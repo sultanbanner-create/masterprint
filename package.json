@@ -1,0 +1,14 @@
+{
+  "name": "printerp",
+  "version": "1.0.0",
+  "description": "ERP system for printing house and outdoor advertising agency",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "exceljs": "^4.4.0",
+    "express": "^4.19.2"
+  }
+}

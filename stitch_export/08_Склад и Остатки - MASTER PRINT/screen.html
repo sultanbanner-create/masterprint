@@ -1,0 +1,536 @@
+<!DOCTYPE html><html lang="ru" style=""><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>Склад - Master Print ERP</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&amp;family=JetBrains+Mono:wght@400;500;600&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "on-primary-container": "#fff6f5",
+                      "primary": "#b70011",
+                      "inverse-surface": "#213145",
+                      "outline": "#916f6b",
+                      "surface-tint": "#bf0715",
+                      "on-primary": "#ffffff",
+                      "secondary-fixed-dim": "#4edea3",
+                      "outline-variant": "#e6bdb8",
+                      "secondary-fixed": "#6ffbbe",
+                      "secondary-container": "#6cf8bb",
+                      "surface-container-highest": "#d3e4fe",
+                      "on-tertiary": "#ffffff",
+                      "on-error-container": "#93000a",
+                      "on-surface-variant": "#5c403c",
+                      "tertiary": "#005e8d",
+                      "surface-dim": "#cbdbf5",
+                      "primary-fixed-dim": "#ffb4ab",
+                      "surface-bright": "#f8f9ff",
+                      "tertiary-fixed-dim": "#90cdff",
+                      "error": "#ba1a1a",
+                      "error-container": "#ffdad6",
+                      "on-secondary-fixed": "#002113",
+                      "surface-container": "#e5eeff",
+                      "surface-container-high": "#dce9ff",
+                      "on-background": "#0b1c30",
+                      "background": "#f8f9ff",
+                      "surface-container-low": "#eff4ff",
+                      "surface-variant": "#d3e4fe",
+                      "on-primary-fixed-variant": "#93000b",
+                      "inverse-on-surface": "#eaf1ff",
+                      "secondary": "#006c49",
+                      "primary-fixed": "#ffdad6",
+                      "on-secondary": "#ffffff",
+                      "inverse-primary": "#ffb4ab",
+                      "surface-container-lowest": "#ffffff",
+                      "primary-container": "#dc2626",
+                      "on-surface": "#0b1c30",
+                      "on-error": "#ffffff",
+                      "tertiary-container": "#0078b2",
+                      "on-primary-fixed": "#410002",
+                      "on-tertiary-fixed-variant": "#004b71",
+                      "surface": "#f8f9ff",
+                      "on-secondary-container": "#00714d",
+                      "on-tertiary-fixed": "#001e30",
+                      "on-secondary-fixed-variant": "#005236",
+                      "tertiary-fixed": "#cbe6ff",
+                      "on-tertiary-container": "#f3f8ff"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.25rem",
+                      "lg": "0.5rem",
+                      "xl": "0.75rem",
+                      "full": "9999px"
+              },
+              "spacing": {
+                      "sidebar_width": "260px",
+                      "gutter": "1rem",
+                      "pos_panel_width": "340px",
+                      "stack-gap": "0.75rem",
+                      "margin-page": "1.5rem",
+                      "header_height": "64px"
+              },
+              "fontFamily": {
+                      "headline-lg": [
+                              "Inter"
+                      ],
+                      "headline-md": [
+                              "Inter"
+                      ],
+                      "body-lg": [
+                              "Inter"
+                      ],
+                      "data-sm": [
+                              "JetBrains Mono"
+                      ],
+                      "body-sm": [
+                              "Inter"
+                      ],
+                      "body-md": [
+                              "Inter"
+                      ],
+                      "headline-sm": [
+                              "Inter"
+                      ],
+                      "data-md": [
+                              "JetBrains Mono"
+                      ],
+                      "data-lg": [
+                              "JetBrains Mono"
+                      ]
+              },
+              "fontSize": {
+                      "headline-lg": [
+                              "32px",
+                              {
+                                      "lineHeight": "40px",
+                                      "letterSpacing": "-0.02em",
+                                      "fontWeight": "700"
+                              }
+                      ],
+                      "headline-md": [
+                              "24px",
+                              {
+                                      "lineHeight": "32px",
+                                      "letterSpacing": "-0.01em",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "body-lg": [
+                              "16px",
+                              {
+                                      "lineHeight": "24px",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "data-sm": [
+                              "12px",
+                              {
+                                      "lineHeight": "16px",
+                                      "fontWeight": "500"
+                              }
+                      ],
+                      "body-sm": [
+                              "12px",
+                              {
+                                      "lineHeight": "16px",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "body-md": [
+                              "14px",
+                              {
+                                      "lineHeight": "20px",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "headline-sm": [
+                              "18px",
+                              {
+                                      "lineHeight": "24px",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "data-md": [
+                              "14px",
+                              {
+                                      "lineHeight": "20px",
+                                      "fontWeight": "500"
+                              }
+                      ],
+                      "data-lg": [
+                              "18px",
+                              {
+                                      "lineHeight": "24px",
+                                      "fontWeight": "600"
+                              }
+                      ]
+              }
+      },
+          },
+        }
+      </script>
+</head>
+<body class="bg-background text-on-surface font-body-md antialiased overflow-hidden flex h-screen">
+<!-- SideNavBar -->
+<nav class="fixed left-0 top-0 h-screen w-[260px] bg-surface-container-lowest border-r border-outline-variant flex flex-col py-gutter space-y-stack-gap z-50">
+<!-- Brand Header -->
+<div class="px-6 pb-6 border-b border-outline-variant flex flex-col items-center">
+<div class="w-16 h-16 mb-4 rounded-xl flex items-center justify-center bg-surface-container"><img src="https://lh3.googleusercontent.com/aida-public/AB6AXuDIrt8Vwe2NUSov08rP337lV34ZlxhLH_MkS9_45Odp6mm9UrgEF2zyy2MC1R2gRKf9qWccwL4G50kElFpiVEJe9nTTDZWf6xiDpnuD2eyvmy19Cf_lsOA1JmoUw00dinbF1QalQeDIFdtQW5x4cGmwl5ebFQYEI-Ka1h_kCpfZe9ZZzXV2izv0gw1K2rHNtgfleyjUSSfdvH6sD_HNghmzF-5gma7hYK96kgVwtnvFIdqtRzu-P5jGImW0Ho1ydPWihg" alt="Master Print Logo" class="w-full h-full object-contain rounded-xl"></div>
+<h1 class="text-headline-md font-headline-md font-black text-on-surface text-center leading-tight">MASTER<br>PRINT</h1>
+<p class="text-body-sm font-body-sm text-on-surface-variant mt-1">Super Admin</p>
+</div>
+<!-- Navigation Tabs -->
+<div class="flex-1 overflow-y-auto px-2 space-y-1">
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant rounded-lg hover:bg-surface-container-low transition-colors active:scale-[0.99]" href="#">
+<span class="material-symbols-outlined" data-icon="point_of_sale">point_of_sale</span>
+<span class="text-body-md font-body-md">Быстрая Касса</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant rounded-lg hover:bg-surface-container-low transition-colors active:scale-[0.99]" href="#">
+<span class="material-symbols-outlined" data-icon="assignment">assignment</span>
+<span class="text-body-md font-body-md">Управление заказами</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant rounded-lg hover:bg-surface-container-low transition-colors active:scale-[0.99]" href="#">
+<span class="material-symbols-outlined" data-icon="payments">payments</span>
+<span class="text-body-md font-body-md">Финансы</span>
+</a>
+<!-- ACTIVE TAB: Склад -->
+<a class="flex items-center gap-3 px-4 py-3 text-primary border-l-4 border-primary font-bold bg-on-primary-container/5 rounded-r-lg active:scale-[0.99] transition-transform duration-150" href="#">
+<span class="material-symbols-outlined" data-icon="inventory_2" style="font-variation-settings: 'FILL' 1;">inventory_2</span>
+<span class="text-body-md font-body-md">Склад</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant rounded-lg hover:bg-surface-container-low transition-colors active:scale-[0.99]" href="#">
+<span class="material-symbols-outlined" data-icon="badge">badge</span>
+<span class="text-body-md font-body-md">Кадры</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant rounded-lg hover:bg-surface-container-low transition-colors active:scale-[0.99]" href="#">
+<span class="material-symbols-outlined" data-icon="analytics">analytics</span>
+<span class="text-body-md font-body-md">Отчеты</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant rounded-lg hover:bg-surface-container-low transition-colors active:scale-[0.99]" href="#">
+<span class="material-symbols-outlined" data-icon="group">group</span>
+<span class="text-body-md font-body-md">Клиенты</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant rounded-lg hover:bg-surface-container-low transition-colors active:scale-[0.99]" href="#">
+<span class="material-symbols-outlined" data-icon="settings">settings</span>
+<span class="text-body-md font-body-md">Настройки</span>
+</a>
+</div>
+<!-- Footer Tab -->
+<div class="px-2 pt-4 border-t border-outline-variant mt-auto">
+<div class="flex items-center gap-3 px-4 py-3 mb-2 rounded-lg bg-surface-container">
+<div class="w-8 h-8 rounded-full bg-primary-container text-on-primary-container flex items-center justify-center font-bold text-sm">И</div>
+<span class="text-body-md font-body-md font-medium text-on-surface">Islam</span>
+</div>
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant rounded-lg hover:bg-surface-container-low transition-colors" href="#">
+<span class="material-symbols-outlined" data-icon="logout">logout</span>
+<span class="text-body-md font-body-md">Выход</span>
+</a>
+</div>
+</nav>
+<!-- Main Content Area -->
+<main class="flex-1 ml-[260px] h-screen overflow-y-auto flex flex-col bg-surface">
+<!-- TopAppBar -->
+<header class="h-[64px] bg-surface border-b border-outline-variant flex justify-between items-center px-6 sticky top-0 z-40 shrink-0">
+<div class="flex items-center gap-4">
+<h2 class="text-headline-md font-headline-md text-on-surface"><div class="flex items-center gap-2"><img src="https://lh3.googleusercontent.com/aida-public/AB6AXuCKWozBLfOIYxflSy07THktPClFXCqfzrFn_r806szhWjM55tNbwMI3UIXD72d1UFce9St0S80OEiV1OofwuHK31oicb56mHyepMPmOpPAo2JwjwBTVESXnkA0AHjsCRx-Hsai2OHcvyNQf4JVVRPlXzwmAKM8moWdfoF_WdPzhPURzFrULf8GK19Bz-Du0PaepDNYbuTrpP2SB0E7JKBQ5Q6d_DVoSsxM1y1QrwItsUwjMxv3sf94ky_ps4YAGVeBITw" alt="Logo" class="w-8 h-8 object-contain"><span class="">Склад</span></div></h2>
+<div class="hidden md:flex gap-4 ml-8 border-l border-outline-variant pl-8">
+<a class="text-body-md font-body-md text-on-surface-variant hover:text-primary transition-colors cursor-pointer" href="#">Обзор</a>
+<a class="text-body-md font-body-md text-primary font-bold" href="#">Остатки</a>
+<a class="text-body-md font-body-md text-on-surface-variant hover:text-primary transition-colors cursor-pointer" href="#">Поставщики</a>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<div class="relative hidden lg:block mr-4">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant text-sm" data-icon="search">search</span>
+<input class="pl-9 pr-4 py-2 bg-surface-container-lowest border border-outline-variant rounded-full text-body-sm font-body-sm focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary w-64 transition-all" placeholder="Поиск материалов..." type="text">
+</div>
+<button class="w-10 h-10 rounded-full flex items-center justify-center text-on-surface-variant hover:bg-surface-container-low transition-colors">
+<span class="material-symbols-outlined" data-icon="schedule">schedule</span>
+</button>
+<button class="w-10 h-10 rounded-full flex items-center justify-center text-on-surface-variant hover:bg-surface-container-low transition-colors mr-2">
+<span class="material-symbols-outlined" data-icon="wifi_tethering">wifi_tethering</span>
+</button>
+<button class="bg-primary text-on-primary px-5 py-2.5 rounded-lg text-body-md font-body-md font-medium hover:bg-surface-tint transition-colors active:opacity-80 flex items-center gap-2 shadow-sm">
+<span class="material-symbols-outlined text-sm" data-icon="add">add</span>
+                    Приход сырья
+                </button>
+</div>
+</header>
+<!-- Page Content -->
+<div class="p-8 max-w-[1600px] mx-auto w-full space-y-8 pb-20">
+<!-- Stats Row -->
+<div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+<div class="bg-surface-container-lowest p-5 rounded-xl border border-outline-variant shadow-sm flex flex-col justify-between h-32">
+<div class="flex justify-between items-start">
+<span class="text-body-sm font-body-sm text-on-surface-variant">Всего позиций</span>
+<span class="material-symbols-outlined text-primary bg-primary-container/10 p-1.5 rounded-lg" data-icon="inventory_2">inventory_2</span>
+</div>
+<div>
+<span class="text-headline-lg font-headline-lg font-bold">142</span>
+</div>
+</div>
+<div class="bg-surface-container-lowest p-5 rounded-xl border border-outline-variant shadow-sm flex flex-col justify-between h-32">
+<div class="flex justify-between items-start">
+<span class="text-body-sm font-body-sm text-on-surface-variant">Требуют пополнения</span>
+<span class="material-symbols-outlined text-error bg-error-container/20 p-1.5 rounded-lg" data-icon="warning">warning</span>
+</div>
+<div>
+<span class="text-headline-lg font-headline-lg font-bold text-error">12</span>
+</div>
+</div>
+<div class="bg-surface-container-lowest p-5 rounded-xl border border-outline-variant shadow-sm flex flex-col justify-between h-32">
+<div class="flex justify-between items-start">
+<span class="text-body-sm font-body-sm text-on-surface-variant">Стоимость склада</span>
+<span class="material-symbols-outlined text-tertiary bg-tertiary-container/10 p-1.5 rounded-lg" data-icon="account_balance_wallet">account_balance_wallet</span>
+</div>
+<div>
+<span class="text-headline-md font-headline-md font-bold">4.2M ₸</span>
+</div>
+</div>
+<div class="bg-surface-container-lowest p-5 rounded-xl border border-outline-variant shadow-sm flex flex-col justify-between h-32">
+<div class="flex justify-between items-start">
+<span class="text-body-sm font-body-sm text-on-surface-variant">Ожидается приход</span>
+<span class="material-symbols-outlined text-secondary bg-secondary-container/20 p-1.5 rounded-lg" data-icon="local_shipping">local_shipping</span>
+</div>
+<div>
+<span class="text-headline-md font-headline-md font-bold">3 <span class="text-body-sm font-body-sm text-on-surface-variant font-normal">партии</span></span>
+</div>
+</div>
+</div>
+<!-- Main Split Layout -->
+<div class="grid grid-cols-1 xl:grid-cols-3 gap-8">
+<!-- Left/Main: Material Grid -->
+<div class="xl:col-span-2 space-y-6">
+<div class="flex justify-between items-end">
+<div>
+<h3 class="text-headline-sm font-headline-sm font-semibold text-on-surface">Сырье и материалы</h3>
+<p class="text-body-sm font-body-sm text-on-surface-variant mt-1">Текущие остатки по складам</p>
+</div>
+<div class="flex gap-2">
+<select class="bg-surface-container-lowest border border-outline-variant rounded-lg text-body-sm font-body-sm px-3 py-1.5 focus:border-primary focus:ring-1 focus:ring-primary">
+<option>Все категории</option>
+<option>Бумага (Офсет/Меловка)</option>
+<option>Широкоформат (Баннер/Пленка)</option>
+<option>Краски и тонеры</option>
+</select>
+</div>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+<!-- Card 1 -->
+<div class="bg-surface-container-lowest border border-outline-variant rounded-xl p-5 hover:shadow-md transition-shadow relative overflow-hidden group">
+<div class="flex justify-between items-start mb-4">
+<div class="flex gap-3">
+<div class="w-12 h-12 rounded-lg bg-surface-container flex items-center justify-center shrink-0 border border-outline-variant/50">
+<span class="material-symbols-outlined text-on-surface-variant" data-icon="layers">layers</span>
+</div>
+<div>
+<h4 class="text-body-lg font-body-lg font-semibold text-on-surface leading-tight">Бумага Мелованная 150г</h4>
+<p class="text-data-sm font-data-sm text-on-surface-variant mt-0.5">SRA3 (320x450mm)</p>
+</div>
+</div>
+<button class="text-on-surface-variant hover:text-primary transition-colors opacity-0 group-hover:opacity-100">
+<span class="material-symbols-outlined" data-icon="edit">edit</span>
+</button>
+</div>
+<div class="space-y-3">
+<div class="flex justify-between text-body-sm font-body-sm">
+<span class="text-on-surface-variant">Остаток</span>
+<span class="font-data-md font-semibold">4,500 <span class="text-on-surface-variant font-normal">листов</span></span>
+</div>
+<div class="w-full bg-surface-variant rounded-full h-2 overflow-hidden">
+<div class="bg-secondary h-2 rounded-full" style="width: 75%"></div>
+</div>
+<div class="flex justify-between text-data-sm font-data-sm text-on-surface-variant pt-1 border-t border-outline-variant/50">
+<span class="">Мин: 1,000 л.</span>
+<span class="">Склад 1 (Стеллаж A3)</span>
+</div>
+</div>
+</div>
+<!-- Card 2 -->
+<div class="bg-surface-container-lowest border border-outline-variant rounded-xl p-5 hover:shadow-md transition-shadow relative overflow-hidden group">
+<div class="flex justify-between items-start mb-4">
+<div class="flex gap-3">
+<div class="w-12 h-12 rounded-lg bg-surface-container flex items-center justify-center shrink-0 border border-outline-variant/50">
+<span class="material-symbols-outlined text-on-surface-variant" data-icon="format_paint">format_paint</span>
+</div>
+<div>
+<h4 class="text-body-lg font-body-lg font-semibold text-on-surface leading-tight">Тонер Konica Minolta TN-622C</h4>
+<p class="text-data-sm font-data-sm text-on-surface-variant mt-0.5">Cyan (Голубой)</p>
+</div>
+</div>
+<button class="text-on-surface-variant hover:text-primary transition-colors opacity-0 group-hover:opacity-100">
+<span class="material-symbols-outlined" data-icon="edit">edit</span>
+</button>
+</div>
+<div class="space-y-3">
+<div class="flex justify-between text-body-sm font-body-sm">
+<span class="text-on-surface-variant">Остаток</span>
+<span class="font-data-md font-semibold text-error">2 <span class="text-on-surface-variant font-normal">тубы</span></span>
+</div>
+<div class="w-full bg-surface-variant rounded-full h-2 overflow-hidden">
+<div class="bg-error h-2 rounded-full" style="width: 20%"></div>
+</div>
+<div class="flex justify-between text-data-sm font-data-sm text-on-surface-variant pt-1 border-t border-outline-variant/50">
+<span class="text-error font-medium">Мин: 4 шт.</span>
+<span class="">Склад 2 (Шкаф 1)</span>
+</div>
+</div>
+</div>
+<!-- Card 3 -->
+<div class="bg-surface-container-lowest border border-outline-variant rounded-xl p-5 hover:shadow-md transition-shadow relative overflow-hidden group">
+<div class="flex justify-between items-start mb-4">
+<div class="flex gap-3">
+<div class="w-12 h-12 rounded-lg bg-surface-container flex items-center justify-center shrink-0 border border-outline-variant/50">
+<span class="material-symbols-outlined text-on-surface-variant" data-icon="panorama_horizontal">panorama_horizontal</span>
+</div>
+<div>
+<h4 class="text-body-lg font-body-lg font-semibold text-on-surface leading-tight">Баннер литой 440г</h4>
+<p class="text-data-sm font-data-sm text-on-surface-variant mt-0.5">Рулон 3.2м</p>
+</div>
+</div>
+<button class="text-on-surface-variant hover:text-primary transition-colors opacity-0 group-hover:opacity-100">
+<span class="material-symbols-outlined" data-icon="edit">edit</span>
+</button>
+</div>
+<div class="space-y-3">
+<div class="flex justify-between text-body-sm font-body-sm">
+<span class="text-on-surface-variant">Остаток</span>
+<span class="font-data-md font-semibold">125 <span class="text-on-surface-variant font-normal">пог. м</span></span>
+</div>
+<div class="w-full bg-surface-variant rounded-full h-2 overflow-hidden">
+<div class="bg-secondary h-2 rounded-full" style="width: 50%"></div>
+</div>
+<div class="flex justify-between text-data-sm font-data-sm text-on-surface-variant pt-1 border-t border-outline-variant/50">
+<span class="">Мин: 50 м.</span>
+<span class="">Цех ШФ (Стойка 2)</span>
+</div>
+</div>
+</div>
+<!-- Card 4 -->
+<div class="bg-surface-container-lowest border border-outline-variant rounded-xl p-5 hover:shadow-md transition-shadow relative overflow-hidden group">
+<div class="flex justify-between items-start mb-4">
+<div class="flex gap-3">
+<div class="w-12 h-12 rounded-lg bg-surface-container flex items-center justify-center shrink-0 border border-outline-variant/50">
+<span class="material-symbols-outlined text-on-surface-variant" data-icon="branding_watermark">branding_watermark</span>
+</div>
+<div>
+<h4 class="text-body-lg font-body-lg font-semibold text-on-surface leading-tight">Акрил прозрачный 3мм</h4>
+<p class="text-data-sm font-data-sm text-on-surface-variant mt-0.5">Лист 2x3м</p>
+</div>
+</div>
+<button class="text-on-surface-variant hover:text-primary transition-colors opacity-0 group-hover:opacity-100">
+<span class="material-symbols-outlined" data-icon="edit">edit</span>
+</button>
+</div>
+<div class="space-y-3">
+<div class="flex justify-between text-body-sm font-body-sm">
+<span class="text-on-surface-variant">Остаток</span>
+<span class="font-data-md font-semibold">15 <span class="text-on-surface-variant font-normal">листов</span></span>
+</div>
+<div class="w-full bg-surface-variant rounded-full h-2 overflow-hidden">
+<div class="bg-secondary-fixed-dim h-2 rounded-full" style="width: 40%"></div>
+</div>
+<div class="flex justify-between text-data-sm font-data-sm text-on-surface-variant pt-1 border-t border-outline-variant/50">
+<span class="">Мин: 10 л.</span>
+<span class="">Склад 3 (Резка)</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Right Sidebar: Deduction Logs -->
+<div class="xl:col-span-1">
+<div class="bg-surface-container-lowest border border-outline-variant rounded-xl shadow-[0_10px_15px_-3px_rgba(0,0,0,0.05)] h-[calc(100vh-220px)] flex flex-col sticky top-24">
+<div class="p-5 border-b border-outline-variant flex justify-between items-center">
+<div>
+<h3 class="text-headline-sm font-headline-sm font-semibold text-on-surface">История списаний</h3>
+<p class="text-data-sm font-data-sm text-on-surface-variant mt-0.5">Автоматический учет</p>
+</div>
+<span class="material-symbols-outlined text-on-surface-variant text-lg" data-icon="history">history</span>
+</div>
+<div class="overflow-y-auto flex-1 p-2">
+<table class="w-full text-left border-collapse">
+<tbody class="divide-y divide-outline-variant/50">
+<!-- Log Item 1 -->
+<tr class="hover:bg-surface-container/50 transition-colors">
+<td class="p-3 align-top w-8">
+<span class="material-symbols-outlined text-primary text-base" data-icon="remove_circle_outline">remove_circle_outline</span>
+</td>
+<td class="p-3">
+<div class="flex flex-col">
+<span class="text-body-sm font-body-sm font-semibold text-on-surface">Бумага Мелованная 150г</span>
+<span class="text-data-sm font-data-sm text-on-surface-variant">Заказ #4092 (Визитки)</span>
+</div>
+</td>
+<td class="p-3 text-right align-top">
+<span class="font-data-sm font-semibold text-on-surface">-45 <span class="text-on-surface-variant font-normal">л.</span></span>
+<div class="text-data-sm font-data-sm text-on-surface-variant/70 mt-0.5">14:32</div>
+</td>
+</tr>
+<!-- Log Item 2 -->
+<tr class="hover:bg-surface-container/50 transition-colors">
+<td class="p-3 align-top w-8">
+<span class="material-symbols-outlined text-primary text-base" data-icon="remove_circle_outline">remove_circle_outline</span>
+</td>
+<td class="p-3">
+<div class="flex flex-col">
+<span class="text-body-sm font-body-sm font-semibold text-on-surface">Баннер литой 440г</span>
+<span class="text-data-sm font-data-sm text-on-surface-variant">Заказ #4090 (Вывеска)</span>
+</div>
+</td>
+<td class="p-3 text-right align-top">
+<span class="font-data-sm font-semibold text-on-surface">-12.5 <span class="text-on-surface-variant font-normal">м.</span></span>
+<div class="text-data-sm font-data-sm text-on-surface-variant/70 mt-0.5">13:15</div>
+</td>
+</tr>
+<!-- Log Item 3 (Manual Add) -->
+<tr class="hover:bg-surface-container/50 transition-colors bg-secondary-container/10">
+<td class="p-3 align-top w-8">
+<span class="material-symbols-outlined text-secondary text-base" data-icon="add_circle_outline">add_circle_outline</span>
+</td>
+<td class="p-3">
+<div class="flex flex-col">
+<span class="text-body-sm font-body-sm font-semibold text-on-surface">Тонер K.M. TN-622Y</span>
+<span class="text-data-sm font-data-sm text-secondary">Приход от поставщика (Накладная #112)</span>
+</div>
+</td>
+<td class="p-3 text-right align-top">
+<span class="font-data-sm font-semibold text-secondary">+4 <span class="text-on-surface-variant font-normal">шт.</span></span>
+<div class="text-data-sm font-data-sm text-on-surface-variant/70 mt-0.5">11:05</div>
+</td>
+</tr>
+<!-- Log Item 4 -->
+<tr class="hover:bg-surface-container/50 transition-colors">
+<td class="p-3 align-top w-8">
+<span class="material-symbols-outlined text-primary text-base" data-icon="remove_circle_outline">remove_circle_outline</span>
+</td>
+<td class="p-3">
+<div class="flex flex-col">
+<span class="text-body-sm font-body-sm font-semibold text-on-surface">Самоклеющаяся пленка мат.</span>
+<span class="text-data-sm font-data-sm text-on-surface-variant">Заказ #4088 (Наклейки)</span>
+</div>
+</td>
+<td class="p-3 text-right align-top">
+<span class="font-data-sm font-semibold text-on-surface">-5 <span class="text-on-surface-variant font-normal">м.</span></span>
+<div class="text-data-sm font-data-sm text-on-surface-variant/70 mt-0.5">Вчера</div>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="p-4 border-t border-outline-variant text-center">
+<button class="text-body-sm font-body-sm text-primary font-medium hover:underline">Показать все операции</button>
+</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+
+
+</body></html>

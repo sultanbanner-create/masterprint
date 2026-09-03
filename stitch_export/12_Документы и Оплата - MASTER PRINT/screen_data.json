@@ -1,0 +1,16 @@
+{
+  "status": 200,
+  "json": {
+    "id": 1788290662380,
+    "jsonrpc": "2.0",
+    "result": {
+      "content": [
+        {
+          "text": "Request contains an invalid argument.",
+          "type": "text"
+        }
+      ],
+      "isError": true
+    }
+  }
+}

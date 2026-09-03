@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>MASTER PRINT - Client Debts</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "background": "#f8f9ff",
+                        "tertiary-container": "#0078b2",
+                        "on-error": "#ffffff",
+                        "tertiary-fixed": "#cbe6ff",
+                        "on-primary-fixed-variant": "#93000b",
+                        "on-primary": "#ffffff",
+                        "inverse-primary": "#ffb4ab",
+                        "secondary-fixed-dim": "#4edea3",
+                        "on-surface-variant": "#5c403c",
+                        "on-tertiary-fixed-variant": "#004b71",
+                        "inverse-on-surface": "#eaf1ff",
+                        "surface": "#f8f9ff",
+                        "primary-fixed-dim": "#ffb4ab",
+                        "on-secondary-fixed": "#002113",
+                        "on-secondary-fixed-variant": "#005236",
+                        "surface-container-highest": "#d3e4fe",
+                        "inverse-surface": "#213145",
+                        "surface-tint": "#bf0715",
+                        "on-primary-fixed": "#410002",
+                        "on-surface": "#0b1c30",
+                        "secondary-container": "#6cf8bb",
+                        "secondary": "#006c49",
+                        "surface-bright": "#f8f9ff",
+                        "surface-container": "#e5eeff",
+                        "outline-variant": "#e6bdb8",
+                        "on-tertiary-container": "#f3f8ff",
+                        "secondary-fixed": "#6ffbbe",
+                        "on-primary-container": "#fff6f5",
+                        "error": "#ba1a1a",
+                        "primary": "#b70011",
+                        "on-secondary": "#ffffff",
+                        "surface-dim": "#cbdbf5",
+                        "outline": "#916f6b",
+                        "error-container": "#ffdad6",
+                        "on-secondary-container": "#00714d",
+                        "on-error-container": "#93000a",
+                        "on-tertiary-fixed": "#001e30",
+                        "tertiary": "#005e8d",
+                        "surface-container-high": "#dce9ff",
+                        "surface-container-lowest": "#ffffff",
+                        "surface-variant": "#d3e4fe",
+                        "primary-fixed": "#ffdad6",
+                        "surface-container-low": "#eff4ff",
+                        "on-background": "#0b1c30",
+                        "tertiary-fixed-dim": "#90cdff",
+                        "primary-container": "#dc2626",
+                        "on-tertiary": "#ffffff"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "header_height": "64px",
+                        "margin-page": "1.5rem",
+                        "gutter": "1rem",
+                        "pos_panel_width": "340px",
+                        "stack-gap": "0.75rem",
+                        "sidebar_width": "260px"
+                    },
+                    "fontFamily": {
+                        "headline-md": ["Inter"],
+                        "data-md": ["JetBrains Mono"],
+                        "body-md": ["Inter"],
+                        "headline-lg": ["Inter"],
+                        "body-lg": ["Inter"],
+                        "headline-sm": ["Inter"],
+                        "data-sm": ["JetBrains Mono"],
+                        "data-lg": ["JetBrains Mono"],
+                        "body-sm": ["Inter"]
+                    },
+                    "fontSize": {
+                        "headline-md": ["24px", { "lineHeight": "32px", "letterSpacing": "-0.01em", "fontWeight": "600" }],
+                        "data-md": ["14px", { "lineHeight": "20px", "fontWeight": "500" }],
+                        "body-md": ["14px", { "lineHeight": "20px", "fontWeight": "400" }],
+                        "headline-lg": ["32px", { "lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+                        "body-lg": ["16px", { "lineHeight": "24px", "fontWeight": "400" }],
+                        "headline-sm": ["18px", { "lineHeight": "24px", "fontWeight": "600" }],
+                        "data-sm": ["12px", { "lineHeight": "16px", "fontWeight": "500" }],
+                        "data-lg": ["18px", { "lineHeight": "24px", "fontWeight": "600" }],
+                        "body-sm": ["12px", { "lineHeight": "16px", "fontWeight": "400" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 1;
+        }
+        /* Custom scrollbar for data tables */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f8f9ff;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #d3e4fe;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #cbe6ff;
+        }
+    </style>
+</head>
+<body class="bg-background text-on-background min-h-screen flex font-body-md text-body-md">
+<!-- SideNavBar -->
+<nav class="hidden md:flex flex-col py-6 w-sidebar_width bg-surface border-r border-outline-variant fixed left-0 top-0 h-full">
+<div class="px-6 mb-8 flex items-center gap-4">
+<div class="w-10 h-10 rounded-full overflow-hidden bg-surface-variant flex items-center justify-center shrink-0">
+<img alt="Employee Profile Avatar" class="w-full h-full object-cover" data-alt="A highly detailed close-up portrait of a professional agency administrator in a crisp modern office setting. The lighting is soft and natural, emphasizing a bright, clinical, and corporate aesthetic. Subtle shades of cool blue and crisp white dominate the background, conveying efficiency and trust." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDIlvZPDiGiyaIXiEgFz7FWknDORGGZv0UCXOoVkVunsGUgtT9wiDTVMfua9RIOgX1W3pU5_BSu7ai-vHuLKGzmXS3IEEjGTRrJPvzP27BP1LHbykzbTg9WBBDIG_E4TQV7pbzvyPqlSPG3MF3XpFgHJJ8EW4tgEzh0Lm8okFU6lmc6xdyezmPseXmAQmFaiXMlWFaLWLx4KJ_bQ0GZmkBTPYrwsxC5gfi-8c99quD0g40tOeC3zzM5"/>
+</div>
+<div>
+<h1 class="font-headline-sm text-headline-sm font-bold text-primary truncate">PrintManager Pro</h1>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Agency Admin</p>
+</div>
+</div>
+<div class="px-4 mb-6">
+<button class="w-full bg-primary-container text-on-primary font-headline-sm text-headline-sm py-3 rounded-lg flex items-center justify-center gap-2 hover:opacity-90 transition-opacity active:scale-95 shadow-sm">
+<span class="material-symbols-outlined text-[20px]">add</span>
+                New Print Order
+            </button>
+</div>
+<div class="flex-1 overflow-y-auto px-4 space-y-2">
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors active:scale-95" href="#">
+<span class="material-symbols-outlined">dashboard</span>
+                Dashboard
+            </a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors active:scale-95" href="#">
+<span class="material-symbols-outlined">inventory_2</span>
+                Inventory
+            </a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors active:scale-95" href="#">
+<span class="material-symbols-outlined">print</span>
+                Orders
+            </a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg border-l-4 border-primary text-primary font-medium bg-surface-container-low transition-colors active:scale-95" href="#">
+<span class="material-symbols-outlined">account_balance_wallet</span>
+                Debt Tracking
+            </a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors active:scale-95" href="#">
+<span class="material-symbols-outlined">payments</span>
+                Payroll
+            </a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors active:scale-95" href="#">
+<span class="material-symbols-outlined">analytics</span>
+                Reports
+            </a>
+</div>
+<div class="mt-auto px-4 pt-4 border-t border-outline-variant space-y-2">
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors active:scale-95" href="#">
+<span class="material-symbols-outlined">settings</span>
+                Settings
+            </a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors active:scale-95" href="#">
+<span class="material-symbols-outlined">logout</span>
+                Logout
+            </a>
+</div>
+</nav>
+<!-- TopNavBar -->
+<header class="fixed top-0 right-0 h-header_height z-40 bg-surface border-b border-outline-variant flex items-center justify-between px-6 w-full md:w-[calc(100%-260px)] shadow-sm">
+<div class="flex items-center gap-6">
+<span class="md:hidden material-symbols-outlined text-primary text-2xl cursor-pointer">menu</span>
+<div class="font-headline-md text-headline-md font-black text-primary">PrintERP</div>
+<nav class="hidden md:flex items-center gap-6 ml-4">
+<a class="font-body-sm text-body-sm text-on-surface-variant hover:text-primary transition-colors active:opacity-80" href="#">Large Format</a>
+<a class="font-body-sm text-body-sm text-on-surface-variant hover:text-primary transition-colors active:opacity-80" href="#">Offset</a>
+<a class="font-body-sm text-body-sm text-on-surface-variant hover:text-primary transition-colors active:opacity-80" href="#">Digital</a>
+</nav>
+</div>
+<div class="flex items-center gap-4">
+<div class="relative hidden sm:block">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant text-[20px]">search</span>
+<input class="pl-10 pr-4 py-2 rounded-full bg-surface-container border-none text-sm focus:ring-2 focus:ring-primary w-64 transition-all" placeholder="Search orders, clients..." type="text"/>
+</div>
+<button class="bg-surface-container text-on-surface font-body-sm text-body-sm px-4 py-2 rounded-full hover:bg-surface-variant transition-colors active:opacity-80 whitespace-nowrap hidden sm:block">Status</button>
+<button class="bg-primary-container text-on-primary font-headline-sm text-headline-sm px-4 py-2 rounded-full hover:opacity-90 transition-opacity active:opacity-80 whitespace-nowrap">Quick Quote</button>
+<div class="flex items-center gap-2 border-l border-outline-variant pl-4 ml-2">
+<button class="text-on-surface-variant hover:text-primary transition-colors active:opacity-80">
+<span class="material-symbols-outlined text-[24px]">notifications</span>
+</button>
+<button class="text-on-surface-variant hover:text-primary transition-colors active:opacity-80">
+<span class="material-symbols-outlined text-[24px]">help_outline</span>
+</button>
+</div>
+</div>
+</header>
+<!-- Main Content -->
+<main class="flex-1 mt-header_height md:ml-sidebar_width p-margin-page overflow-x-hidden flex flex-col gap-6 w-full max-w-[1600px] mx-auto">
+<div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+<div>
+<h2 class="font-headline-lg text-headline-lg text-on-surface">Accounts Receivable</h2>
+<p class="text-on-surface-variant mt-1">Manage client debts and track outstanding payments.</p>
+</div>
+<div class="flex gap-3 w-full md:w-auto">
+<button class="flex-1 md:flex-none flex items-center justify-center gap-2 bg-surface-container text-on-surface px-4 py-2 rounded-lg font-headline-sm text-headline-sm hover:bg-surface-variant transition-colors shadow-sm border border-outline-variant">
+<span class="material-symbols-outlined text-[18px]">receipt_long</span>
+                    Record Payment
+                </button>
+<button class="flex-1 md:flex-none flex items-center justify-center gap-2 bg-primary-container text-on-primary px-4 py-2 rounded-lg font-headline-sm text-headline-sm hover:opacity-90 transition-opacity shadow-sm">
+<span class="material-symbols-outlined text-[18px]">forward_to_inbox</span>
+                    Send Reminders
+                </button>
+</div>
+</div>
+<!-- Summary Cards (Bento Grid Style) -->
+<div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+<div class="bg-surface-container-lowest p-6 rounded-xl border border-outline-variant shadow-[0_10px_15px_-3px_rgba(0,0,0,0.05)] relative overflow-hidden group">
+<div class="absolute top-0 right-0 w-32 h-32 bg-error-container rounded-bl-full -mr-10 -mt-10 opacity-50 transition-transform group-hover:scale-110"></div>
+<div class="flex items-start justify-between relative z-10">
+<div>
+<p class="text-on-surface-variant font-body-sm text-body-sm mb-1 uppercase tracking-wider">Total Outstanding</p>
+<h3 class="font-data-lg text-data-lg text-on-surface text-3xl">$124,500.00</h3>
+</div>
+<div class="w-12 h-12 rounded-full bg-error-container text-on-error-container flex items-center justify-center">
+<span class="material-symbols-outlined text-2xl">account_balance_wallet</span>
+</div>
+</div>
+<div class="mt-4 flex items-center gap-2 text-error font-body-sm text-body-sm relative z-10">
+<span class="material-symbols-outlined text-[16px]">trending_up</span>
+<span>+5.2% from last month</span>
+</div>
+</div>
+<div class="bg-surface-container-lowest p-6 rounded-xl border border-outline-variant shadow-[0_10px_15px_-3px_rgba(0,0,0,0.05)] relative overflow-hidden group">
+<div class="absolute top-0 right-0 w-32 h-32 bg-primary-fixed rounded-bl-full -mr-10 -mt-10 opacity-50 transition-transform group-hover:scale-110"></div>
+<div class="flex items-start justify-between relative z-10">
+<div>
+<p class="text-on-surface-variant font-body-sm text-body-sm mb-1 uppercase tracking-wider">Overdue Amount</p>
+<h3 class="font-data-lg text-data-lg text-primary text-3xl">$45,230.50</h3>
+</div>
+<div class="w-12 h-12 rounded-full bg-primary-fixed text-on-primary-fixed flex items-center justify-center">
+<span class="material-symbols-outlined text-2xl">warning</span>
+</div>
+</div>
+<div class="mt-4 flex items-center gap-2 text-on-surface-variant font-body-sm text-body-sm relative z-10">
+<span class="material-symbols-outlined text-[16px]">schedule</span>
+<span>30+ days past due</span>
+</div>
+</div>
+<div class="bg-surface-container-lowest p-6 rounded-xl border border-outline-variant shadow-[0_10px_15px_-3px_rgba(0,0,0,0.05)] relative overflow-hidden group">
+<div class="absolute top-0 right-0 w-32 h-32 bg-surface-container-high rounded-bl-full -mr-10 -mt-10 opacity-50 transition-transform group-hover:scale-110"></div>
+<div class="flex items-start justify-between relative z-10">
+<div>
+<p class="text-on-surface-variant font-body-sm text-body-sm mb-1 uppercase tracking-wider">Active Debtors</p>
+<h3 class="font-headline-lg text-headline-lg text-on-surface text-3xl">42</h3>
+</div>
+<div class="w-12 h-12 rounded-full bg-surface-container-high text-on-surface flex items-center justify-center">
+<span class="material-symbols-outlined text-2xl">groups</span>
+</div>
+</div>
+<div class="mt-4 flex items-center gap-2 text-secondary font-body-sm text-body-sm relative z-10">
+<span class="material-symbols-outlined text-[16px]">check_circle</span>
+<span>12 resolved this week</span>
+</div>
+</div>
+</div>
+</main>
+</body></html>

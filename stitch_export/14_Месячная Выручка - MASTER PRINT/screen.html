@@ -1,0 +1,303 @@
+<!DOCTYPE html><html lang="ru" style=""><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>Master Print - Отчеты</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&amp;family=JetBrains+Mono:wght@500;600&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "on-primary-container": "#fff6f5",
+                    "primary": "#b70011",
+                    "inverse-surface": "#213145",
+                    "outline": "#916f6b",
+                    "surface-tint": "#bf0715",
+                    "on-primary": "#ffffff",
+                    "secondary-fixed-dim": "#4edea3",
+                    "outline-variant": "#e6bdb8",
+                    "secondary-fixed": "#6ffbbe",
+                    "secondary-container": "#6cf8bb",
+                    "surface-container-highest": "#d3e4fe",
+                    "on-tertiary": "#ffffff",
+                    "on-error-container": "#93000a",
+                    "on-surface-variant": "#5c403c",
+                    "tertiary": "#005e8d",
+                    "surface-dim": "#cbdbf5",
+                    "primary-fixed-dim": "#ffb4ab",
+                    "surface-bright": "#f8f9ff",
+                    "tertiary-fixed-dim": "#90cdff",
+                    "error": "#ba1a1a",
+                    "error-container": "#ffdad6",
+                    "on-secondary-fixed": "#002113",
+                    "surface-container": "#e5eeff",
+                    "surface-container-high": "#dce9ff",
+                    "on-background": "#0b1c30",
+                    "background": "#f8f9ff",
+                    "surface-container-low": "#eff4ff",
+                    "surface-variant": "#d3e4fe",
+                    "on-primary-fixed-variant": "#93000b",
+                    "inverse-on-surface": "#eaf1ff",
+                    "secondary": "#006c49",
+                    "primary-fixed": "#ffdad6",
+                    "on-secondary": "#ffffff",
+                    "inverse-primary": "#ffb4ab",
+                    "surface-container-lowest": "#ffffff",
+                    "primary-container": "#dc2626",
+                    "on-surface": "#0b1c30",
+                    "on-error": "#ffffff",
+                    "tertiary-container": "#0078b2",
+                    "on-primary-fixed": "#410002",
+                    "on-tertiary-fixed-variant": "#004b71",
+                    "surface": "#f8f9ff",
+                    "on-secondary-container": "#00714d",
+                    "on-tertiary-fixed": "#001e30",
+                    "on-secondary-fixed-variant": "#005236",
+                    "tertiary-fixed": "#cbe6ff",
+                    "on-tertiary-container": "#f3f8ff"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "spacing": {
+                    "sidebar_width": "260px",
+                    "gutter": "1rem",
+                    "pos_panel_width": "340px",
+                    "stack-gap": "0.75rem",
+                    "margin-page": "1.5rem",
+                    "header_height": "64px"
+            },
+            "fontFamily": {
+                    "headline-lg": ["Inter"],
+                    "headline-md": ["Inter"],
+                    "body-lg": ["Inter"],
+                    "data-sm": ["JetBrains Mono"],
+                    "body-sm": ["Inter"],
+                    "body-md": ["Inter"],
+                    "headline-sm": ["Inter"],
+                    "data-md": ["JetBrains Mono"],
+                    "data-lg": ["JetBrains Mono"]
+            },
+            "fontSize": {
+                    "headline-lg": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                    "headline-md": ["24px", {"lineHeight": "32px", "letterSpacing": "-0.01em", "fontWeight": "600"}],
+                    "body-lg": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                    "data-sm": ["12px", {"lineHeight": "16px", "fontWeight": "500"}],
+                    "body-sm": ["12px", {"lineHeight": "16px", "fontWeight": "400"}],
+                    "body-md": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                    "headline-sm": ["18px", {"lineHeight": "24px", "fontWeight": "600"}],
+                    "data-md": ["14px", {"lineHeight": "20px", "fontWeight": "500"}],
+                    "data-lg": ["18px", {"lineHeight": "24px", "fontWeight": "600"}]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+          font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        
+        /* Custom scrollbar for matrix */
+        .matrix-container::-webkit-scrollbar {
+            height: 8px;
+            width: 8px;
+        }
+        .matrix-container::-webkit-scrollbar-track {
+            background: theme('colors.surface');
+        }
+        .matrix-container::-webkit-scrollbar-thumb {
+            background-color: theme('colors.outline-variant');
+            border-radius: 4px;
+        }
+        
+        th.sticky-col, td.sticky-col {
+            position: sticky;
+            left: 0;
+            background-color: white;
+            z-index: 10;
+        }
+    </style>
+</head>
+<body class="bg-background text-on-surface font-body-md antialiased min-h-screen">
+<!-- SideNavBar -->
+<nav class="fixed left-0 top-0 h-screen w-[260px] bg-surface-container-lowest border-r border-outline-variant flex flex-col py-gutter space-y-stack-gap z-50">
+<div class="px-4 mb-4 flex items-center gap-3">
+<div class="w-10 h-10 rounded overflow-hidden flex items-center justify-center"><img src="https://lh3.googleusercontent.com/aida-public/AB6AXuAE_nBBKE540FD169BpHfFWd4Gp87ZTey8YzwPNSynULKwTh0QhjlBOYHgUlcSgHkYso31OisMAXJiRZ_ICmqCxFdmzGZDaqAzW5agFyA4lmGz_LBpLffxLGIUXWTxbv73BYHY-V6GypAR6Q3w7jwN98s-Hhxm5xd0Ht1o73Tzvkk8PCkL_-99MMrSAvQoTltKUXcZFsUMoJDK8QT1CCYF30bNW7v8FLrPMJKqwrDYfvTaUrAyWL2X-T85Uac5nvGNuiQ" alt="Master Print Logo" class="w-full h-full object-contain"></div>
+<div>
+<h1 class="text-headline-md font-headline-md font-black text-on-surface">MASTER PRINT</h1>
+<p class="text-body-sm font-body-sm text-on-surface-variant">Super Admin</p>
+</div>
+</div>
+<div class="flex-1 overflow-y-auto space-y-1 px-2">
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant hover:bg-surface-container-low transition-colors rounded-lg" href="#">
+<span class="material-symbols-outlined">point_of_sale</span>
+<span class="text-body-md font-body-md">Быстрая Касса</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant hover:bg-surface-container-low transition-colors rounded-lg" href="#">
+<span class="material-symbols-outlined">assignment</span>
+<span class="text-body-md font-body-md">Управление заказами</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant hover:bg-surface-container-low transition-colors rounded-lg" href="#">
+<span class="material-symbols-outlined">payments</span>
+<span class="text-body-md font-body-md">Финансы</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant hover:bg-surface-container-low transition-colors rounded-lg" href="#">
+<span class="material-symbols-outlined">inventory_2</span>
+<span class="text-body-md font-body-md">Склад</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant hover:bg-surface-container-low transition-colors rounded-lg" href="#">
+<span class="material-symbols-outlined">badge</span>
+<span class="text-body-md font-body-md">Кадры</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-primary border-l-4 border-primary font-bold bg-on-primary-container/5 rounded-r-lg hover:bg-surface-container-low transition-colors scale-[0.99]" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">analytics</span>
+<span class="text-body-md font-body-md">Отчеты</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant hover:bg-surface-container-low transition-colors rounded-lg" href="#">
+<span class="material-symbols-outlined">group</span>
+<span class="text-body-md font-body-md">Клиенты</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant hover:bg-surface-container-low transition-colors rounded-lg" href="#">
+<span class="material-symbols-outlined">settings</span>
+<span class="text-body-md font-body-md">Настройки</span>
+</a>
+</div>
+<div class="px-2 mt-auto">
+<div class="px-4 py-3 border-t border-outline-variant/50 flex items-center justify-between mb-2">
+<div class="flex items-center gap-2">
+<div class="w-8 h-8 rounded-full bg-surface-variant flex items-center justify-center text-primary font-bold">IS</div>
+<span class="font-body-sm text-body-sm font-medium">Islam</span>
+</div>
+</div>
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant hover:bg-surface-container-low transition-colors rounded-lg" href="#">
+<span class="material-symbols-outlined">logout</span>
+<span class="text-body-md font-body-md">Выход</span>
+</a>
+</div>
+</nav>
+<!-- TopAppBar -->
+<header class="fixed top-0 right-0 h-[64px] z-40 bg-surface border-b border-outline-variant flex justify-between items-center px-gutter w-[calc(100%-260px)] ml-[260px]">
+<div class="flex items-center gap-4"><div class="w-8 h-8 rounded overflow-hidden flex items-center justify-center"><img src="https://lh3.googleusercontent.com/aida-public/AB6AXuCPYeas4lUXovTzK4Q-W160d9IrIYp1YFmTsoDWMOlgTpwBqcHhK9lTvusrcSjCcuq7g-1zpv6s3WRBCiEnQZ1yj8dULavCNoa2oyFqP76DsJny1EJe5HRVJEb9EqerSGl79kI8C_u3mca6DO7LWq-ApHT03q70FZZ2yG82KgSCS4_Z4kDlh6SYxR_QWLV2KLnmrxB0nDKzMP6ixhdXIa37BMoy8d-w-NgEmbTHXT_A_EGuKMEOVvTa8zudfma5RW_eUw" alt="Logo" class="w-full h-full object-contain"></div>
+<h2 class="text-headline-md font-headline-md text-on-surface">Месячная выручка</h2>
+</div>
+<div class="flex items-center gap-6">
+<div class="flex gap-4">
+<span class="text-body-md font-body-md text-on-surface-variant hover:text-primary transition-colors cursor-pointer">2024</span>
+<span class="text-body-md font-body-md text-primary font-bold hover:text-primary transition-colors cursor-pointer">Октябрь</span>
+</div>
+<div class="flex gap-2">
+<button class="w-10 h-10 rounded-full flex items-center justify-center text-on-surface-variant hover:bg-surface-container hover:text-primary transition-colors active:opacity-80">
+<span class="material-symbols-outlined">schedule</span>
+</button>
+<button class="w-10 h-10 rounded-full flex items-center justify-center text-on-surface-variant hover:bg-surface-container hover:text-primary transition-colors active:opacity-80">
+<span class="material-symbols-outlined">wifi_tethering</span>
+</button>
+</div>
+<div class="flex gap-3 border-l border-outline-variant pl-6">
+<button class="px-4 py-2 border border-outline-variant rounded-lg text-body-md font-body-md font-medium text-on-surface hover:bg-surface-container transition-colors active:opacity-80 flex items-center gap-2">
+<span class="material-symbols-outlined text-base">refresh</span> Обновить
+                </button>
+<button class="px-4 py-2 bg-primary-container text-on-primary rounded-lg text-body-md font-body-md font-medium hover:bg-surface-tint transition-colors active:opacity-80 flex items-center gap-2">
+<span class="material-symbols-outlined text-base">download</span> .xlsx
+                </button>
+</div>
+</div>
+</header>
+<!-- Main Content -->
+<main class="ml-[260px] pt-[64px] p-margin-page h-screen overflow-hidden flex flex-col">
+<!-- Matrix Container -->
+<div class="bg-surface-container-lowest rounded-xl border border-outline-variant shadow-sm flex-1 flex flex-col overflow-hidden">
+<!-- Table Wrapper for scrolling -->
+<div class="matrix-container flex-1 overflow-auto bg-surface-container-lowest">
+<table class="w-full border-collapse whitespace-nowrap">
+<thead>
+<tr class="bg-surface text-on-surface-variant border-b border-outline-variant">
+<th class="sticky-col p-3 text-left text-body-sm font-headline-sm font-semibold border-r border-outline-variant shadow-[1px_0_0_0_theme(colors.outline-variant)]">Сотрудник</th>
+<script>
+                                for(let i=1; i<=31; i++) {
+                                    document.write(`<th class="p-3 text-center text-data-sm font-data-sm min-w-[80px] border-r border-outline-variant/30">${i}</th>`);
+                                }
+                            </script><th class="p-3 text-center text-data-sm font-data-sm min-w-[80px] border-r border-outline-variant/30">1</th><th class="p-3 text-center text-data-sm font-data-sm min-w-[80px] border-r border-outline-variant/30">2</th><th class="p-3 text-center text-data-sm font-data-sm min-w-[80px] border-r border-outline-variant/30">3</th><th class="p-3 text-center text-data-sm font-data-sm min-w-[80px] border-r border-outline-variant/30">4</th><th class="p-3 text-center text-data-sm font-data-sm min-w-[80px] border-r border-outline-variant/30">5</th><th class="p-3 text-center text-data-sm font-data-sm min-w-[80px] border-r border-outline-variant/30">6</th><th class="p-3 text-center text-data-sm font-data-sm min-w-[80px] border-r border-outline-variant/30">7</th><th class="p-3 text-center text-data-sm font-data-sm min-w-[80px] border-r border-outline-variant/30">8</th><th class="p-3 text-center text-data-sm font-data-sm min-w-[80px] border-r border-outline-variant/30">9</th><th class="p-3 text-center text-data-sm font-data-sm min-w-[80px] border-r border-outline-variant/30">10</th><th class="p-3 text-center text-data-sm font-data-sm min-w-[80px] border-r border-outline-variant/30">11</th><th class="p-3 text-center text-data-sm font-data-sm min-w-[80px] border-r border-outline-variant/30">12</th><th class="p-3 text-center text-data-sm font-data-sm min-w-[80px] border-r border-outline-variant/30">13</th><th class="p-3 text-center text-data-sm font-data-sm min-w-[80px] border-r border-outline-variant/30">14</th><th class="p-3 text-center text-data-sm font-data-sm min-w-[80px] border-r border-outline-variant/30">15</th><th class="p-3 text-center text-data-sm font-data-sm min-w-[80px] border-r border-outline-variant/30">16</th><th class="p-3 text-center text-data-sm font-data-sm min-w-[80px] border-r border-outline-variant/30">17</th><th class="p-3 text-center text-data-sm font-data-sm min-w-[80px] border-r border-outline-variant/30">18</th><th class="p-3 text-center text-data-sm font-data-sm min-w-[80px] border-r border-outline-variant/30">19</th><th class="p-3 text-center text-data-sm font-data-sm min-w-[80px] border-r border-outline-variant/30">20</th><th class="p-3 text-center text-data-sm font-data-sm min-w-[80px] border-r border-outline-variant/30">21</th><th class="p-3 text-center text-data-sm font-data-sm min-w-[80px] border-r border-outline-variant/30">22</th><th class="p-3 text-center text-data-sm font-data-sm min-w-[80px] border-r border-outline-variant/30">23</th><th class="p-3 text-center text-data-sm font-data-sm min-w-[80px] border-r border-outline-variant/30">24</th><th class="p-3 text-center text-data-sm font-data-sm min-w-[80px] border-r border-outline-variant/30">25</th><th class="p-3 text-center text-data-sm font-data-sm min-w-[80px] border-r border-outline-variant/30">26</th><th class="p-3 text-center text-data-sm font-data-sm min-w-[80px] border-r border-outline-variant/30">27</th><th class="p-3 text-center text-data-sm font-data-sm min-w-[80px] border-r border-outline-variant/30">28</th><th class="p-3 text-center text-data-sm font-data-sm min-w-[80px] border-r border-outline-variant/30">29</th><th class="p-3 text-center text-data-sm font-data-sm min-w-[80px] border-r border-outline-variant/30">30</th><th class="p-3 text-center text-data-sm font-data-sm min-w-[80px] border-r border-outline-variant/30">31</th>
+<th class="p-3 text-right text-body-sm font-headline-sm font-semibold bg-surface-container-low border-l border-outline-variant shadow-[-1px_0_0_0_theme(colors.outline-variant)] sticky right-0">Итого</th>
+</tr>
+</thead>
+<tbody class="text-data-md font-data-md">
+<!-- Employee Row -->
+<tr class="border-b border-outline-variant/50 hover:bg-surface-container/30 transition-colors">
+<td class="sticky-col p-3 text-left font-body-md text-on-surface border-r border-outline-variant shadow-[1px_0_0_0_theme(colors.outline-variant)] flex items-center gap-2">
+<div class="w-6 h-6 rounded-full bg-primary-container/10 text-primary flex items-center justify-center text-xs font-bold">IS</div>
+                                Islam
+                            </td>
+<script>
+                                for(let i=1; i<=31; i++) {
+                                    let val = Math.floor(Math.random() * 50000) + 10000;
+                                    let isHigh = val > 40000;
+                                    let classText = isHigh ? 'text-secondary font-bold bg-secondary-container/10' : 'text-on-surface-variant';
+                                    document.write(`<td class="p-3 text-right ${classText} border-r border-outline-variant/30">${val.toLocaleString('ru-RU')}</td>`);
+                                }
+                            </script><td class="p-3 text-right text-secondary font-bold bg-secondary-container/10 border-r border-outline-variant/30">45&nbsp;916</td><td class="p-3 text-right text-on-surface-variant border-r border-outline-variant/30">11&nbsp;237</td><td class="p-3 text-right text-on-surface-variant border-r border-outline-variant/30">16&nbsp;358</td><td class="p-3 text-right text-on-surface-variant border-r border-outline-variant/30">26&nbsp;914</td><td class="p-3 text-right text-secondary font-bold bg-secondary-container/10 border-r border-outline-variant/30">53&nbsp;949</td><td class="p-3 text-right text-secondary font-bold bg-secondary-container/10 border-r border-outline-variant/30">43&nbsp;205</td><td class="p-3 text-right text-on-surface-variant border-r border-outline-variant/30">28&nbsp;169</td><td class="p-3 text-right text-on-surface-variant border-r border-outline-variant/30">35&nbsp;576</td><td class="p-3 text-right text-on-surface-variant border-r border-outline-variant/30">14&nbsp;945</td><td class="p-3 text-right text-on-surface-variant border-r border-outline-variant/30">24&nbsp;918</td><td class="p-3 text-right text-secondary font-bold bg-secondary-container/10 border-r border-outline-variant/30">43&nbsp;120</td><td class="p-3 text-right text-on-surface-variant border-r border-outline-variant/30">38&nbsp;273</td><td class="p-3 text-right text-secondary font-bold bg-secondary-container/10 border-r border-outline-variant/30">58&nbsp;960</td><td class="p-3 text-right text-on-surface-variant border-r border-outline-variant/30">38&nbsp;497</td><td class="p-3 text-right text-secondary font-bold bg-secondary-container/10 border-r border-outline-variant/30">47&nbsp;903</td><td class="p-3 text-right text-secondary font-bold bg-secondary-container/10 border-r border-outline-variant/30">41&nbsp;261</td><td class="p-3 text-right text-secondary font-bold bg-secondary-container/10 border-r border-outline-variant/30">45&nbsp;744</td><td class="p-3 text-right text-on-surface-variant border-r border-outline-variant/30">15&nbsp;865</td><td class="p-3 text-right text-on-surface-variant border-r border-outline-variant/30">31&nbsp;263</td><td class="p-3 text-right text-on-surface-variant border-r border-outline-variant/30">25&nbsp;715</td><td class="p-3 text-right text-secondary font-bold bg-secondary-container/10 border-r border-outline-variant/30">57&nbsp;086</td><td class="p-3 text-right text-secondary font-bold bg-secondary-container/10 border-r border-outline-variant/30">55&nbsp;763</td><td class="p-3 text-right text-on-surface-variant border-r border-outline-variant/30">34&nbsp;277</td><td class="p-3 text-right text-on-surface-variant border-r border-outline-variant/30">19&nbsp;063</td><td class="p-3 text-right text-secondary font-bold bg-secondary-container/10 border-r border-outline-variant/30">44&nbsp;555</td><td class="p-3 text-right text-on-surface-variant border-r border-outline-variant/30">22&nbsp;757</td><td class="p-3 text-right text-on-surface-variant border-r border-outline-variant/30">11&nbsp;071</td><td class="p-3 text-right text-secondary font-bold bg-secondary-container/10 border-r border-outline-variant/30">59&nbsp;912</td><td class="p-3 text-right text-on-surface-variant border-r border-outline-variant/30">10&nbsp;383</td><td class="p-3 text-right text-secondary font-bold bg-secondary-container/10 border-r border-outline-variant/30">54&nbsp;371</td><td class="p-3 text-right text-on-surface-variant border-r border-outline-variant/30">23&nbsp;469</td>
+<td class="p-3 text-right font-bold bg-surface-container-low border-l border-outline-variant shadow-[-1px_0_0_0_theme(colors.outline-variant)] sticky right-0">
+                                845 000
+                            </td>
+</tr>
+<tr class="border-b border-outline-variant/50 hover:bg-surface-container/30 transition-colors">
+<td class="sticky-col p-3 text-left font-body-md text-on-surface border-r border-outline-variant shadow-[1px_0_0_0_theme(colors.outline-variant)] flex items-center gap-2">
+<div class="w-6 h-6 rounded-full bg-primary-container/10 text-primary flex items-center justify-center text-xs font-bold">BE</div>
+                                Beksultan
+                            </td>
+<script>
+                                for(let i=1; i<=31; i++) {
+                                    let val = Math.floor(Math.random() * 40000) + 5000;
+                                    document.write(`<td class="p-3 text-right text-on-surface-variant border-r border-outline-variant/30">${val.toLocaleString('ru-RU')}</td>`);
+                                }
+                            </script><td class="p-3 text-right text-on-surface-variant border-r border-outline-variant/30">24&nbsp;008</td><td class="p-3 text-right text-on-surface-variant border-r border-outline-variant/30">42&nbsp;876</td><td class="p-3 text-right text-on-surface-variant border-r border-outline-variant/30">41&nbsp;486</td><td class="p-3 text-right text-on-surface-variant border-r border-outline-variant/30">24&nbsp;638</td><td class="p-3 text-right text-on-surface-variant border-r border-outline-variant/30">8&nbsp;541</td><td class="p-3 text-right text-on-surface-variant border-r border-outline-variant/30">29&nbsp;294</td><td class="p-3 text-right text-on-surface-variant border-r border-outline-variant/30">19&nbsp;033</td><td class="p-3 text-right text-on-surface-variant border-r border-outline-variant/30">28&nbsp;431</td><td class="p-3 text-right text-on-surface-variant border-r border-outline-variant/30">21&nbsp;729</td><td class="p-3 text-right text-on-surface-variant border-r border-outline-variant/30">33&nbsp;522</td><td class="p-3 text-right text-on-surface-variant border-r border-outline-variant/30">35&nbsp;070</td><td class="p-3 text-right text-on-surface-variant border-r border-outline-variant/30">24&nbsp;487</td><td class="p-3 text-right text-on-surface-variant border-r border-outline-variant/30">36&nbsp;486</td><td class="p-3 text-right text-on-surface-variant border-r border-outline-variant/30">18&nbsp;075</td><td class="p-3 text-right text-on-surface-variant border-r border-outline-variant/30">42&nbsp;329</td><td class="p-3 text-right text-on-surface-variant border-r border-outline-variant/30">30&nbsp;733</td><td class="p-3 text-right text-on-surface-variant border-r border-outline-variant/30">31&nbsp;464</td><td class="p-3 text-right text-on-surface-variant border-r border-outline-variant/30">27&nbsp;340</td><td class="p-3 text-right text-on-surface-variant border-r border-outline-variant/30">41&nbsp;266</td><td class="p-3 text-right text-on-surface-variant border-r border-outline-variant/30">42&nbsp;965</td><td class="p-3 text-right text-on-surface-variant border-r border-outline-variant/30">17&nbsp;504</td><td class="p-3 text-right text-on-surface-variant border-r border-outline-variant/30">33&nbsp;315</td><td class="p-3 text-right text-on-surface-variant border-r border-outline-variant/30">35&nbsp;266</td><td class="p-3 text-right text-on-surface-variant border-r border-outline-variant/30">16&nbsp;871</td><td class="p-3 text-right text-on-surface-variant border-r border-outline-variant/30">36&nbsp;356</td><td class="p-3 text-right text-on-surface-variant border-r border-outline-variant/30">41&nbsp;377</td><td class="p-3 text-right text-on-surface-variant border-r border-outline-variant/30">22&nbsp;462</td><td class="p-3 text-right text-on-surface-variant border-r border-outline-variant/30">31&nbsp;839</td><td class="p-3 text-right text-on-surface-variant border-r border-outline-variant/30">24&nbsp;602</td><td class="p-3 text-right text-on-surface-variant border-r border-outline-variant/30">23&nbsp;328</td><td class="p-3 text-right text-on-surface-variant border-r border-outline-variant/30">38&nbsp;055</td>
+<td class="p-3 text-right font-bold bg-surface-container-low border-l border-outline-variant shadow-[-1px_0_0_0_theme(colors.outline-variant)] sticky right-0">
+                                620 500
+                            </td>
+</tr>
+<tr class="border-b border-outline-variant/50 hover:bg-surface-container/30 transition-colors">
+<td class="sticky-col p-3 text-left font-body-md text-on-surface border-r border-outline-variant shadow-[1px_0_0_0_theme(colors.outline-variant)] flex items-center gap-2">
+<div class="w-6 h-6 rounded-full bg-primary-container/10 text-primary flex items-center justify-center text-xs font-bold">AZ</div>
+                                Aziz
+                            </td>
+<script>
+                                for(let i=1; i<=31; i++) {
+                                     let val = Math.floor(Math.random() * 60000) + 15000;
+                                    document.write(`<td class="p-3 text-right text-on-surface-variant border-r border-outline-variant/30">${val.toLocaleString('ru-RU')}</td>`);
+                                }
+                            </script><td class="p-3 text-right text-on-surface-variant border-r border-outline-variant/30">70&nbsp;748</td><td class="p-3 text-right text-on-surface-variant border-r border-outline-variant/30">61&nbsp;943</td><td class="p-3 text-right text-on-surface-variant border-r border-outline-variant/30">18&nbsp;267</td><td class="p-3 text-right text-on-surface-variant border-r border-outline-variant/30">35&nbsp;548</td><td class="p-3 text-right text-on-surface-variant border-r border-outline-variant/30">68&nbsp;322</td><td class="p-3 text-right text-on-surface-variant border-r border-outline-variant/30">15&nbsp;850</td><td class="p-3 text-right text-on-surface-variant border-r border-outline-variant/30">27&nbsp;903</td><td class="p-3 text-right text-on-surface-variant border-r border-outline-variant/30">68&nbsp;866</td><td class="p-3 text-right text-on-surface-variant border-r border-outline-variant/30">45&nbsp;650</td><td class="p-3 text-right text-on-surface-variant border-r border-outline-variant/30">21&nbsp;141</td><td class="p-3 text-right text-on-surface-variant border-r border-outline-variant/30">43&nbsp;436</td><td class="p-3 text-right text-on-surface-variant border-r border-outline-variant/30">37&nbsp;367</td><td class="p-3 text-right text-on-surface-variant border-r border-outline-variant/30">70&nbsp;802</td><td class="p-3 text-right text-on-surface-variant border-r border-outline-variant/30">72&nbsp;447</td><td class="p-3 text-right text-on-surface-variant border-r border-outline-variant/30">16&nbsp;542</td><td class="p-3 text-right text-on-surface-variant border-r border-outline-variant/30">34&nbsp;958</td><td class="p-3 text-right text-on-surface-variant border-r border-outline-variant/30">67&nbsp;246</td><td class="p-3 text-right text-on-surface-variant border-r border-outline-variant/30">71&nbsp;877</td><td class="p-3 text-right text-on-surface-variant border-r border-outline-variant/30">64&nbsp;771</td><td class="p-3 text-right text-on-surface-variant border-r border-outline-variant/30">27&nbsp;201</td><td class="p-3 text-right text-on-surface-variant border-r border-outline-variant/30">46&nbsp;902</td><td class="p-3 text-right text-on-surface-variant border-r border-outline-variant/30">22&nbsp;398</td><td class="p-3 text-right text-on-surface-variant border-r border-outline-variant/30">69&nbsp;334</td><td class="p-3 text-right text-on-surface-variant border-r border-outline-variant/30">29&nbsp;857</td><td class="p-3 text-right text-on-surface-variant border-r border-outline-variant/30">26&nbsp;718</td><td class="p-3 text-right text-on-surface-variant border-r border-outline-variant/30">45&nbsp;816</td><td class="p-3 text-right text-on-surface-variant border-r border-outline-variant/30">62&nbsp;427</td><td class="p-3 text-right text-on-surface-variant border-r border-outline-variant/30">53&nbsp;791</td><td class="p-3 text-right text-on-surface-variant border-r border-outline-variant/30">70&nbsp;950</td><td class="p-3 text-right text-on-surface-variant border-r border-outline-variant/30">41&nbsp;812</td><td class="p-3 text-right text-on-surface-variant border-r border-outline-variant/30">56&nbsp;572</td>
+<td class="p-3 text-right font-bold bg-surface-container-low border-l border-outline-variant shadow-[-1px_0_0_0_theme(colors.outline-variant)] sticky right-0">
+                                910 200
+                            </td>
+</tr>
+</tbody>
+</table>
+</div>
+<!-- Summary Footer -->
+<div class="bg-surface border-t border-outline-variant p-4 grid grid-cols-3 gap-6 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)] z-20">
+<div class="flex flex-col">
+<span class="text-body-sm text-on-surface-variant mb-1">Общие долги</span>
+<span class="text-headline-sm font-data-lg text-error">45 000 ₸</span>
+</div>
+<div class="flex flex-col border-l border-outline-variant pl-6">
+<span class="text-body-sm text-on-surface-variant mb-1">Расходы (Материалы)</span>
+<span class="text-headline-sm font-data-lg text-on-surface">320 000 ₸</span>
+</div>
+<div class="flex flex-col border-l border-outline-variant pl-6">
+<span class="text-body-sm text-on-surface-variant mb-1">Чистая прибыль (Октябрь)</span>
+<span class="text-headline-md font-data-lg text-secondary font-bold">2 010 700 ₸</span>
+</div>
+</div>
+</div>
+</main>
+
+
+</body></html>

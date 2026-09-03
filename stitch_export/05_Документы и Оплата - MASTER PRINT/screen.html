@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+
+<html lang="ru"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Документы и Платежи - MASTER PRINT</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "on-tertiary": "#ffffff",
+                    "on-tertiary-container": "#f3f8ff",
+                    "tertiary-fixed": "#cbe6ff",
+                    "on-secondary-fixed": "#002113",
+                    "secondary-container": "#6cf8bb",
+                    "on-tertiary-fixed-variant": "#004b71",
+                    "secondary": "#006c49",
+                    "inverse-primary": "#ffb4ab",
+                    "on-primary": "#ffffff",
+                    "surface-variant": "#d3e4fe",
+                    "secondary-fixed-dim": "#4edea3",
+                    "surface-dim": "#cbdbf5",
+                    "background": "#f8f9ff",
+                    "surface-container-lowest": "#ffffff",
+                    "surface": "#f8f9ff",
+                    "inverse-on-surface": "#eaf1ff",
+                    "outline": "#916f6b",
+                    "inverse-surface": "#213145",
+                    "secondary-fixed": "#6ffbbe",
+                    "surface-tint": "#bf0715",
+                    "on-secondary": "#ffffff",
+                    "surface-container-high": "#dce9ff",
+                    "error": "#ba1a1a",
+                    "on-error-container": "#93000a",
+                    "error-container": "#ffdad6",
+                    "surface-container-low": "#eff4ff",
+                    "on-error": "#ffffff",
+                    "surface-container-highest": "#d3e4fe",
+                    "on-surface-variant": "#5c403c",
+                    "primary-container": "#dc2626",
+                    "primary-fixed": "#ffdad6",
+                    "on-surface": "#0b1c30",
+                    "primary-fixed-dim": "#ffb4ab",
+                    "on-secondary-fixed-variant": "#005236",
+                    "surface-container": "#e5eeff",
+                    "on-primary-container": "#fff6f5",
+                    "on-background": "#0b1c30",
+                    "on-secondary-container": "#00714d",
+                    "tertiary": "#005e8d",
+                    "tertiary-fixed-dim": "#90cdff",
+                    "primary": "#b70011",
+                    "on-tertiary-fixed": "#001e30",
+                    "outline-variant": "#e6bdb8",
+                    "on-primary-fixed": "#410002",
+                    "on-primary-fixed-variant": "#93000b",
+                    "surface-bright": "#f8f9ff",
+                    "tertiary-container": "#0078b2"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "spacing": {
+                    "header_height": "64px",
+                    "stack-gap": "0.75rem",
+                    "margin-page": "1.5rem",
+                    "gutter": "1rem",
+                    "sidebar_width": "260px",
+                    "pos_panel_width": "340px"
+            },
+            "fontFamily": {
+                    "data-md": [
+                            "JetBrains Mono"
+                    ],
+                    "headline-sm": [
+                            "Inter"
+                    ],
+                    "body-lg": [
+                            "Inter"
+                    ],
+                    "data-sm": [
+                            "JetBrains Mono"
+                    ],
+                    "body-md": [
+                            "Inter"
+                    ],
+                    "headline-md": [
+                            "Inter"
+                    ],
+                    "body-sm": [
+                            "Inter"
+                    ],
+                    "data-lg": [
+                            "JetBrains Mono"
+                    ],
+                    "headline-lg": [
+                            "Inter"
+                    ]
+            },
+            "fontSize": {
+                    "data-md": [
+                            "14px",
+                            {
+                                    "lineHeight": "20px",
+                                    "fontWeight": "500"
+                            }
+                    ],
+                    "headline-sm": [
+                            "18px",
+                            {
+                                    "lineHeight": "24px",
+                                    "fontWeight": "600"
+                            }
+                    ],
+                    "body-lg": [
+                            "16px",
+                            {
+                                    "lineHeight": "24px",
+                                    "fontWeight": "400"
+                            }
+                    ],
+                    "data-sm": [
+                            "12px",
+                            {
+                                    "lineHeight": "16px",
+                                    "fontWeight": "500"
+                            }
+                    ],
+                    "body-md": [
+                            "14px",
+                            {
+                                    "lineHeight": "20px",
+                                    "fontWeight": "400"
+                            }
+                    ],
+                    "headline-md": [
+                            "24px",
+                            {
+                                    "lineHeight": "32px",
+                                    "letterSpacing": "-0.01em",
+                                    "fontWeight": "600"
+                            }
+                    ],
+                    "body-sm": [
+                            "12px",
+                            {
+                                    "lineHeight": "16px",
+                                    "fontWeight": "400"
+                            }
+                    ],
+                    "data-lg": [
+                            "18px",
+                            {
+                                    "lineHeight": "24px",
+                                    "fontWeight": "600"
+                            }
+                    ],
+                    "headline-lg": [
+                            "32px",
+                            {
+                                    "lineHeight": "40px",
+                                    "letterSpacing": "-0.02em",
+                                    "fontWeight": "700"
+                            }
+                    ]
+            }
+        },
+        },
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+          font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        /* Custom scrollbar for tables */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 3px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+    </style>
+</head>
+<body class="bg-background text-on-background font-body-md min-h-screen flex">
+<!-- SideNavBar (Shared Component) -->
+<nav class="fixed left-0 top-0 h-full w-[260px] bg-surface dark:bg-inverse-surface border-r border-outline-variant dark:border-outline flex flex-col py-6 hidden md:flex z-50">
+<!-- Header -->
+<div class="px-6 mb-8">
+<div class="flex items-center gap-3 mb-2">
+<div class="w-8 h-8 rounded bg-primary flex items-center justify-center text-on-primary font-bold">M</div>
+<h1 class="font-headline-md text-headline-md font-bold text-primary dark:text-inverse-primary">MASTER PRINT</h1>
+</div>
+<p class="text-on-surface-variant font-body-sm">Client Portal</p>
+</div>
+<!-- CTA -->
+<div class="px-6 mb-6">
+<button class="w-full bg-primary-container text-on-primary-container font-headline-sm text-headline-sm py-3 rounded-lg hover:opacity-90 transition-all flex items-center justify-center gap-2">
+<span class="material-symbols-outlined">add</span>
+                New Order
+            </button>
+</div>
+<!-- Navigation Tabs -->
+<div class="flex-1 overflow-y-auto">
+<ul class="space-y-1 px-3">
+<li>
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg text-on-surface-variant hover:text-primary hover:bg-surface-container-high transition-colors duration-200" href="#">
+<span class="material-symbols-outlined">dashboard</span>
+<span>Dashboard</span>
+</a>
+</li>
+<li>
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg text-on-surface-variant hover:text-primary hover:bg-surface-container-high transition-colors duration-200" href="#">
+<span class="material-symbols-outlined">inventory_2</span>
+<span>My Orders</span>
+</a>
+</li>
+<li>
+<!-- ACTIVE STATE -->
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg border-l-4 border-primary text-primary font-semibold bg-primary-container/10 opacity-90 transition-all" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">description</span>
+<span>Documents</span>
+</a>
+</li>
+<li>
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg text-on-surface-variant hover:text-primary hover:bg-surface-container-high transition-colors duration-200" href="#">
+<span class="material-symbols-outlined">payments</span>
+<span>Payments</span>
+</a>
+</li>
+<li>
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg text-on-surface-variant hover:text-primary hover:bg-surface-container-high transition-colors duration-200" href="#">
+<span class="material-symbols-outlined">support_agent</span>
+<span>Support</span>
+</a>
+</li>
+</ul>
+</div>
+<!-- Footer Tabs -->
+<div class="mt-auto pt-4 border-t border-outline-variant px-3 space-y-1">
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg text-on-surface-variant hover:text-primary hover:bg-surface-container-high transition-colors duration-200" href="#">
+<span class="material-symbols-outlined">settings</span>
+<span>Settings</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg text-on-surface-variant hover:text-primary hover:bg-surface-container-high transition-colors duration-200" href="#">
+<span class="material-symbols-outlined">logout</span>
+<span>Logout</span>
+</a>
+</div>
+</nav>
+<!-- TopAppBar (Shared Component) -->
+<header class="fixed top-0 right-0 w-[calc(100%-260px)] h-header_height bg-surface/80 backdrop-blur-md dark:bg-surface-dim/80 border-b border-outline-variant/50 flex items-center justify-between px-margin-page z-40 hidden md:flex">
+<div class="flex-1 flex items-center justify-end">
+<!-- Search omitted based on instruction "search_bar: on_right" but minimal design focus -->
+<div class="flex items-center gap-4">
+<button class="text-on-surface-variant hover:text-primary transition-all scale-95 duration-100">
+<span class="material-symbols-outlined">notifications</span>
+</button>
+<button class="text-on-surface-variant hover:text-primary transition-all scale-95 duration-100">
+<span class="material-symbols-outlined">account_circle</span>
+</button>
+</div>
+</div>
+</header>
+<!-- Main Content Area -->
+<main class="ml-0 md:ml-[260px] pt-[80px] p-margin-page w-full min-h-screen">
+<div class="max-w-7xl mx-auto space-y-8">
+<!-- Page Header -->
+<div>
+<h2 class="font-headline-lg text-headline-lg text-on-surface">Документы и Платежи</h2>
+<p class="text-on-surface-variant font-body-lg mt-2">Управление финансовыми документами, счетами и историей оплат.</p>
+</div>
+<!-- Bento Grid Layout for Sections -->
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+<!-- Unpaid Invoices (Bento Item 1 - Prominent) -->
+<div class="lg:col-span-2 bg-surface-container-lowest border border-outline-variant rounded-xl p-6 shadow-sm">
+<div class="flex items-center justify-between mb-6">
+<h3 class="font-headline-sm text-headline-sm text-on-surface flex items-center gap-2">
+<span class="material-symbols-outlined text-primary">warning</span>
+                            Неоплаченные счета
+                        </h3>
+</div>
+<div class="overflow-x-auto">
+<table class="w-full text-left border-collapse">
+<thead>
+<tr class="text-on-surface-variant border-b border-outline-variant font-body-sm">
+<th class="pb-3 font-medium">№ Счета</th>
+<th class="pb-3 font-medium">Дата</th>
+<th class="pb-3 font-medium">Проект</th>
+<th class="pb-3 font-medium text-right">Сумма</th>
+<th class="pb-3 font-medium text-right">Действие</th>
+</tr>
+</thead>
+<tbody class="font-data-md text-data-md text-on-surface">
+<tr class="border-b border-outline-variant/50 hover:bg-surface-container-low transition-colors">
+<td class="py-4">INV-2023-089</td>
+<td class="py-4 text-on-surface-variant font-body-sm">12.10.2023</td>
+<td class="py-4 font-body-md">Брендирование витрин (ЦУМ)</td>
+<td class="py-4 text-right">145 000 ₽</td>
+<td class="py-4 text-right">
+<button class="bg-primary-container text-on-primary-container px-4 py-2 rounded-lg font-headline-sm text-headline-sm hover:opacity-90 transition-opacity">
+                                            Оплатить
+                                        </button>
+</td>
+</tr>
+<tr class="border-b border-outline-variant/50 hover:bg-surface-container-low transition-colors">
+<td class="py-4">INV-2023-092</td>
+<td class="py-4 text-on-surface-variant font-body-sm">15.10.2023</td>
+<td class="py-4 font-body-md">Печать каталогов (Осень)</td>
+<td class="py-4 text-right">82 500 ₽</td>
+<td class="py-4 text-right">
+<button class="bg-primary-container text-on-primary-container px-4 py-2 rounded-lg font-headline-sm text-headline-sm hover:opacity-90 transition-opacity">
+                                            Оплатить
+                                        </button>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<!-- History of Payments (Bento Item 2 - Side Panel) -->
+<div class="lg:col-span-1 bg-surface-container-low rounded-xl p-6">
+<h3 class="font-headline-sm text-headline-sm text-on-surface mb-6 flex items-center gap-2">
+<span class="material-symbols-outlined text-secondary">history</span>
+                        История платежей
+                    </h3>
+<div class="space-y-4">
+<!-- Payment Item -->
+<div class="flex justify-between items-center bg-surface-container-lowest p-3 rounded-lg border border-outline-variant/50">
+<div>
+<p class="font-data-md text-data-md text-on-surface">INV-2023-081</p>
+<p class="text-on-surface-variant font-body-sm">01.10.2023 • Карта *4589</p>
+</div>
+<div class="text-right">
+<p class="font-data-md text-data-md text-secondary">55 000 ₽</p>
+<span class="text-[10px] bg-secondary-container text-on-secondary-container px-2 py-0.5 rounded font-medium">УСПЕШНО</span>
+</div>
+</div>
+<!-- Payment Item -->
+<div class="flex justify-between items-center bg-surface-container-lowest p-3 rounded-lg border border-outline-variant/50">
+<div>
+<p class="font-data-md text-data-md text-on-surface">INV-2023-075</p>
+<p class="text-on-surface-variant font-body-sm">15.09.2023 • Б/Н расчет</p>
+</div>
+<div class="text-right">
+<p class="font-data-md text-data-md text-secondary">210 000 ₽</p>
+<span class="text-[10px] bg-secondary-container text-on-secondary-container px-2 py-0.5 rounded font-medium">УСПЕШНО</span>
+</div>
+</div>
+</div>
+<button class="w-full mt-4 text-primary font-headline-sm text-headline-sm hover:underline py-2">Смотреть все</button>
+</div>
+<!-- Document Archive (Bento Item 3 - Full Width Bottom) -->
+<div class="lg:col-span-3 bg-surface-container-lowest border border-outline-variant rounded-xl p-6 shadow-sm">
+<div class="flex items-center justify-between mb-6">
+<h3 class="font-headline-sm text-headline-sm text-on-surface flex items-center gap-2">
+<span class="material-symbols-outlined text-tertiary">folder_open</span>
+                            Архив документов
+                        </h3>
+<!-- Simple Filter Placeholder -->
+<div class="flex gap-2">
+<select class="bg-surface-container-low border-outline-variant rounded-md text-body-sm px-3 py-1 focus:ring-primary focus:border-primary">
+<option>Все года</option>
+<option>2023</option>
+</select>
+</div>
+</div>
+<div class="overflow-x-auto">
+<table class="w-full text-left border-collapse">
+<thead>
+<tr class="text-on-surface-variant border-b border-outline-variant font-body-sm">
+<th class="pb-3 font-medium">Документ</th>
+<th class="pb-3 font-medium">Проект / Назначение</th>
+<th class="pb-3 font-medium">Дата</th>
+<th class="pb-3 font-medium text-right">Скачать</th>
+</tr>
+</thead>
+<tbody class="font-body-md text-on-surface">
+<!-- Row 1 -->
+<tr class="border-b border-outline-variant/50 hover:bg-surface-container-low transition-colors">
+<td class="py-3">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-tertiary text-[20px]">contract</span>
+<span class="font-medium">Договор №45/23</span>
+</div>
+</td>
+<td class="py-3 text-on-surface-variant">Основной договор подряда</td>
+<td class="py-3 font-data-sm text-data-sm text-on-surface-variant">01.01.2023</td>
+<td class="py-3 text-right flex justify-end gap-2">
+<button class="p-2 rounded-full hover:bg-surface-variant text-primary transition-colors" title="Скачать PDF">
+<span class="material-symbols-outlined">picture_as_pdf</span>
+</button>
+</td>
+</tr>
+<!-- Row 2 -->
+<tr class="border-b border-outline-variant/50 hover:bg-surface-container-low transition-colors">
+<td class="py-3">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-tertiary text-[20px]">receipt</span>
+<span class="font-medium">Счет-фактура INV-2023-081</span>
+</div>
+</td>
+<td class="py-3 text-on-surface-variant">Печать баннеров</td>
+<td class="py-3 font-data-sm text-data-sm text-on-surface-variant">05.10.2023</td>
+<td class="py-3 text-right flex justify-end gap-2">
+<button class="p-2 rounded-full hover:bg-surface-variant text-primary transition-colors" title="Скачать PDF">
+<span class="material-symbols-outlined">picture_as_pdf</span>
+</button>
+</td>
+</tr>
+<!-- Row 3 -->
+<tr class="border-b border-outline-variant/50 hover:bg-surface-container-low transition-colors">
+<td class="py-3">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-tertiary text-[20px]">fact_check</span>
+<span class="font-medium">Акт выполненных работ #12</span>
+</div>
+</td>
+<td class="py-3 text-on-surface-variant">Монтаж конструкций</td>
+<td class="py-3 font-data-sm text-data-sm text-on-surface-variant">10.09.2023</td>
+<td class="py-3 text-right flex justify-end gap-2">
+<button class="p-2 rounded-full hover:bg-surface-variant text-primary transition-colors" title="Скачать PDF">
+<span class="material-symbols-outlined">picture_as_pdf</span>
+</button>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</div>
+</div>
+</main>
+</body></html>

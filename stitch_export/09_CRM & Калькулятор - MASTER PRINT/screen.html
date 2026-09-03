@@ -1,0 +1,376 @@
+<!DOCTYPE html><html lang="ru" style=""><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>MASTER PRINT - CRM &amp; Калькулятор</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&amp;family=JetBrains+Mono:wght@500;600&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "on-primary-container": "#fff6f5",
+                        "primary": "#b70011",
+                        "inverse-surface": "#213145",
+                        "outline": "#916f6b",
+                        "surface-tint": "#bf0715",
+                        "on-primary": "#ffffff",
+                        "secondary-fixed-dim": "#4edea3",
+                        "outline-variant": "#e6bdb8",
+                        "secondary-fixed": "#6ffbbe",
+                        "secondary-container": "#6cf8bb",
+                        "surface-container-highest": "#d3e4fe",
+                        "on-tertiary": "#ffffff",
+                        "on-error-container": "#93000a",
+                        "on-surface-variant": "#5c403c",
+                        "tertiary": "#005e8d",
+                        "surface-dim": "#cbdbf5",
+                        "primary-fixed-dim": "#ffb4ab",
+                        "surface-bright": "#f8f9ff",
+                        "tertiary-fixed-dim": "#90cdff",
+                        "error": "#ba1a1a",
+                        "error-container": "#ffdad6",
+                        "on-secondary-fixed": "#002113",
+                        "surface-container": "#e5eeff",
+                        "surface-container-high": "#dce9ff",
+                        "on-background": "#0b1c30",
+                        "background": "#f8f9ff",
+                        "surface-container-low": "#eff4ff",
+                        "surface-variant": "#d3e4fe",
+                        "on-primary-fixed-variant": "#93000b",
+                        "inverse-on-surface": "#eaf1ff",
+                        "secondary": "#006c49",
+                        "primary-fixed": "#ffdad6",
+                        "on-secondary": "#ffffff",
+                        "inverse-primary": "#ffb4ab",
+                        "surface-container-lowest": "#ffffff",
+                        "primary-container": "#dc2626",
+                        "on-surface": "#0b1c30",
+                        "on-error": "#ffffff",
+                        "tertiary-container": "#0078b2",
+                        "on-primary-fixed": "#410002",
+                        "on-tertiary-fixed-variant": "#004b71",
+                        "surface": "#f8f9ff",
+                        "on-secondary-container": "#00714d",
+                        "on-tertiary-fixed": "#001e30",
+                        "on-secondary-fixed-variant": "#005236",
+                        "tertiary-fixed": "#cbe6ff",
+                        "on-tertiary-container": "#f3f8ff"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "sidebar_width": "260px",
+                        "gutter": "1rem",
+                        "pos_panel_width": "340px",
+                        "stack-gap": "0.75rem",
+                        "margin-page": "1.5rem",
+                        "header_height": "64px"
+                    },
+                    "fontFamily": {
+                        "headline-lg": ["Inter"],
+                        "headline-md": ["Inter"],
+                        "body-lg": ["Inter"],
+                        "data-sm": ["JetBrains Mono"],
+                        "body-sm": ["Inter"],
+                        "body-md": ["Inter"],
+                        "headline-sm": ["Inter"],
+                        "data-md": ["JetBrains Mono"],
+                        "data-lg": ["JetBrains Mono"]
+                    },
+                    "fontSize": {
+                        "headline-lg": ["32px", { "lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+                        "headline-md": ["24px", { "lineHeight": "32px", "letterSpacing": "-0.01em", "fontWeight": "600" }],
+                        "body-lg": ["16px", { "lineHeight": "24px", "fontWeight": "400" }],
+                        "data-sm": ["12px", { "lineHeight": "16px", "fontWeight": "500" }],
+                        "body-sm": ["12px", { "lineHeight": "16px", "fontWeight": "400" }],
+                        "body-md": ["14px", { "lineHeight": "20px", "fontWeight": "400" }],
+                        "headline-sm": ["18px", { "lineHeight": "24px", "fontWeight": "600" }],
+                        "data-md": ["14px", { "lineHeight": "20px", "fontWeight": "500" }],
+                        "data-lg": ["18px", { "lineHeight": "24px", "fontWeight": "600" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .material-symbols-outlined.filled {
+            font-variation-settings: 'FILL' 1;
+        }
+    </style>
+</head>
+<body class="bg-background text-on-surface font-body-md h-screen overflow-hidden flex">
+<!-- SideNavBar -->
+<nav class="bg-surface-container-lowest fixed left-0 top-0 h-screen w-[260px] border-r border-outline-variant flex flex-col h-full py-gutter space-y-stack-gap z-50">
+<div class="px-gutter mb-6 flex flex-col items-center">
+<div class="w-16 h-16 rounded-full bg-surface-container-high mb-2 flex items-center justify-center overflow-hidden border-2 border-outline-variant">
+<img src="https://lh3.googleusercontent.com/aida-public/AB6AXuDSolzNAayG4NepFYWQo4ZwyCogw34vLjQbL3N4W-5PXI7peFdOV3XgeKLdKxdlBay_Rf-U1ZdXXNYB4lQyMxI2mpsqSCQF5nT-XoewU-cdXNfAGvGf93b7fQv6Mai47bwRstihghdcZmb73FEGra_0TQycEbD1RfVJF42agFjdv-2xBuCVorUu_X2G3BYe5_zicTLJDWxAttXuCPd7fCpAsT0bc_sP3Y9tZDtGSIhWTQZujBJoe21Kp_dLXXZTnLt1-A" alt="Master Print Logo" class="object-cover w-full h-full">
+</div>
+<h1 class="text-headline-md font-headline-md font-black text-on-surface text-center">MASTER PRINT</h1>
+<p class="text-body-sm font-body-sm text-on-surface-variant">Super Admin</p>
+</div>
+<div class="flex-1 overflow-y-auto px-2 space-y-1">
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant hover:bg-surface-container-low transition-colors rounded-lg group" href="#">
+<span class="material-symbols-outlined group-hover:text-primary transition-colors">point_of_sale</span>
+<span class="text-body-md font-body-md">Быстрая Касса</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-primary border-l-4 border-primary font-bold bg-on-primary-container/5 hover:bg-surface-container-low transition-colors rounded-r-lg group" href="#">
+<span class="material-symbols-outlined filled text-primary">assignment</span>
+<span class="text-body-md font-body-md">Управление заказами</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant hover:bg-surface-container-low transition-colors rounded-lg group" href="#">
+<span class="material-symbols-outlined group-hover:text-primary transition-colors">payments</span>
+<span class="text-body-md font-body-md">Финансы</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant hover:bg-surface-container-low transition-colors rounded-lg group" href="#">
+<span class="material-symbols-outlined group-hover:text-primary transition-colors">inventory_2</span>
+<span class="text-body-md font-body-md">Склад</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant hover:bg-surface-container-low transition-colors rounded-lg group" href="#">
+<span class="material-symbols-outlined group-hover:text-primary transition-colors">badge</span>
+<span class="text-body-md font-body-md">Кадры</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant hover:bg-surface-container-low transition-colors rounded-lg group" href="#">
+<span class="material-symbols-outlined group-hover:text-primary transition-colors">analytics</span>
+<span class="text-body-md font-body-md">Отчеты</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant hover:bg-surface-container-low transition-colors rounded-lg group" href="#">
+<span class="material-symbols-outlined group-hover:text-primary transition-colors">group</span>
+<span class="text-body-md font-body-md">Клиенты</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant hover:bg-surface-container-low transition-colors rounded-lg group" href="#">
+<span class="material-symbols-outlined group-hover:text-primary transition-colors">settings</span>
+<span class="text-body-md font-body-md">Настройки</span>
+</a>
+</div>
+<div class="px-2 mt-auto">
+<div class="flex items-center gap-3 px-4 py-3 bg-surface-container-high rounded-lg mb-4">
+<div class="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center overflow-hidden">
+<img alt="Islam Profile Image" class="object-cover w-full h-full" data-alt="A professional headshot of a young male administrator named Islam, with a neat short haircut, wearing a casual business shirt, well-lit in a bright modern office setting." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCVDR_6IV_l2mVsG44zMsG7gVqTCQMKIZMAT57RQBYBJkxVPyZ3vAEKF-DbeLWENZIP42uRTvAYz3R-SE6168gzYPmVYcoENRcYsjQiYx_iYawQDKqLKVMJqgXeWP7GsQltR28aEPqHzW5nr975o9SF85JDMrOXK-eVhBxW3MbcRsUN8vVXt8yD32c-p8_qVOTSyvuQt7licdC4QeN9YIEj1xAr6i9R3HDROXlRKvZqealcBBoXhs6R">
+</div>
+<span class="text-body-md font-body-md font-semibold">Islam</span>
+</div>
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant hover:bg-surface-container-low transition-colors rounded-lg group" href="#">
+<span class="material-symbols-outlined group-hover:text-primary transition-colors">logout</span>
+<span class="text-body-md font-body-md">Выход</span>
+</a>
+</div>
+</nav>
+<!-- TopAppBar -->
+<header class="bg-surface fixed top-0 right-0 h-[64px] z-40 border-b border-outline-variant flex justify-between items-center px-gutter w-[calc(100%-260px)] ml-[260px]">
+<div class="flex items-center gap-4">
+<div class="w-8 h-8 rounded-lg overflow-hidden border border-outline-variant/50 flex-shrink-0"><img src="https://lh3.googleusercontent.com/aida-public/AB6AXuDL9yTCH2Zwghk02ktWtrw6XP0DLCk79gtr2u0D13mztD6D_tv191ZkflW9tm2qFu70nFxswNMUS46QD1mujpDtiidqkuTt4JIn_FsTHWoqSHXSVKnlI_0p8eicHorPire0-UBmEJvMDxo8HBffacs2YYPG0ok2ioR3TpEUlIBI8PDnmbxpaW6nGa43t3dNGUHi7TfjJVR25Z0Me96tbI9y6vS2yWEFokYPujWx0Xz0L1wLTNPtnJMO2TgwCEWhvX1ekw" alt="Logo" class="w-full h-full object-cover"></div><h2 class="text-headline-md font-headline-md text-on-surface">Быстрая Касса</h2>
+<div class="hidden md:flex gap-4 ml-6 border-l border-outline-variant pl-6">
+<a class="text-on-surface-variant hover:text-primary transition-colors cursor-pointer text-body-md font-body-md" href="#">2024</a>
+<a class="text-primary font-bold hover:text-primary transition-colors cursor-pointer text-body-md font-body-md" href="#">Октябрь</a>
+</div>
+</div>
+<div class="flex items-center gap-3">
+<button class="text-on-surface-variant hover:text-primary transition-colors active:opacity-80 p-2 rounded-full hover:bg-surface-container-low">
+<span class="material-symbols-outlined">schedule</span>
+</button>
+<button class="text-on-surface-variant hover:text-primary transition-colors active:opacity-80 p-2 rounded-full hover:bg-surface-container-low">
+<span class="material-symbols-outlined">wifi_tethering</span>
+</button>
+<button class="px-4 py-2 bg-surface-container-low text-on-surface font-body-md font-medium rounded-lg border border-outline-variant hover:bg-surface-container-high transition-colors active:opacity-80 ml-2">
+                Обновить
+            </button>
+<button class="px-4 py-2 bg-primary text-on-primary font-body-md font-medium rounded-lg shadow-sm hover:bg-primary-container transition-colors active:opacity-80 ml-2">
+                + Заказ
+            </button>
+</div>
+</header>
+<!-- Main Content Area -->
+<main class="ml-[260px] mt-[64px] w-[calc(100%-260px)] h-[calc(100vh-64px)] bg-background p-margin-page overflow-y-auto">
+<div class="max-w-5xl mx-auto space-y-6">
+<!-- Page Title -->
+<div class="mb-8">
+<h2 class="text-headline-lg font-headline-lg text-on-background mb-2">Новый заказ (Наружная реклама)</h2>
+<p class="text-body-lg font-body-lg text-on-surface-variant">Заполните параметры заказа для расчета стоимости.</p>
+</div>
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+<!-- Left Column: Order Details & Calculator -->
+<div class="lg:col-span-8 space-y-6">
+<!-- Client Info Card -->
+<div class="bg-surface-container-lowest rounded-xl border border-outline-variant p-6">
+<h3 class="text-headline-sm font-headline-sm text-on-surface mb-4 flex items-center gap-2">
+<span class="material-symbols-outlined text-primary">person</span>
+                            Данные клиента
+                        </h3>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+<div>
+<label class="block text-body-sm font-body-sm text-on-surface-variant mb-1">Имя / Компания</label>
+<input class="w-full bg-surface text-on-surface border border-outline-variant rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all" placeholder="Введите имя" type="text">
+</div>
+<div>
+<label class="block text-body-sm font-body-sm text-on-surface-variant mb-1">Телефон</label>
+<input class="w-full bg-surface text-on-surface border border-outline-variant rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all" placeholder="+7 (___) ___-__-__" type="tel">
+</div>
+</div>
+</div>
+<!-- Calculator Card -->
+<div class="bg-surface-container-lowest rounded-xl border border-outline-variant p-6 shadow-[0_10px_15px_-3px_rgba(0,0,0,0.05)]">
+<h3 class="text-headline-sm font-headline-sm text-on-surface mb-4 flex items-center gap-2">
+<span class="material-symbols-outlined text-primary">calculate</span>
+                            Параметры печати
+                        </h3>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+<!-- Dimensions -->
+<div class="space-y-4">
+<div>
+<label class="block text-body-sm font-body-sm text-on-surface-variant mb-1">Материал</label>
+<select class="w-full bg-surface text-on-surface border border-outline-variant rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all appearance-none cursor-pointer">
+<option>Баннер 440г (Литой)</option>
+<option>Баннер 510г (Евро)</option>
+<option>Пленка Oracal (Мат)</option>
+<option>Пленка Oracal (Глянец)</option>
+<option>Сетка (Mesh)</option>
+</select>
+</div>
+<div class="flex gap-4">
+<div class="flex-1">
+<label class="block text-body-sm font-body-sm text-on-surface-variant mb-1">Ширина (м)</label>
+<div class="relative">
+<input class="w-full bg-surface text-on-surface font-data-md border border-outline-variant rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all text-right pr-10" id="calc-width" step="0.01" type="number" value="0.00">
+<span class="absolute right-3 top-2 text-on-surface-variant font-data-md">W</span>
+</div>
+</div>
+<div class="flex items-end pb-2">
+<span class="material-symbols-outlined text-outline-variant">close</span>
+</div>
+<div class="flex-1">
+<label class="block text-body-sm font-body-sm text-on-surface-variant mb-1">Высота (м)</label>
+<div class="relative">
+<input class="w-full bg-surface text-on-surface font-data-md border border-outline-variant rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all text-right pr-10" id="calc-height" step="0.01" type="number" value="0.00">
+<span class="absolute right-3 top-2 text-on-surface-variant font-data-md">H</span>
+</div>
+</div>
+</div>
+<div class="bg-surface-container-low rounded-lg p-3 flex justify-between items-center border border-outline-variant/50">
+<span class="text-body-sm font-body-sm text-on-surface-variant">Площадь:</span>
+<span class="text-data-lg font-data-lg text-primary font-bold"><span id="calc-area" class="">0.00</span> м²</span>
+</div>
+</div>
+<!-- Options & Post-print -->
+<div class="space-y-4">
+<div>
+<label class="block text-body-sm font-body-sm text-on-surface-variant mb-1">Люверсы (шт)</label>
+<input class="w-full bg-surface text-on-surface border border-outline-variant rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all font-data-md" type="number" value="0">
+</div>
+<div>
+<label class="block text-body-sm font-body-sm text-on-surface-variant mb-1">Проклейка края</label>
+<select class="w-full bg-surface text-on-surface border border-outline-variant rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all appearance-none cursor-pointer">
+<option>Нет</option>
+<option>По периметру</option>
+<option>Сверху и снизу</option>
+</select>
+</div>
+<div>
+<label class="block text-body-sm font-body-sm text-on-surface-variant mb-1">Разрешение печати</label>
+<div class="flex gap-2">
+<label class="flex-1 cursor-pointer">
+<input checked="" class="peer sr-only" name="res" type="radio">
+<div class="text-center px-2 py-2 border border-outline-variant rounded-lg peer-checked:bg-primary/10 peer-checked:border-primary peer-checked:text-primary text-body-sm font-body-sm transition-all">360 dpi</div>
+</label>
+<label class="flex-1 cursor-pointer">
+<input class="peer sr-only" name="res" type="radio">
+<div class="text-center px-2 py-2 border border-outline-variant rounded-lg peer-checked:bg-primary/10 peer-checked:border-primary peer-checked:text-primary text-body-sm font-body-sm transition-all">720 dpi</div>
+</label>
+<label class="flex-1 cursor-pointer">
+<input class="peer sr-only" name="res" type="radio">
+<div class="text-center px-2 py-2 border border-outline-variant rounded-lg peer-checked:bg-primary/10 peer-checked:border-primary peer-checked:text-primary text-body-sm font-body-sm transition-all">1440 dpi</div>
+</label>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Assignment Card -->
+<div class="bg-surface-container-lowest rounded-xl border border-outline-variant p-6">
+<h3 class="text-headline-sm font-headline-sm text-on-surface mb-4 flex items-center gap-2">
+<span class="material-symbols-outlined text-primary">engineering</span>
+                            Исполнители (Сдельно)
+                        </h3>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+<div>
+<label class="block text-body-sm font-body-sm text-on-surface-variant mb-1">Дизайнер</label>
+<select class="w-full bg-surface text-on-surface border border-outline-variant rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all appearance-none cursor-pointer">
+<option value="">Не назначен</option>
+<option>Анна (Препресс)</option>
+<option>Игорь (Креатив)</option>
+</select>
+</div>
+<div>
+<label class="block text-body-sm font-body-sm text-on-surface-variant mb-1">Мастер-печатник</label>
+<select class="w-full bg-surface text-on-surface border border-outline-variant rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all appearance-none cursor-pointer">
+<option value="">Не назначен</option>
+<option>Сергей (Цех 1)</option>
+<option>Алексей (Смена А)</option>
+</select>
+</div>
+</div>
+</div>
+</div>
+<!-- Right Column: Checkout / Total Panel -->
+<div class="lg:col-span-4">
+<div class="bg-surface-container-lowest rounded-xl border border-outline-variant p-6 sticky top-6 shadow-[0_10px_15px_-3px_rgba(0,0,0,0.05)]">
+<h3 class="text-headline-md font-headline-md text-on-surface mb-6 border-b border-outline-variant pb-4">Итоговая смета</h3>
+<div class="space-y-3 mb-6 font-data-md text-on-surface-variant">
+<div class="flex justify-between items-center">
+<span class="">Печать (1500 ₸/м²):</span>
+<span class="text-on-surface">0 ₸</span>
+</div>
+<div class="flex justify-between items-center">
+<span class="">Люверсы (50 ₸/шт):</span>
+<span class="text-on-surface">0 ₸</span>
+</div>
+<div class="flex justify-between items-center">
+<span class="">Проклейка (200 ₸/м):</span>
+<span class="text-on-surface">0 ₸</span>
+</div>
+<div class="flex justify-between items-center">
+<span class="">Услуги дизайнера:</span>
+<span class="text-on-surface">0 ₸</span>
+</div>
+</div>
+<div class="border-t border-outline-variant pt-4 mb-8 flex justify-between items-end">
+<span class="text-body-lg font-body-lg text-on-surface-variant font-medium">К оплате:</span>
+<span class="text-headline-lg font-headline-lg text-primary font-bold">0 ₸</span>
+</div>
+<button class="w-full bg-primary text-on-primary py-4 rounded-xl font-headline-sm hover:bg-primary-container transition-colors shadow-md active:scale-[0.98]">
+                            Оформить заказ
+                        </button>
+</div>
+</div>
+</div>
+</div>
+</main>
+<script>
+        // Simple client-side calculator logic for demonstration
+        const widthInput = document.getElementById('calc-width');
+        const heightInput = document.getElementById('calc-height');
+        const areaOutput = document.getElementById('calc-area');
+
+        function updateArea() {
+            const w = parseFloat(widthInput.value) || 0;
+            const h = parseFloat(heightInput.value) || 0;
+            const area = w * h;
+            areaOutput.textContent = area.toFixed(2);
+        }
+
+        widthInput.addEventListener('input', updateArea);
+        heightInput.addEventListener('input', updateArea);
+    </script>
+
+
+</body></html>
