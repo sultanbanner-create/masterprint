@@ -1,3 +1,4 @@
+const telegramBot = require('./telegramBot');
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
@@ -77,7 +78,10 @@ app.get('*', (req, res) => {
 
 // Start server
 const server = app.listen(PORT, '0.0.0.0', () => {
-  console.log('================================================================');
+  // Start Telegram Bot Long Polling
+telegramBot.startPolling();
+
+console.log('================================================================');
   console.log('⚡ MASTER PRINT Enterprise ERP 3.0 is LIVE & ACTIVE!');
   console.log(`🌐 Local URL:   http://localhost:${PORT}`);
   console.log(`🎨 Stitch UI:   http://localhost:${PORT}/stitch`);

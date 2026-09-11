@@ -2050,14 +2050,6 @@
       "currentDebt": 180000,
       "totalSpent": 180000,
       "notes": ""
-    },
-    {
-      "id": "cl_1789145315114",
-      "name": "Алишер (Telegram)",
-      "phone": "+998907771122",
-      "currentDebt": 180000,
-      "totalSpent": 180000,
-      "notes": ""
     }
   ],
   "settings": {
@@ -2438,7 +2430,7 @@
       "orderNumber": 1005
     }
   ],
-  "orderCounter": 1008,
+  "orderCounter": 1007,
   "debtPayments": [
     {
       "id": "pay_1788448860024",
@@ -2537,7 +2529,7 @@
       "openedBy": "islam",
       "initialCash": 500000,
       "status": "open",
-      "cashSales": 1596800,
+      "cashSales": 1416800,
       "clickSales": 2180000,
       "expensesCash": 92115000,
       "expectedCash": 0,

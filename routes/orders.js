@@ -1,3 +1,4 @@
+const telegramBot = require('../telegramBot');
 const { broadcastEvent } = require('./events');
 const express = require('express');
 const router = express.Router();
@@ -119,6 +120,7 @@ router.patch('/:id/status', (req, res) => {
 
   store.save();
   broadcastEvent('order_status_changed', { orderId: order.id, status: order.status });
+  telegramBot.notifyOrderStatus(order);
   res.json({ success: true, order });
 });
 
@@ -176,6 +178,7 @@ router.post('/:id/confirm-payment', (req, res) => {
 
     store.save();
     broadcastEvent('payment_confirmed', { order, cashierName: order.paymentConfirmedBy });
+    telegramBot.notifyPaymentReceived(order, order.paymentConfirmedBy);
     res.json({ success: true, order, receipt: order });
   } catch (err) {
     console.error('Error confirming payment:', err);
