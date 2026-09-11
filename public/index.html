@@ -157,17 +157,22 @@
   </div>
 
   <!-- STITCH SIDEBAR NAVIGATION (260px) -->
-  <nav class="fixed left-0 top-0 h-screen w-[260px] bg-surface-container-lowest border-r border-outline-variant z-50 flex flex-col py-4 space-y-2">
+  <!-- Mobile Sidebar Backdrop Overlay -->
+  <div id="mobileSidebarBackdrop" onclick="toggleMobileSidebar(false)" class="fixed inset-0 bg-black/60 backdrop-blur-xs z-40 hidden transition-opacity md:hidden"></div>
+
+  <!-- STITCH SIDEBAR NAVIGATION (Responsive 260px desktop, slide-out drawer on mobile) -->
+  <nav id="mainSidebarNav" class="fixed left-0 top-0 h-screen w-[270px] bg-surface-container-lowest border-r border-outline-variant z-50 flex flex-col py-4 space-y-2 -translate-x-full md:translate-x-0 transition-transform duration-200 shadow-2xl md:shadow-none">
     
     <!-- Logo Header -->
-    <div class="px-6 mb-6 mt-2">
-      <div class="flex items-center gap-3">
-        <img alt="Master Print Logo" class="h-10 w-10 object-contain rounded-lg border border-outline-variant shadow-xs" src="assets/logo.jpg">
+    <div class="px-5 mb-5 mt-1 flex items-center justify-between">
+      <div class="flex items-center gap-2.5">
+        <img alt="Master Print Logo" class="h-9 w-9 object-contain rounded-lg border border-outline-variant shadow-xs" src="assets/logo.jpg">
         <div class="flex flex-col">
-          <span class="text-lg font-black text-on-surface tracking-tight">MASTER PRINT</span>
-          <span id="sidebarUserSubname" class="text-xs text-primary-container font-bold uppercase">SUPER ADMIN</span>
+          <span class="text-base font-black text-on-surface tracking-tight">MASTER PRINT</span>
+          <span id="sidebarUserSubname" class="text-[10px] text-primary-container font-bold uppercase">SUPER ADMIN</span>
         </div>
       </div>
+      <button onclick="toggleMobileSidebar(false)" class="md:hidden p-1.5 rounded-lg bg-surface-container-low text-on-surface-variant hover:text-on-surface cursor-pointer text-xs">✕</button>
     </div>
 
     <!-- Navigation Menu Items -->
@@ -249,41 +254,47 @@
   </nav>
 
   <!-- STITCH TOP APP BAR (64px) -->
-  <header class="fixed top-0 right-0 h-[64px] z-40 bg-surface border-b border-outline-variant flex justify-between items-center px-6 w-[calc(100%-260px)] ml-[260px]">
+  <header class="fixed top-0 right-0 h-[60px] md:h-[64px] z-30 bg-surface border-b border-outline-variant flex justify-between items-center px-3 sm:px-6 w-full md:w-[calc(100%-260px)] md:ml-[260px]">
     
-    <div class="flex items-center gap-4">
-      <h1 id="pageTitle" class="text-lg font-bold text-on-surface flex items-center gap-2">
-        <img alt="Logo" class="h-7 w-7 object-contain rounded" src="assets/logo.jpg">
-        <span>Быстрая Касса</span>
+    <div class="flex items-center gap-2.5 sm:gap-4">
+      <!-- Mobile Hamburger Button -->
+      <button onclick="toggleMobileSidebar(true)" class="md:hidden p-1.5 rounded-xl bg-surface-container-low text-on-surface hover:bg-surface-container transition cursor-pointer flex items-center justify-center">
+        <span class="material-symbols-outlined text-2xl">menu</span>
+      </button>
+
+      <h1 id="pageTitle" class="text-sm sm:text-lg font-bold text-on-surface flex items-center gap-2">
+        <img alt="Logo" class="h-6 w-6 sm:h-7 sm:w-7 object-contain rounded" src="assets/logo.jpg">
+        <span class="truncate max-w-[130px] sm:max-w-none">Быстрая Касса</span>
       </h1>
-      <div class="h-5 w-px bg-outline-variant mx-1"></div>
-      <nav class="flex gap-3 text-xs">
+      <div class="hidden sm:block h-5 w-px bg-outline-variant mx-1"></div>
+      <nav class="hidden sm:flex gap-3 text-xs">
         <span class="text-on-surface-variant font-medium">2026</span>
         <span class="text-primary font-bold">Сентябрь</span>
       </nav>
     </div>
 
-    <div class="flex items-center gap-3">
-      <!-- Live Clock -->
-      <div class="flex items-center gap-1.5 px-3 py-1.5 bg-surface-container-low rounded-lg text-xs font-data-md text-on-surface font-bold">
+    <div class="flex items-center gap-2 sm:gap-3">
+      <!-- Live Clock (Hidden on small mobile) -->
+      <div class="hidden lg:flex items-center gap-1.5 px-3 py-1.5 bg-surface-container-low rounded-lg text-xs font-data-md text-on-surface font-bold">
         <span class="material-symbols-outlined text-sm text-secondary">schedule</span>
         <span id="liveClockDisplay">00:00:00</span>
       </div>
 
       <!-- Cloud Status -->
-      <div class="flex items-center gap-1 px-3 py-1.5 bg-secondary-container/30 text-secondary rounded-lg text-xs font-bold">
+      <div class="hidden sm:flex items-center gap-1 px-2.5 py-1 bg-secondary-container/30 text-secondary rounded-lg text-xs font-bold">
         <span class="material-symbols-outlined text-sm">wifi_tethering</span>
         <span>Онлайн</span>
       </div>
 
-      <!-- Refresh Button -->
-      <button onclick="initDashboard()" class="px-3 py-1.5 text-xs text-on-surface hover:text-primary transition-colors cursor-pointer flex items-center gap-1">
-        <span class="material-symbols-outlined text-sm">sync</span>
-        <span>Обновить</span>
+      <!-- Mobile POS Cart Trigger Button -->
+      <button onclick="toggleMobileCart()" id="btnMobileCartTrigger" class="md:hidden relative px-3 py-1.5 bg-primary-container/10 text-primary rounded-xl text-xs font-bold flex items-center gap-1.5 cursor-pointer">
+        <span class="material-symbols-outlined text-lg">shopping_cart</span>
+        <span id="mobileCartHeaderSum" class="font-data-sm text-[11px] font-bold">0</span>
+        <span id="mobileCartBadge" class="hidden absolute -top-1.5 -right-1.5 w-4 h-4 bg-primary text-white text-[9px] font-black rounded-full flex items-center justify-center shadow-xs">0</span>
       </button>
 
       <!-- + New Order Button -->
-      <button onclick="openNewOrderModal()" class="px-4 py-2 bg-primary-container text-white rounded-lg text-xs font-bold hover:bg-primary transition-colors active:opacity-80 shadow-sm flex items-center gap-1.5 cursor-pointer">
+      <button onclick="openNewOrderModal()" class="px-3 sm:px-4 py-1.5 sm:py-2 bg-primary-container text-white rounded-xl text-xs font-bold hover:bg-primary transition active:scale-95 shadow-sm flex items-center gap-1 cursor-pointer">
         <span>+ Заказ</span>
       </button>
     </div>
@@ -291,7 +302,7 @@
   </header>
 
   <!-- STITCH MAIN CONTENT CANVAS & POS PANEL WRAPPER -->
-  <main class="ml-[260px] pt-[64px] flex h-screen w-[calc(100%-260px)] bg-background">
+  <main class="w-full md:ml-[260px] md:w-[calc(100%-260px)] pt-[60px] md:pt-[64px] flex h-screen bg-background pb-16 md:pb-0 overflow-x-hidden">
     
     <!-- ========================================================================= -->
     <!-- TAB 1: STITCH POS КАССА -->
@@ -351,6 +362,24 @@
         <!-- Stitch Service Cards Grid -->
         <div id="quickServicesGrid" class="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 mb-6"></div>
 
+        
+        <!-- Mobile Floating Cart Bar (Visible when cart has items on phone) -->
+        <div id="mobileCartFloatingBar" onclick="toggleMobileCart(true)" class="hidden md:hidden fixed bottom-18 left-3 right-3 bg-gradient-to-r from-primary to-primary-container text-white p-3 rounded-2xl shadow-xl flex items-center justify-between z-30 cursor-pointer animate-in fade-in slide-in-from-bottom-2">
+          <div class="flex items-center gap-2.5">
+            <div class="w-9 h-9 rounded-xl bg-white/20 flex items-center justify-center font-bold">
+              <span class="material-symbols-outlined text-xl">shopping_cart</span>
+            </div>
+            <div>
+              <div class="text-[11px] opacity-90 font-medium">Текущий чек: <span id="mobFloatCount">0</span> поз.</div>
+              <div id="mobFloatTotal" class="text-base font-black font-data-md">0 сум</div>
+            </div>
+          </div>
+          <div class="px-3.5 py-1.5 bg-white text-primary rounded-xl font-bold text-xs flex items-center gap-1 shadow-sm">
+            <span>Оплатить</span>
+            <span class="material-symbols-outlined text-sm">arrow_forward</span>
+          </div>
+        </div>
+
         <!-- Stitch Recent Sales Table -->
         <div class="mt-auto bg-surface-container-lowest border border-outline-variant rounded-xl overflow-hidden flex flex-col flex-1 min-h-[220px]">
           <div class="px-4 py-3 border-b border-outline-variant bg-surface flex justify-between items-center">
@@ -378,7 +407,19 @@
       </div>
 
       <!-- Stitch Right Panel: POS Cart (340px) -->
-      <div class="w-[340px] bg-surface-container-lowest border-l border-outline-variant shadow-[-4px_0_15px_-3px_rgba(0,0,0,0.02)] flex flex-col relative z-20">
+      <!-- Mobile Cart Backdrop -->
+      <div id="mobileCartBackdrop" onclick="toggleMobileCart(false)" class="fixed inset-0 bg-black/60 backdrop-blur-xs z-35 hidden md:hidden"></div>
+
+      <!-- Stitch Right Panel: POS Cart (Full drawer on mobile, 340px sidebar on desktop) -->
+      <div id="posCartPanel" class="fixed md:static inset-x-0 bottom-16 top-16 md:top-auto md:inset-auto z-40 md:z-20 w-full md:w-[340px] bg-surface-container-lowest border-t md:border-t-0 md:border-l border-outline-variant shadow-2xl md:shadow-[-4px_0_15px_-3px_rgba(0,0,0,0.02)] flex flex-col translate-y-full md:translate-y-0 transition-transform duration-200">
+        <!-- Mobile Cart Close Bar -->
+        <div class="md:hidden px-4 py-2 bg-surface-container-low border-b border-outline-variant flex items-center justify-between">
+          <span class="text-xs font-bold text-on-surface flex items-center gap-1.5">
+            <span class="material-symbols-outlined text-primary text-base">shopping_cart</span>
+            <span>Корзина заказа</span>
+          </span>
+          <button onclick="toggleMobileCart(false)" class="px-2.5 py-1 bg-surface-container hover:bg-surface-container-high text-on-surface-variant rounded-lg text-xs font-bold cursor-pointer">Свернуть ✕</button>
+        </div>
         
         <!-- Cart Header -->
         <div class="p-4 border-b border-outline-variant bg-surface flex justify-between items-center">
@@ -1545,5 +1586,39 @@
   </div>
 
   <script src="js/app.js"></script>
+
+  <!-- MOBILE BOTTOM NAVIGATION BAR (Thumb-friendly for smartphones) -->
+  <nav class="md:hidden fixed bottom-0 left-0 right-0 h-16 bg-surface-container-lowest border-t border-outline-variant flex items-center justify-around px-2 z-30 shadow-[0_-4px_16px_rgba(0,0,0,0.06)]">
+    
+    <button onclick="switchTab('pos'); toggleMobileSidebar(false);" id="mobTab-pos" class="flex flex-col items-center justify-center flex-1 py-1 text-primary cursor-pointer active:scale-95 transition">
+      <span class="material-symbols-outlined text-xl">point_of_sale</span>
+      <span class="text-[10px] font-bold mt-0.5">Касса</span>
+    </button>
+
+    <button onclick="switchTab('orders'); toggleMobileSidebar(false);" id="mobTab-orders" class="flex flex-col items-center justify-center flex-1 py-1 text-on-surface-variant hover:text-primary cursor-pointer active:scale-95 transition">
+      <span class="material-symbols-outlined text-xl">assignment</span>
+      <span class="text-[10px] font-medium mt-0.5">Заказы</span>
+    </button>
+
+    <!-- Center + Button for Quick Order -->
+    <button onclick="openNewOrderModal()" class="flex flex-col items-center justify-center -mt-6 cursor-pointer active:scale-90 transition">
+      <div class="w-13 h-13 rounded-full bg-primary text-white shadow-xl flex items-center justify-center border-4 border-surface-container-lowest">
+        <span class="material-symbols-outlined text-2xl font-black">add</span>
+      </div>
+      <span class="text-[10px] font-bold text-primary mt-0.5">+ Заказ</span>
+    </button>
+
+    <button onclick="switchTab('chat'); toggleMobileSidebar(false);" id="mobTab-chat" class="flex flex-col items-center justify-center flex-1 py-1 text-on-surface-variant hover:text-primary cursor-pointer active:scale-95 transition">
+      <span class="material-symbols-outlined text-xl">forum</span>
+      <span class="text-[10px] font-medium mt-0.5">Чат</span>
+    </button>
+
+    <button onclick="toggleMobileSidebar()" class="flex flex-col items-center justify-center flex-1 py-1 text-on-surface-variant hover:text-primary cursor-pointer active:scale-95 transition">
+      <span class="material-symbols-outlined text-xl">menu</span>
+      <span class="text-[10px] font-medium mt-0.5">Меню</span>
+    </button>
+
+  </nav>
+
 </body>
 </html>

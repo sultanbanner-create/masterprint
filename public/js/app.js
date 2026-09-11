@@ -1,5 +1,43 @@
 
 // =========================================================================
+// MOBILE UI CONTROLS (Sidebar, Drawer Cart, Touch Navigation)
+// =========================================================================
+function toggleMobileSidebar(force) {
+  const sidebar = document.getElementById('mainSidebarNav');
+  const backdrop = document.getElementById('mobileSidebarBackdrop');
+  if (!sidebar) return;
+
+  const isOpen = !sidebar.classList.contains('-translate-x-full');
+  const nextState = force !== undefined ? force : !isOpen;
+
+  if (nextState) {
+    sidebar.classList.remove('-translate-x-full');
+    if (backdrop) backdrop.classList.remove('hidden');
+  } else {
+    sidebar.classList.add('-translate-x-full');
+    if (backdrop) backdrop.classList.add('hidden');
+  }
+}
+
+function toggleMobileCart(force) {
+  const panel = document.getElementById('posCartPanel');
+  const backdrop = document.getElementById('mobileCartBackdrop');
+  if (!panel) return;
+
+  const isOpen = !panel.classList.contains('translate-y-full');
+  const nextState = force !== undefined ? force : !isOpen;
+
+  if (nextState) {
+    panel.classList.remove('translate-y-full');
+    if (backdrop) backdrop.classList.remove('hidden');
+  } else {
+    panel.classList.add('translate-y-full');
+    if (backdrop) backdrop.classList.add('hidden');
+  }
+}
+
+
+// =========================================================================
 // REAL-TIME SYNCHRONIZATION (SSE) & AUDIO CHIME & BACKUPS & SECURITY
 // =========================================================================
 
@@ -1384,6 +1422,21 @@ function switchTab(tabId) {
   }
 
   state.currentTab = tabId;
+  toggleMobileSidebar(false);
+  toggleMobileCart(false);
+
+  // Update mobile bottom tab active state
+  ['pos', 'orders', 'chat'].forEach(t => {
+    const mobBtn = document.getElementById('mobTab-' + t);
+    if (mobBtn) {
+      if (t === tabId) {
+        mobBtn.className = 'flex flex-col items-center justify-center flex-1 py-1 text-primary font-bold cursor-pointer active:scale-95 transition';
+      } else {
+        mobBtn.className = 'flex flex-col items-center justify-center flex-1 py-1 text-on-surface-variant hover:text-primary cursor-pointer active:scale-95 transition';
+      }
+    }
+  });
+
   document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
   document.querySelectorAll('nav button').forEach(el => {
     el.className = 'w-full flex items-center gap-3 px-4 py-3 text-on-surface-variant hover:bg-surface-container-low transition-colors rounded-r-lg group';

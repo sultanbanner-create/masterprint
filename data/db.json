@@ -465,6 +465,30 @@
   ],
   "orders": [
     {
+      "id": "ord_1789146783764",
+      "orderNumber": 1029,
+      "clientName": "Розничный клиент",
+      "clientId": null,
+      "category": "quick_pos",
+      "title": "Ксерокопия А4 x2",
+      "items": [
+        {
+          "id": "qs_xerox_a4",
+          "title": "Ксерокопия А4",
+          "price": 1000,
+          "qty": 2
+        }
+      ],
+      "subtotal": 2000,
+      "discount": 0,
+      "totalAmount": 2000,
+      "paidAmount": 2000,
+      "paymentMethod": "cash",
+      "status": "Выдан",
+      "createdBy": "islam",
+      "createdAt": "2026-09-11T17:13:03.764Z"
+    },
+    {
       "id": "ord_1789144832662",
       "orderNumber": 1028,
       "clientName": "Розничный клиент",
@@ -1817,7 +1841,7 @@
       "id": "wh_paper_a4_80",
       "name": "Бумага А4 80г (Снегурочка/DoubleA)",
       "category": "polygraphy",
-      "inStock": 2573,
+      "inStock": 2571,
       "unit": "лист",
       "minStock": 500,
       "price": 100
@@ -2070,6 +2094,20 @@
     "address": "г. Нукус, ул. Каракалпакстан 45"
   },
   "stockLogs": [
+    {
+      "id": "log_1789146783765_qa4r",
+      "date": "2026-09-11",
+      "timestamp": "2026-09-11T17:13:03.765Z",
+      "type": "deduction",
+      "materialId": "wh_paper_a4_80",
+      "materialName": "Бумага А4 80г (Снегурочка/DoubleA)",
+      "delta": -2,
+      "unit": "лист",
+      "remainingStock": 2571,
+      "reason": "Чек №1029 (Ксерокопия А4 x2 -> расход: Бумага А4 80г (Снегурочка/DoubleA) x2)",
+      "orderId": "ord_1789146783764",
+      "userId": "islam"
+    },
     {
       "id": "log_1789144832662_miz6",
       "date": "2026-09-11",
@@ -2537,8 +2575,8 @@
       "openedBy": "islam",
       "initialCash": 500000,
       "status": "open",
-      "cashSales": 1596800,
-      "clickSales": 2180000,
+      "cashSales": 2238800,
+      "clickSales": 0,
       "expensesCash": 92115000,
       "expectedCash": 0,
       "actualCash": null,
