@@ -1,5 +1,142 @@
 
 // =========================================================================
+// CASHIER PAYMENT CONFIRMATION WORKFLOW
+// =========================================================================
+function openConfirmPaymentModal(orderId) {
+  const modal = document.getElementById('confirmPaymentModal');
+  if (!modal) return;
+
+  const order = (state.orders || []).find(o => o.id === orderId);
+  if (!order) return;
+
+  const remaining = Math.max(0, (Number(order.totalAmount) || 0) - (Number(order.paidAmount) || 0));
+
+  document.getElementById('confirmPayOrderId').value = order.id;
+  document.getElementById('confirmPayOrderTitle').textContent = `Заказ #${order.orderNumber}`;
+  document.getElementById('confirmPayClientName').textContent = order.clientName + (order.clientPhone ? ` (${order.clientPhone})` : '');
+  document.getElementById('confirmPayItemName').textContent = order.title;
+  document.getElementById('confirmPayDueAmount').textContent = formatMoney(remaining > 0 ? remaining : order.totalAmount);
+
+  const cashierDisplay = document.getElementById('confirmPayCashierName');
+  if (cashierDisplay) {
+    cashierDisplay.textContent = state.currentUser ? state.currentUser.name : 'Наргиза (Кассир)';
+  }
+
+  modal.classList.remove('hidden');
+}
+
+function closeConfirmPaymentModal() {
+  const modal = document.getElementById('confirmPaymentModal');
+  if (modal) modal.classList.add('hidden');
+}
+
+async function submitConfirmPayment(event) {
+  event.preventDefault();
+
+  const orderId = document.getElementById('confirmPayOrderId')?.value;
+  if (!orderId) return;
+
+  const order = (state.orders || []).find(o => o.id === orderId);
+  if (!order) return;
+
+  const remaining = Math.max(0, (Number(order.totalAmount) || 0) - (Number(order.paidAmount) || 0));
+  const amountToPay = remaining > 0 ? remaining : order.totalAmount;
+
+  const methodRadios = document.getElementsByName('confirmPayMethodRadio');
+  let selectedMethod = 'cash';
+  for (const r of methodRadios) {
+    if (r.checked) {
+      selectedMethod = r.value;
+      break;
+    }
+  }
+
+  const cashierName = state.currentUser ? state.currentUser.name : 'Наргиза (Кассир)';
+  const cashierId = state.currentUser ? state.currentUser.id : 'cashier';
+
+  try {
+    const res = await fetch(`${API_BASE}/orders/${orderId}/confirm-payment`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        paidAmount: amountToPay,
+        paymentMethod: selectedMethod,
+        cashierId,
+        cashierName
+      })
+    });
+
+    const data = await res.json();
+    if (!res.ok) {
+      showToast('Ошибка', data.error || 'Не удалось подтвердить оплату', true);
+      return;
+    }
+
+    closeConfirmPaymentModal();
+    showToast('Оплата подтверждена!', `Чек №${data.order?.orderNumber} оформлен кассиром ${cashierName}`);
+
+    // Open receipt
+    if (data.order) {
+      openReceiptModal(data.order);
+    }
+
+    await loadOrders();
+    loadFinanceSummary();
+    loadClients();
+  } catch (err) {
+    console.error('Error confirming payment:', err);
+    showToast('Ошибка', 'Сбой при подтверждении оплаты', true);
+  }
+}
+
+function renderPosPendingQueue() {
+  const banner = document.getElementById('posCashierQueueBanner');
+  const countEl = document.getElementById('posPendingQueueCount');
+  const cardsContainer = document.getElementById('posPendingQueueCards');
+  if (!banner || !cardsContainer) return;
+
+  const pendingList = (state.orders || []).filter(o => {
+    const isUnpaid = (Number(o.totalAmount) || 0) > (Number(o.paidAmount) || 0);
+    return isUnpaid && o.category !== 'quick_pos';
+  });
+
+  if (countEl) countEl.textContent = `${pendingList.length} заказов`;
+
+  if (pendingList.length === 0) {
+    banner.classList.add('hidden');
+    return;
+  }
+
+  banner.classList.remove('hidden');
+
+  cardsContainer.innerHTML = pendingList.slice(0, 6).map(o => {
+    const remaining = Math.max(0, (Number(o.totalAmount) || 0) - (Number(o.paidAmount) || 0));
+
+    return `
+      <div class="bg-white border border-amber-200/90 rounded-xl p-3 shadow-xs flex flex-col justify-between hover:border-amber-400 transition">
+        <div>
+          <div class="flex items-center justify-between text-xs mb-1">
+            <span class="font-extrabold text-on-surface font-data-sm">#${o.orderNumber}</span>
+            <span class="text-[10px] text-amber-800 bg-amber-100 font-bold px-1.5 py-0.5 rounded">${o.designerId || o.createdBy || 'Дизайнер'}</span>
+          </div>
+          <div class="font-bold text-xs text-on-surface truncate" title="${o.title}">${o.title}</div>
+          <div class="text-[11px] text-on-surface-variant truncate">${o.clientName}</div>
+        </div>
+
+        <div class="pt-2 mt-2 border-t border-dashed border-outline-variant flex items-center justify-between">
+          <span class="font-black text-xs text-emerald-700 font-data-md">${formatMoney(remaining)}</span>
+          <button onclick="openConfirmPaymentModal('${o.id}')" class="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold shadow-xs transition flex items-center gap-1 cursor-pointer">
+            <span class="material-symbols-outlined text-[13px]">payments</span>
+            <span>Принять</span>
+          </button>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+
+// =========================================================================
 // UNIFIED SERVICES & VARIANT POPUP ENGINE
 // =========================================================================
 function handleServiceClick(serviceId) {
@@ -684,7 +821,7 @@ function updateUserUI() {
   if (name) name.textContent = state.currentUser.name;
   if (subname) subname.textContent = state.currentUser.role === 'admin' ? 'SUPER ADMIN' : state.currentUser.name.toUpperCase();
   if (role) {
-    const rolesMap = { admin: 'Директор (Администратор)', designer: 'Дизайнер / Менеджер', master: 'Мастер цеха', worker: 'Сотрудник' };
+    const rolesMap = { admin: 'Директор (Администратор)', cashier: 'Кассир (Главная касса)', designer: 'Дизайнер / Менеджер', master: 'Мастер цеха', worker: 'Сотрудник' };
     role.textContent = rolesMap[state.currentUser.role] || state.currentUser.role;
   }
 }
@@ -1066,7 +1203,8 @@ function openReceiptModal(order) {
     <div class="text-center pb-2.5 border-b border-dashed border-outline-variant">
       <div class="font-extrabold text-sm uppercase tracking-wider text-on-surface">MASTER PRINT</div>
       <div class="text-[10px] text-on-surface-variant mt-0.5">Чек №${order.orderNumber} • ${formattedDate}</div>
-      <div class="text-[10px] text-on-surface-variant">Кассир: ${order.createdBy} • ${order.clientName}</div>
+      <div class="text-[10px] text-emerald-800 font-bold mt-0.5">Кассир (Оплата принята): ${order.paymentConfirmedBy || order.createdBy || 'Наргиза (Кассир)'}</div>
+      <div class="text-[10px] text-on-surface-variant">Клиент: ${order.clientName}</div>
     </div>
     <div class="py-2.5 space-y-1.5 border-b border-dashed border-outline-variant font-data-sm">
       ${(order.items || []).map(i => `
@@ -1095,7 +1233,7 @@ function closeReceiptModal() {
 // =========================================================================
 function setOrdersFilter(status) {
   state.currentOrderStatusFilter = status;
-  const filterBtns = ['all', 'new', 'in_progress', 'ready', 'delivered', 'debt'];
+  const filterBtns = ['all', 'pending', 'new', 'in_progress', 'ready', 'delivered', 'debt'];
   filterBtns.forEach(f => {
     const btn = document.getElementById(`ordFilter-${f}`);
     if (btn) {
@@ -1127,12 +1265,24 @@ async function loadOrders() {
 
 function renderOrdersTable() {
   const container = document.getElementById('ordersTableBody');
+  const pendingBadge = document.getElementById('pendingOrdersFilterCount');
   if (!container) return;
 
   let list = state.orders || [];
 
+  // Count pending orders for badge
+  const pendingCount = list.filter(o => {
+    return (Number(o.totalAmount) || 0) > (Number(o.paidAmount) || 0);
+  }).length;
+  if (pendingBadge) pendingBadge.textContent = pendingCount;
+
+  // Also update POS pending queue
+  renderPosPendingQueue();
+
   // Filter by status tab
-  if (state.currentOrderStatusFilter === 'debt') {
+  if (state.currentOrderStatusFilter === 'pending') {
+    list = list.filter(o => (Number(o.totalAmount) || 0) > (Number(o.paidAmount) || 0));
+  } else if (state.currentOrderStatusFilter === 'debt') {
     list = list.filter(o => o.status === 'Долг (Карыз)' || (Number(o.totalAmount) - Number(o.paidAmount) > 0));
   } else if (state.currentOrderStatusFilter !== 'all') {
     list = list.filter(o => o.status === state.currentOrderStatusFilter);
@@ -1164,6 +1314,7 @@ function renderOrdersTable() {
     const dateObj = new Date(o.createdAt);
     const dateStr = dateObj.toLocaleDateString('ru-RU') + ' ' + dateObj.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
     const debt = Math.max(0, (Number(o.totalAmount) || 0) - (Number(o.paidAmount) || 0));
+    const isPaid = debt === 0 && (Number(o.totalAmount) || 0) > 0;
 
     return `
       <tr class="hover:bg-surface-container-low/50 transition">
@@ -1201,13 +1352,26 @@ function renderOrdersTable() {
           ${o.designerId || o.createdBy || 'Ислам'}
         </td>
 
-        <!-- Total & Paid -->
+        <!-- Total & Paid & Cashier Confirmation Button -->
         <td class="p-3 text-right whitespace-nowrap">
           <div class="font-data-md font-bold text-on-surface text-xs">${formatMoney(o.totalAmount)}</div>
-          ${debt > 0 ? `
-            <div class="text-[10px] font-bold text-error font-data-sm">Долг: ${formatMoney(debt)}</div>
+          
+          ${isPaid ? `
+            <div class="mt-0.5 flex flex-col items-end">
+              <span class="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] font-bold text-emerald-800 bg-emerald-50 border border-emerald-200">
+                <span class="material-symbols-outlined text-[12px]">verified</span>
+                <span>Оплачено 100%</span>
+              </span>
+              ${o.paymentConfirmedBy ? `<span class="text-[9px] text-on-surface-variant font-medium mt-0.5">Кассир: ${o.paymentConfirmedBy}</span>` : ''}
+            </div>
           ` : `
-            <div class="text-[10px] font-semibold text-secondary font-data-sm">Оплачено 100%</div>
+            <div class="mt-1 flex flex-col items-end gap-1">
+              <div class="text-[10px] font-bold text-error font-data-sm">К оплате: ${formatMoney(debt)}</div>
+              <button onclick="openConfirmPaymentModal('${o.id}')" class="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-[11px] font-bold shadow-xs transition flex items-center gap-1 cursor-pointer">
+                <span class="material-symbols-outlined text-[13px]">payments</span>
+                <span>Подтвердить оплату</span>
+              </button>
+            </div>
           `}
         </td>
 

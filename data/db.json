@@ -9,6 +9,15 @@
       "color": "#6366f1"
     },
     {
+      "id": "cashier",
+      "username": "cashier",
+      "name": "Наргиза (Кассир)",
+      "role": "cashier",
+      "pin": "12345",
+      "phone": "+998901234509",
+      "color": "#059669"
+    },
+    {
       "id": "islam",
       "username": "islam",
       "name": "Ислам",
@@ -398,6 +407,94 @@
   ],
   "orders": [
     {
+      "id": "ord_1789134644098",
+      "orderNumber": 1026,
+      "clientName": "Розничный клиент",
+      "clientId": null,
+      "category": "quick_pos",
+      "title": "Ксерокопия А4 x2",
+      "items": [
+        {
+          "id": "qs_xerox_a4",
+          "title": "Ксерокопия А4",
+          "price": 1000,
+          "qty": 2
+        }
+      ],
+      "subtotal": 2000,
+      "discount": 0,
+      "totalAmount": 2000,
+      "paidAmount": 2000,
+      "paymentMethod": "cash",
+      "status": "Выдан",
+      "createdBy": "islam",
+      "createdAt": "2026-09-11T13:50:44.098Z"
+    },
+    {
+      "id": "ord_1789134440010",
+      "orderNumber": 1025,
+      "clientName": "Розничный клиент",
+      "clientId": null,
+      "category": "quick_pos",
+      "title": "Ксерокопия А4 x2",
+      "items": [
+        {
+          "id": "qs_xerox_a4",
+          "title": "Ксерокопия А4",
+          "price": 1000,
+          "qty": 2
+        }
+      ],
+      "subtotal": 2000,
+      "discount": 0,
+      "totalAmount": 2000,
+      "paidAmount": 2000,
+      "paymentMethod": "cash",
+      "status": "Выдан",
+      "createdBy": "islam",
+      "createdAt": "2026-09-11T13:47:20.010Z"
+    },
+    {
+      "id": "ord_1789134436080",
+      "orderNumber": 1007,
+      "category": "wide_format",
+      "title": "Баннер 3х2м для выставки",
+      "clientName": "Тестовый Клиент ООО",
+      "clientPhone": "+998909998877",
+      "details": {
+        "width": 3,
+        "height": 2,
+        "area": 6,
+        "material": "Баннер 440г"
+      },
+      "designerId": "islam",
+      "designerFee": 20000,
+      "masterId": null,
+      "masterFee": 0,
+      "totalAmount": 180000,
+      "paidAmount": 180000,
+      "paymentMethod": "cash",
+      "paymentStatus": "paid",
+      "paymentConfirmedBy": "Наргиза (Кассир)",
+      "paymentConfirmedAt": "2026-09-11T13:47:16.086Z",
+      "status": "new",
+      "notes": "",
+      "createdBy": "islam",
+      "createdAt": "2026-09-11T13:47:16.080Z",
+      "history": [
+        {
+          "status": "new",
+          "time": "2026-09-11T13:47:16.080Z",
+          "user": "islam"
+        },
+        {
+          "status": "Оплата подтверждена: +180000 сум (cash) кассиром Наргиза (Кассир)",
+          "time": "2026-09-11T13:47:16.086Z",
+          "user": "Наргиза (Кассир)"
+        }
+      ]
+    },
+    {
       "id": "ord_1788457869203",
       "orderNumber": 1023,
       "clientName": "Розничный клиент",
@@ -419,7 +516,10 @@
       "paymentMethod": "cash",
       "status": "Выдан",
       "createdBy": "islam",
-      "createdAt": "2026-09-03T17:51:09.203Z"
+      "createdAt": "2026-09-03T17:51:09.203Z",
+      "paymentStatus": "paid",
+      "paymentConfirmedBy": "islam",
+      "paymentConfirmedAt": "2026-09-03T17:51:09.203Z"
     },
     {
       "id": "ord_1788457844350",
@@ -443,7 +543,10 @@
       "paymentMethod": "cash",
       "status": "Выдан",
       "createdBy": "islam",
-      "createdAt": "2026-09-03T17:50:44.350Z"
+      "createdAt": "2026-09-03T17:50:44.350Z",
+      "paymentStatus": "paid",
+      "paymentConfirmedBy": "islam",
+      "paymentConfirmedAt": "2026-09-03T17:50:44.350Z"
     },
     {
       "id": "ord_1788455462626",
@@ -474,7 +577,10 @@
           "time": "2026-09-03T17:23:18.304Z",
           "user": "admin"
         }
-      ]
+      ],
+      "paymentStatus": "paid",
+      "paymentConfirmedBy": "islam",
+      "paymentConfirmedAt": "2026-09-03T17:11:02.626Z"
     },
     {
       "id": "ord_1788455458432",
@@ -498,7 +604,10 @@
       "paymentMethod": "cash",
       "status": "Выдан",
       "createdBy": "islam",
-      "createdAt": "2026-09-03T17:10:58.432Z"
+      "createdAt": "2026-09-03T17:10:58.432Z",
+      "paymentStatus": "paid",
+      "paymentConfirmedBy": "islam",
+      "paymentConfirmedAt": "2026-09-03T17:10:58.432Z"
     },
     {
       "id": "ord_1788454786016",
@@ -522,7 +631,10 @@
       "paymentMethod": "cash",
       "status": "Выдан",
       "createdBy": "islam",
-      "createdAt": "2026-09-03T16:59:46.016Z"
+      "createdAt": "2026-09-03T16:59:46.016Z",
+      "paymentStatus": "paid",
+      "paymentConfirmedBy": "islam",
+      "paymentConfirmedAt": "2026-09-03T16:59:46.016Z"
     },
     {
       "id": "ord_1788454747223",
@@ -546,7 +658,10 @@
       "paymentMethod": "cash",
       "status": "Выдан",
       "createdBy": "islam",
-      "createdAt": "2026-09-03T16:59:07.223Z"
+      "createdAt": "2026-09-03T16:59:07.223Z",
+      "paymentStatus": "paid",
+      "paymentConfirmedBy": "islam",
+      "paymentConfirmedAt": "2026-09-03T16:59:07.223Z"
     },
     {
       "id": "ord_1788454710299",
@@ -570,7 +685,10 @@
       "paymentMethod": "cash",
       "status": "Выдан",
       "createdBy": "islam",
-      "createdAt": "2026-09-03T16:58:30.299Z"
+      "createdAt": "2026-09-03T16:58:30.299Z",
+      "paymentStatus": "paid",
+      "paymentConfirmedBy": "islam",
+      "paymentConfirmedAt": "2026-09-03T16:58:30.299Z"
     },
     {
       "id": "ord_1788448969737",
@@ -596,7 +714,10 @@
       "paymentMethod": "cash",
       "status": "Выдан",
       "createdBy": "islam",
-      "createdAt": "2026-09-03T15:22:49.737Z"
+      "createdAt": "2026-09-03T15:22:49.737Z",
+      "paymentStatus": "paid",
+      "paymentConfirmedBy": "islam",
+      "paymentConfirmedAt": "2026-09-03T15:22:49.737Z"
     },
     {
       "id": "ord_1788448905772",
@@ -622,7 +743,10 @@
       "paymentMethod": "cash",
       "status": "Выдан",
       "createdBy": "islam",
-      "createdAt": "2026-09-03T15:21:45.772Z"
+      "createdAt": "2026-09-03T15:21:45.772Z",
+      "paymentStatus": "paid",
+      "paymentConfirmedBy": "islam",
+      "paymentConfirmedAt": "2026-09-03T15:21:45.772Z"
     },
     {
       "id": "ord_1788448843567",
@@ -656,7 +780,8 @@
           "time": "2026-09-03T15:20:43.567Z",
           "user": "admin"
         }
-      ]
+      ],
+      "paymentStatus": "partial"
     },
     {
       "id": "ord_1788448695249",
@@ -680,7 +805,10 @@
       "paymentMethod": "cash",
       "status": "Выдан",
       "createdBy": "islam",
-      "createdAt": "2026-09-03T15:18:15.249Z"
+      "createdAt": "2026-09-03T15:18:15.249Z",
+      "paymentStatus": "paid",
+      "paymentConfirmedBy": "islam",
+      "paymentConfirmedAt": "2026-09-03T15:18:15.249Z"
     },
     {
       "id": "ord_1788447573448",
@@ -704,7 +832,10 @@
       "paymentMethod": "cash",
       "status": "Выдан",
       "createdBy": "islam",
-      "createdAt": "2026-09-03T14:59:33.448Z"
+      "createdAt": "2026-09-03T14:59:33.448Z",
+      "paymentStatus": "paid",
+      "paymentConfirmedBy": "islam",
+      "paymentConfirmedAt": "2026-09-03T14:59:33.448Z"
     },
     {
       "id": "ord_1788293947143",
@@ -738,7 +869,10 @@
           "time": "2026-09-01T20:19:07.143Z",
           "user": "islam"
         }
-      ]
+      ],
+      "paymentStatus": "paid",
+      "paymentConfirmedBy": "islam",
+      "paymentConfirmedAt": "2026-09-01T20:19:07.143Z"
     },
     {
       "id": "ord_1788291426216",
@@ -776,7 +910,8 @@
           "time": "2026-09-01T19:37:06.219Z",
           "user": "system"
         }
-      ]
+      ],
+      "paymentStatus": "partial"
     },
     {
       "id": "ord_1788291426213",
@@ -799,7 +934,10 @@
       "status": "delivered",
       "createdBy": "islam",
       "createdAt": "2026-09-01T19:37:06.213Z",
-      "completedAt": "2026-09-01T19:37:06.213Z"
+      "completedAt": "2026-09-01T19:37:06.213Z",
+      "paymentStatus": "paid",
+      "paymentConfirmedBy": "islam",
+      "paymentConfirmedAt": "2026-09-01T19:37:06.213Z"
     },
     {
       "id": "ord_1788291034151",
@@ -837,7 +975,8 @@
           "time": "2026-09-01T19:30:34.155Z",
           "user": "system"
         }
-      ]
+      ],
+      "paymentStatus": "partial"
     },
     {
       "id": "ord_1788291034148",
@@ -860,7 +999,10 @@
       "status": "delivered",
       "createdBy": "islam",
       "createdAt": "2026-09-01T19:30:34.148Z",
-      "completedAt": "2026-09-01T19:30:34.148Z"
+      "completedAt": "2026-09-01T19:30:34.148Z",
+      "paymentStatus": "paid",
+      "paymentConfirmedBy": "islam",
+      "paymentConfirmedAt": "2026-09-01T19:30:34.148Z"
     },
     {
       "id": "ORD-1788273186019",
@@ -1539,7 +1681,7 @@
       "id": "wh_paper_a4_80",
       "name": "Бумага А4 80г (Снегурочка/DoubleA)",
       "category": "polygraphy",
-      "inStock": 2581,
+      "inStock": 2577,
       "unit": "лист",
       "minStock": 500,
       "price": 100
@@ -1647,7 +1789,7 @@
       "id": "wh_banner_440",
       "name": "Баннерная ткань 440г Европа (рулон)",
       "category": "wide_format",
-      "inStock": 128,
+      "inStock": 122,
       "unit": "м²",
       "minStock": 30,
       "price": 18000
@@ -1764,6 +1906,14 @@
       "currentDebt": 0,
       "totalSpent": 1955800,
       "notes": ""
+    },
+    {
+      "id": "cl_1789134436081",
+      "name": "Тестовый Клиент ООО",
+      "phone": "+998909998877",
+      "currentDebt": 180000,
+      "totalSpent": 180000,
+      "notes": ""
     }
   ],
   "settings": {
@@ -1772,6 +1922,48 @@
     "defaultPin": "12345"
   },
   "stockLogs": [
+    {
+      "id": "log_1789134644098_iksq",
+      "date": "2026-09-11",
+      "timestamp": "2026-09-11T13:50:44.098Z",
+      "type": "deduction",
+      "materialId": "wh_paper_a4_80",
+      "materialName": "Бумага А4 80г (Снегурочка/DoubleA)",
+      "delta": -2,
+      "unit": "лист",
+      "remainingStock": 2577,
+      "reason": "Чек №1026 (Ксерокопия А4 x2 -> расход: Бумага А4 80г (Снегурочка/DoubleA) x2)",
+      "orderId": "ord_1789134644098",
+      "userId": "islam"
+    },
+    {
+      "id": "log_1789134440010_292m",
+      "date": "2026-09-11",
+      "timestamp": "2026-09-11T13:47:20.010Z",
+      "type": "deduction",
+      "materialId": "wh_paper_a4_80",
+      "materialName": "Бумага А4 80г (Снегурочка/DoubleA)",
+      "delta": -2,
+      "unit": "лист",
+      "remainingStock": 2579,
+      "reason": "Чек №1025 (Ксерокопия А4 x2 -> расход: Бумага А4 80г (Снегурочка/DoubleA) x2)",
+      "orderId": "ord_1789134440010",
+      "userId": "islam"
+    },
+    {
+      "id": "log_1789134436081_jji7",
+      "date": "2026-09-11",
+      "timestamp": "2026-09-11T13:47:16.081Z",
+      "type": "deduction",
+      "materialId": "wh_banner_440",
+      "materialName": "Баннерная ткань 440г Европа (рулон)",
+      "delta": -6,
+      "unit": "м²",
+      "remainingStock": 122,
+      "reason": "Заказ №1007 (Баннер 3х2м для выставки - 6 м²)",
+      "orderId": "ord_1789134436080",
+      "userId": "islam"
+    },
     {
       "id": "log_1788457869203_ubnm",
       "date": "2026-09-03",
@@ -2070,7 +2262,7 @@
       "orderNumber": 1005
     }
   ],
-  "orderCounter": 1006,
+  "orderCounter": 1007,
   "debtPayments": [
     {
       "id": "pay_1788448860024",
@@ -2169,7 +2361,7 @@
       "openedBy": "islam",
       "initialCash": 500000,
       "status": "open",
-      "cashSales": 93000,
+      "cashSales": 277000,
       "clickSales": 1000000,
       "expensesCash": 92115000,
       "expectedCash": 0,

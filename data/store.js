@@ -83,6 +83,7 @@ class DataStore {
     return {
       users: [
         { id: 'admin', name: 'Директор', role: 'admin', pin: '12345', phone: '+998901234500', color: '#dc2626' },
+        { id: 'cashier', name: 'Наргиза (Кассир)', role: 'cashier', pin: '12345', phone: '+998901234509', color: '#059669' },
         { id: 'islam', name: 'Ислам', role: 'designer', pin: '12345', phone: '+998901234501', color: '#3b82f6' },
         { id: 'beksultan', name: 'Бексултан', role: 'designer', pin: '12345', phone: '+998901234502', color: '#10b981' },
         { id: 'aziz', name: 'Азиз', role: 'designer', pin: '12345', phone: '+998901234503', color: '#f59e0b' },

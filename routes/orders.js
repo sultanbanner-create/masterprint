@@ -47,6 +47,9 @@ router.post('/', (req, res) => {
   const paid = Number(paidAmount) || 0;
   const debt = Math.max(0, total - paid);
 
+    const isPaid = paid >= total && total > 0;
+  const paymentStatus = isPaid ? 'paid' : (paid > 0 ? 'partial' : 'pending');
+
   const newOrder = {
     id: 'ord_' + Date.now(),
     orderNumber,
@@ -62,6 +65,9 @@ router.post('/', (req, res) => {
     totalAmount: total,
     paidAmount: paid,
     paymentMethod: paymentMethod || 'cash',
+    paymentStatus,
+    paymentConfirmedBy: isPaid ? (createdBy || 'Кассир') : null,
+    paymentConfirmedAt: isPaid ? now.toISOString() : null,
     status: 'new',
     notes: notes || '',
     createdBy: createdBy || 'admin',
@@ -120,6 +126,57 @@ router.delete('/:id', (req, res) => {
   const deleted = store.db.orders.splice(index, 1)[0];
   store.save();
   res.json({ success: true, deleted });
+});
+
+
+// Confirm order payment by Cashier
+router.post('/:id/confirm-payment', (req, res) => {
+  try {
+    const { paidAmount, paymentMethod, cashierId, cashierName, notes } = req.body;
+    const order = store.db.orders.find(o => o.id === req.params.id);
+    if (!order) return res.status(404).json({ error: 'Заказ не найден' });
+
+    const remaining = Math.max(0, (Number(order.totalAmount) || 0) - (Number(order.paidAmount) || 0));
+    const numPaid = Number(paidAmount) > 0 ? Number(paidAmount) : remaining;
+
+    order.paidAmount = (Number(order.paidAmount) || 0) + numPaid;
+    order.paymentMethod = paymentMethod || order.paymentMethod || 'cash';
+    order.paymentConfirmedBy = cashierName || cashierId || 'Наргиза (Кассир)';
+    order.paymentConfirmedAt = new Date().toISOString();
+    order.paymentStatus = (order.paidAmount >= order.totalAmount) ? 'paid' : 'partial';
+
+    if (!order.history) order.history = [];
+    order.history.push({
+      status: `Оплата подтверждена: +${numPaid} сум (${order.paymentMethod}) кассиром ${order.paymentConfirmedBy}`,
+      time: new Date().toISOString(),
+      user: order.paymentConfirmedBy
+    });
+
+    // Update live open shift
+    const openShift = (store.db.shifts || []).find(s => s.status === 'open');
+    if (openShift) {
+      if (order.paymentMethod === 'cash') {
+        openShift.cashSales = (Number(openShift.cashSales) || 0) + numPaid;
+      } else if (order.paymentMethod === 'click') {
+        openShift.clickSales = (Number(openShift.clickSales) || 0) + numPaid;
+      }
+      openShift.expectedCash = Math.max(0, (Number(openShift.initialCash) || 0) + (Number(openShift.cashSales) || 0) - (Number(openShift.expensesCash) || 0));
+    }
+
+    // Update client debt balance
+    if (order.clientId) {
+      const client = (store.db.clients || []).find(c => c.id === order.clientId);
+      if (client) {
+        client.currentDebt = Math.max(0, (Number(client.currentDebt) || 0) - numPaid);
+      }
+    }
+
+    store.save();
+    res.json({ success: true, order, receipt: order });
+  } catch (err) {
+    console.error('Error confirming payment:', err);
+    res.status(500).json({ error: 'Ошибка подтверждения оплаты: ' + err.message });
+  }
 });
 
 module.exports = router;
