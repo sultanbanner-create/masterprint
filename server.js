@@ -47,6 +47,8 @@ app.use('/api/clients', require('./routes/clients'));
 app.use('/api/chat', require('./routes/chat'));
 app.use('/api/leaderboard', require('./routes/leaderboard'));
 app.use('/api/settings', require('./routes/settings'));
+app.use('/api/events', require('./routes/events').router);
+app.use('/api/backups', require('./routes/backups'));
 app.use('/api/reports', require('./routes/reports'));
 
 // Fallback direct aliases

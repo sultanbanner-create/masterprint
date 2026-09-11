@@ -465,30 +465,6 @@
   ],
   "orders": [
     {
-      "id": "ord_1789144832662",
-      "orderNumber": 1028,
-      "clientName": "Розничный клиент",
-      "clientId": null,
-      "category": "quick_pos",
-      "title": "Ксерокопия А4 x2",
-      "items": [
-        {
-          "id": "qs_xerox_a4",
-          "title": "Ксерокопия А4",
-          "price": 1000,
-          "qty": 2
-        }
-      ],
-      "subtotal": 2000,
-      "discount": 0,
-      "totalAmount": 2000,
-      "paidAmount": 2000,
-      "paymentMethod": "cash",
-      "status": "Выдан",
-      "createdBy": "islam",
-      "createdAt": "2026-09-11T16:40:32.662Z"
-    },
-    {
       "id": "ord_1789144468227",
       "orderNumber": 1027,
       "clientName": "Розничный клиент",
@@ -1787,7 +1763,7 @@
       "id": "wh_paper_a4_80",
       "name": "Бумага А4 80г (Снегурочка/DoubleA)",
       "category": "polygraphy",
-      "inStock": 2573,
+      "inStock": 2575,
       "unit": "лист",
       "minStock": 500,
       "price": 100
@@ -2023,29 +1999,11 @@
     }
   ],
   "settings": {
-    "companyName": "MASTER PRINT Enterprise",
+    "companyName": "Полиграфия & Наружная Реклама",
     "currency": "сум",
-    "defaultPin": "12345",
-    "phone": "+998 90 123 45 67",
-    "inn": "308942115",
-    "terminal": "TM-778899",
-    "address": "г. Нукус, ул. Каракалпакстан 45"
+    "defaultPin": "12345"
   },
   "stockLogs": [
-    {
-      "id": "log_1789144832662_miz6",
-      "date": "2026-09-11",
-      "timestamp": "2026-09-11T16:40:32.662Z",
-      "type": "deduction",
-      "materialId": "wh_paper_a4_80",
-      "materialName": "Бумага А4 80г (Снегурочка/DoubleA)",
-      "delta": -2,
-      "unit": "лист",
-      "remainingStock": 2573,
-      "reason": "Чек №1028 (Ксерокопия А4 x2 -> расход: Бумага А4 80г (Снегурочка/DoubleA) x2)",
-      "orderId": "ord_1789144832662",
-      "userId": "islam"
-    },
     {
       "id": "log_1789144468227_7hyk",
       "date": "2026-09-11",
@@ -2499,7 +2457,7 @@
       "openedBy": "islam",
       "initialCash": 500000,
       "status": "open",
-      "cashSales": 281000,
+      "cashSales": 279000,
       "clickSales": 1000000,
       "expensesCash": 92115000,
       "expectedCash": 0,

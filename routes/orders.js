@@ -1,3 +1,4 @@
+const { broadcastEvent } = require('./events');
 const express = require('express');
 const router = express.Router();
 const store = require('../data/store');
@@ -99,6 +100,7 @@ router.post('/', (req, res) => {
   // Deduct materials
   const deducted = store.deductMaterialsForOrder(newOrder);
   store.save();
+  broadcastEvent('order_created', newOrder);
 
   res.json({ success: true, order: newOrder, deductedMaterials: deducted });
 });
@@ -116,6 +118,7 @@ router.patch('/:id/status', (req, res) => {
   }
 
   store.save();
+  broadcastEvent('order_status_changed', { orderId: order.id, status: order.status });
   res.json({ success: true, order });
 });
 
@@ -172,6 +175,7 @@ router.post('/:id/confirm-payment', (req, res) => {
     }
 
     store.save();
+    broadcastEvent('payment_confirmed', { order, cashierName: order.paymentConfirmedBy });
     res.json({ success: true, order, receipt: order });
   } catch (err) {
     console.error('Error confirming payment:', err);

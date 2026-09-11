@@ -1,5 +1,206 @@
 
 // =========================================================================
+// REAL-TIME SYNCHRONIZATION (SSE) & AUDIO CHIME & BACKUPS & SECURITY
+// =========================================================================
+
+// 1. Web Audio API Cashier Chime 🔔
+function playCashierChime() {
+  try {
+    const AudioCtx = window.AudioContext || window.webkitAudioContext;
+    if (!AudioCtx) return;
+    const ctx = new AudioCtx();
+
+    // First tone (E5: 659.25Hz)
+    const osc1 = ctx.createOscillator();
+    const gain1 = ctx.createGain();
+    osc1.type = 'sine';
+    osc1.frequency.setValueAtTime(659.25, ctx.currentTime);
+    gain1.gain.setValueAtTime(0.2, ctx.currentTime);
+    gain1.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.35);
+    osc1.connect(gain1);
+    gain1.connect(ctx.destination);
+    osc1.start(ctx.currentTime);
+    osc1.stop(ctx.currentTime + 0.35);
+
+    // Second chime tone (A5: 880Hz)
+    const osc2 = ctx.createOscillator();
+    const gain2 = ctx.createGain();
+    osc2.type = 'sine';
+    osc2.frequency.setValueAtTime(880.00, ctx.currentTime + 0.12);
+    gain2.gain.setValueAtTime(0.25, ctx.currentTime + 0.12);
+    gain2.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.6);
+    osc2.connect(gain2);
+    gain2.connect(ctx.destination);
+    osc2.start(ctx.currentTime + 0.12);
+    osc2.stop(ctx.currentTime + 0.6);
+  } catch (err) {
+    // Audio context may be restricted before user gesture
+  }
+}
+
+// 2. Real-time EventSource (SSE)
+let sseConnection = null;
+function initRealtimeSSE() {
+  if (sseConnection) return;
+  if (!window.EventSource) return;
+
+  try {
+    sseConnection = new EventSource('/api/events');
+
+    sseConnection.onmessage = (event) => {
+      if (!event.data) return;
+      try {
+        const payload = JSON.parse(event.data);
+        handleRealtimeEvent(payload);
+      } catch (e) {}
+    };
+
+    sseConnection.onerror = () => {
+      if (sseConnection) {
+        sseConnection.close();
+        sseConnection = null;
+        setTimeout(initRealtimeSSE, 5000); // Reconnect after 5s
+      }
+    };
+  } catch (e) {}
+}
+
+function handleRealtimeEvent(payload) {
+  const { type, data } = payload;
+  if (!type) return;
+
+  if (type === 'order_created') {
+    const order = data;
+    // Play chime on Cashier terminal
+    playCashierChime();
+
+    // Live update orders list in memory
+    if (state.orders && Array.isArray(state.orders)) {
+      if (!state.orders.some(o => o.id === order.id)) {
+        state.orders.unshift(order);
+      }
+    }
+
+    // Live update UI
+    renderPosPendingQueue();
+    if (state.currentTab === 'orders') renderOrdersTable();
+
+    showToast('🔔 Новый заказ на кассу!', `Заказ #${order.orderNumber} (${order.title}) — ${formatMoney(order.totalAmount)}`);
+  } 
+  else if (type === 'payment_confirmed') {
+    const { order, cashierName } = data;
+    if (state.orders) {
+      const idx = state.orders.findIndex(o => o.id === order.id);
+      if (idx !== -1) state.orders[idx] = order;
+    }
+    renderPosPendingQueue();
+    if (state.currentTab === 'orders') renderOrdersTable();
+    loadFinanceSummary();
+  }
+  else if (type === 'order_status_changed') {
+    const { orderId, status } = data;
+    if (state.orders) {
+      const o = state.orders.find(item => item.id === orderId);
+      if (o) o.status = status;
+    }
+    if (state.currentTab === 'orders') renderOrdersTable();
+  }
+}
+
+// 3. Backups Management
+async function loadBackupsTable() {
+  const container = document.getElementById('backupsSettingsTableBody');
+  const countBadge = document.getElementById('backupsCountBadge');
+  if (!container) return;
+
+  try {
+    const res = await fetch('/api/backups');
+    const data = await res.json();
+    const backups = data.backups || [];
+
+    if (countBadge) countBadge.textContent = `Всего копий: ${backups.length}`;
+
+    if (backups.length === 0) {
+      container.innerHTML = '<tr><td colspan="5" class="p-4 text-center text-on-surface-variant font-medium">Резервные копии пока не созданы</td></tr>';
+      return;
+    }
+
+    container.innerHTML = backups.slice(0, 15).map(b => {
+      const dateObj = new Date(b.createdAt);
+      const dateFormatted = dateObj.toLocaleDateString('ru-RU') + ' ' + dateObj.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+
+      return `
+        <tr class="hover:bg-surface-container-low/50 transition">
+          <td class="p-3.5 pl-5 font-data-sm text-xs font-bold text-on-surface whitespace-nowrap">
+            ${b.filename}
+          </td>
+          <td class="p-3.5 whitespace-nowrap">
+            <span class="px-2 py-0.5 rounded-full text-[10px] font-bold ${b.label === 'Закрытие смены' ? 'bg-secondary-container/30 text-secondary' : 'bg-surface-container-low text-on-surface border border-outline-variant'}">
+              ${b.label}
+            </span>
+          </td>
+          <td class="p-3.5 font-data-sm text-xs text-on-surface-variant whitespace-nowrap">
+            ${dateFormatted}
+          </td>
+          <td class="p-3.5 font-data-sm text-xs font-bold text-right text-on-surface whitespace-nowrap">
+            ${b.sizeFormatted}
+          </td>
+          <td class="p-3.5 pr-5 text-center whitespace-nowrap">
+            <button onclick="restoreBackupFile('${b.filename}')" class="px-3 py-1 bg-surface-container-low hover:bg-error/10 hover:text-error text-on-surface rounded-lg text-[11px] font-bold transition flex items-center gap-1 mx-auto cursor-pointer">
+              <span class="material-symbols-outlined text-sm">settings_backup_restore</span>
+              <span>Откатить</span>
+            </button>
+          </td>
+        </tr>
+      `;
+    }).join('');
+  } catch (err) {
+    console.error('Error loading backups:', err);
+  }
+}
+
+async function createManualBackup() {
+  try {
+    const res = await fetch('/api/backups', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ label: 'manual' })
+    });
+    const data = await res.json();
+    if (data.success) {
+      showToast('Бэкап создан!', `Файл ${data.backup?.filename} сохранен`);
+      loadBackupsTable();
+    } else {
+      showToast('Ошибка', data.error || 'Сбой создания копии', true);
+    }
+  } catch (e) {
+    showToast('Ошибка', 'Сбой связи с сервером', true);
+  }
+}
+
+function downloadDatabaseFile() {
+  window.location.href = '/api/backups/download';
+}
+
+async function restoreBackupFile(filename) {
+  if (!confirm(`ВНИМАНИЕ! Вы точно хотите откатить базу данных к снимку ${filename}?`)) return;
+
+  try {
+    const res = await fetch(`/api/backups/restore/${filename}`, { method: 'POST' });
+    const data = await res.json();
+    if (data.success) {
+      showToast('Восстановлено!', 'База данных успешно возвращена к снимку!');
+      setTimeout(() => window.location.reload(), 1000);
+    } else {
+      showToast('Ошибка отката', data.error, true);
+    }
+  } catch (e) {
+    showToast('Ошибка', 'Сбой при восстановлении', true);
+  }
+}
+
+
+// =========================================================================
 // RBAC & DIRECTOR PANEL EMPLOYEE & PERMISSION MANAGEMENT
 // =========================================================================
 const ALL_SYSTEM_MODULES = [
@@ -1554,9 +1755,11 @@ function openReceiptModal(order) {
 
   container.innerHTML = `
     <div class="text-center pb-2.5 border-b border-dashed border-outline-variant">
-      <div class="font-extrabold text-sm uppercase tracking-wider text-on-surface">MASTER PRINT</div>
-      <div class="text-[10px] text-on-surface-variant mt-0.5">Чек №${order.orderNumber} • ${formattedDate}</div>
-      <div class="text-[10px] text-emerald-800 font-bold mt-0.5">Кассир (Оплата принята): ${order.paymentConfirmedBy || order.createdBy || 'Наргиза (Кассир)'}</div>
+      <div class="font-black text-sm uppercase tracking-wider text-on-surface">MASTER PRINT</div>
+      <div class="text-[9px] text-on-surface-variant">г. Нукус, ул. Каракалпакстан 45</div>
+      <div class="text-[9px] text-on-surface-variant font-data-sm">ИНН: 308942115 • Терминал: EP-88491</div>
+      <div class="text-[10px] text-on-surface mt-1 font-bold">Чек №${order.orderNumber} • ${formattedDate}</div>
+      <div class="text-[10px] text-emerald-800 font-bold mt-0.5">Кассир: ${order.paymentConfirmedBy || order.createdBy || 'Наргиза (Кассир)'}</div>
       <div class="text-[10px] text-on-surface-variant">Клиент: ${order.clientName}</div>
     </div>
     <div class="py-2.5 space-y-1.5 border-b border-dashed border-outline-variant font-data-sm">

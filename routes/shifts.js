@@ -1,3 +1,4 @@
+const backupManager = require('../data/backupManager');
 const express = require('express');
 const router = express.Router();
 const store = require('../data/store');

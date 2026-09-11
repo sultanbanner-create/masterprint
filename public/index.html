@@ -122,6 +122,7 @@
       <h2 class="text-lg font-black text-on-surface tracking-tight">MASTER PRINT</h2>
       <p class="text-xs text-on-surface-variant mt-0.5 mb-5 text-center">Пароль по умолчанию: <span class="font-bold text-primary-container">12345</span></p>
 
+      <div id="loginLockoutTimer" class="hidden w-full bg-red-50 border border-red-200 text-red-700 p-2.5 rounded-xl text-center text-xs font-bold mb-3"></div>
       <div id="userSelectList" class="grid grid-cols-3 gap-2 w-full mb-4 max-h-40 overflow-y-auto pr-1"></div>
 
       <!-- PIN Display -->
@@ -808,6 +809,19 @@
               <label class="block text-xs font-semibold text-on-surface-variant mb-1">Телефон для чеков</label>
               <input id="setCompanyPhone" type="text" class="w-full bg-surface-container-low border border-outline-variant rounded-lg px-3 py-2 text-xs text-on-surface">
             </div>
+          
+            <div>
+              <label class="block text-xs font-semibold text-on-surface-variant mb-1">ИНН организации</label>
+              <input id="setCompanyInn" type="text" placeholder="123456789" class="w-full bg-surface-container-low border border-outline-variant rounded-lg px-3 py-2 text-xs text-on-surface">
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-on-surface-variant mb-1">ID кассового терминала</label>
+              <input id="setCompanyTerminal" type="text" placeholder="TM-778899" class="w-full bg-surface-container-low border border-outline-variant rounded-lg px-3 py-2 text-xs text-on-surface">
+            </div>
+            <div class="col-span-2">
+              <label class="block text-xs font-semibold text-on-surface-variant mb-1">Адрес торговой точки (для чеков)</label>
+              <input id="setCompanyAddress" type="text" placeholder="г. Нукус, ул. Каракалпакстан 45" class="w-full bg-surface-container-low border border-outline-variant rounded-lg px-3 py-2 text-xs text-on-surface">
+            </div>
           </div>
           <div class="flex justify-end pt-1">
             <button type="submit" class="px-4 py-2 bg-on-surface text-white rounded-lg text-xs font-bold hover:bg-inverse-surface transition cursor-pointer">Сохранить реквизиты</button>
@@ -816,6 +830,54 @@
       </div>
 
       
+      
+      <!-- Director Panel: Automated Backups & Disaster Recovery -->
+      <div id="directorBackupsSection" class="bg-surface-container-lowest border border-outline-variant rounded-2xl shadow-xs overflow-hidden">
+        <div class="p-5 border-b border-outline-variant flex flex-col md:flex-row md:items-center justify-between gap-3 bg-surface-bright">
+          <div>
+            <h3 class="font-bold text-base text-on-surface flex items-center gap-2">
+              <span class="material-symbols-outlined text-secondary">backup</span>
+              <span>Резервное копирование базы данных & Защита от сбоев</span>
+            </h3>
+            <p class="text-xs text-on-surface-variant mt-0.5">Автоматические снимки при закрытии смен, скачивание базы на флешку и откат в 1 клик</p>
+          </div>
+
+          <div class="flex items-center gap-2">
+            <button onclick="downloadDatabaseFile()" class="px-3.5 py-2 bg-surface-container-low hover:bg-surface-container text-on-surface rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer">
+              <span class="material-symbols-outlined text-base">download</span>
+              <span>Скачать базу (db.json)</span>
+            </button>
+            <button onclick="createManualBackup()" class="px-4 py-2 bg-secondary hover:opacity-90 text-white rounded-xl text-xs font-bold shadow-sm transition active:scale-95 flex items-center gap-1.5 cursor-pointer">
+              <span class="material-symbols-outlined text-base">save</span>
+              <span>Создать бэкап сейчас</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="p-4 bg-surface-container-low/40 border-b border-outline-variant/60 flex items-center justify-between text-xs">
+          <div class="flex items-center gap-2 text-on-surface">
+            <span class="material-symbols-outlined text-secondary text-base">verified_user</span>
+            <span>Автосохранение: <strong class="text-secondary">Активно</strong> (при каждом закрытии кассовой смены)</span>
+          </div>
+          <span id="backupsCountBadge" class="text-on-surface-variant font-data-sm">Всего копий: 0</span>
+        </div>
+
+        <div class="overflow-x-auto">
+          <table class="w-full text-left border-collapse text-xs">
+            <thead>
+              <tr class="bg-surface-container text-on-surface-variant font-semibold uppercase tracking-wider border-b border-outline-variant text-[11px]">
+                <th class="p-3.5 pl-5">Файл резервной копии</th>
+                <th class="p-3.5">Тип снимка</th>
+                <th class="p-3.5">Дата и время</th>
+                <th class="p-3.5 text-right">Размер</th>
+                <th class="p-3.5 pr-5 text-center">Откат / Восстановление</th>
+              </tr>
+            </thead>
+            <tbody id="backupsSettingsTableBody" class="divide-y divide-outline-variant text-on-surface"></tbody>
+          </table>
+        </div>
+      </div>
+
       <!-- Director Panel: Employee Accounts, Passwords (PIN) & Access Control -->
       <div id="directorStaffAccessSection" class="bg-surface-container-lowest border border-outline-variant rounded-2xl shadow-xs overflow-hidden">
         <div class="p-5 border-b border-outline-variant flex flex-col md:flex-row md:items-center justify-between gap-3 bg-surface-bright">

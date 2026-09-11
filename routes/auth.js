@@ -1,18 +1,53 @@
 const express = require('express');
 const router = express.Router();
 const store = require('../data/store');
+const { createSession } = require('../middleware/auth');
+
+// Brute-force memory store: ip_username -> { attempts, lockedUntil }
+const loginAttempts = new Map();
 
 router.post('/login', (req, res) => {
   const { username, pin } = req.body;
+  const ip = req.ip || req.connection.remoteAddress || 'local';
+  const attemptKey = `${ip}_${username}`;
+
+  const now = Date.now();
+  const attemptRecord = loginAttempts.get(attemptKey) || { attempts: 0, lockedUntil: 0 };
+
+  // Check if locked
+  if (attemptRecord.lockedUntil > now) {
+    const remainingSec = Math.ceil((attemptRecord.lockedUntil - now) / 1000);
+    return res.status(429).json({
+      error: `Превышено число попыток! Вход заблокирован на ${remainingSec} сек.`,
+      lockedSeconds: remainingSec
+    });
+  }
+
   const user = store.db.users.find(u => u.id === username || u.phone === username);
   if (!user) {
     return res.status(401).json({ error: 'Пользователь не найден' });
   }
+
   if (user.pin && user.pin !== pin) {
-    return res.status(401).json({ error: 'Неверный PIN-код (по умолчанию 12345)' });
+    attemptRecord.attempts += 1;
+    if (attemptRecord.attempts >= 5) {
+      attemptRecord.lockedUntil = now + (120 * 1000); // 2 minutes lock
+      loginAttempts.set(attemptKey, attemptRecord);
+      return res.status(429).json({
+        error: '5 неверных попыток! Ввод PIN заблокирован на 2 минуты для защиты.',
+        lockedSeconds: 120
+      });
+    }
+    loginAttempts.set(attemptKey, attemptRecord);
+    return res.status(401).json({
+      error: `Неверный PIN-код! Осталось попыток: ${5 - attemptRecord.attempts}`
+    });
   }
 
-  // Determine user permissions
+  // Reset failed attempts on success
+  loginAttempts.delete(attemptKey);
+
+  // Determine permissions
   let permissions = user.permissions;
   if (!Array.isArray(permissions) || permissions.length === 0) {
     if (user.role === 'admin') permissions = ['pos', 'orders', 'finance', 'warehouse', 'staff', 'reports', 'clients', 'leaderboard', 'chat', 'portal', 'settings'];
@@ -22,16 +57,22 @@ router.post('/login', (req, res) => {
     else permissions = ['orders', 'chat'];
   }
 
+  const userPayload = {
+    id: user.id,
+    name: user.name,
+    role: user.role,
+    color: user.color,
+    phone: user.phone || '',
+    permissions
+  };
+
+  // Generate secure session token
+  const token = createSession(userPayload);
+
   res.json({
     success: true,
-    user: {
-      id: user.id,
-      name: user.name,
-      role: user.role,
-      color: user.color,
-      phone: user.phone || '',
-      permissions
-    }
+    user: userPayload,
+    token
   });
 });
 
