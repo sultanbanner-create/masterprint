@@ -35,6 +35,7 @@ app.use('/stitch', express.static(path.join(__dirname, 'stitch_export')));
 
 // Mount API Routes
 app.use('/api/auth', require('./routes/auth'));
+app.use('/api/users', require('./routes/users'));
 app.use('/api/pos', require('./routes/pos'));
 app.use('/api/services', require('./routes/services'));
 app.use('/api/shifts', require('./routes/shifts'));
@@ -49,7 +50,7 @@ app.use('/api/settings', require('./routes/settings'));
 app.use('/api/reports', require('./routes/reports'));
 
 // Fallback direct aliases
-app.get('/api/users', (req, res) => res.json(store.db.users || []));
+// app.get('/api/users', ...); // handled by routes/users
 app.get('/api/expenses', (req, res) => res.json(store.db.expenses || []));
 
 // Telegram test endpoint

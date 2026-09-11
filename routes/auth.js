@@ -11,7 +11,28 @@ router.post('/login', (req, res) => {
   if (user.pin && user.pin !== pin) {
     return res.status(401).json({ error: 'Неверный PIN-код (по умолчанию 12345)' });
   }
-  res.json({ success: true, user: { id: user.id, name: user.name, role: user.role, color: user.color } });
+
+  // Determine user permissions
+  let permissions = user.permissions;
+  if (!Array.isArray(permissions) || permissions.length === 0) {
+    if (user.role === 'admin') permissions = ['pos', 'orders', 'finance', 'warehouse', 'staff', 'reports', 'clients', 'leaderboard', 'chat', 'portal', 'settings'];
+    else if (user.role === 'cashier') permissions = ['pos'];
+    else if (user.role === 'designer') permissions = ['orders', 'chat', 'leaderboard', 'portal'];
+    else if (user.role === 'master') permissions = ['orders', 'warehouse', 'chat', 'leaderboard'];
+    else permissions = ['orders', 'chat'];
+  }
+
+  res.json({
+    success: true,
+    user: {
+      id: user.id,
+      name: user.name,
+      role: user.role,
+      color: user.color,
+      phone: user.phone || '',
+      permissions
+    }
+  });
 });
 
 router.post('/client-login', (req, res) => {

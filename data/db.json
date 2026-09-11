@@ -6,7 +6,20 @@
       "name": "Директор (Администратор)",
       "role": "admin",
       "pin": "12345",
-      "color": "#6366f1"
+      "color": "#6366f1",
+      "permissions": [
+        "pos",
+        "orders",
+        "finance",
+        "warehouse",
+        "staff",
+        "reports",
+        "clients",
+        "leaderboard",
+        "chat",
+        "portal",
+        "settings"
+      ]
     },
     {
       "id": "cashier",
@@ -15,7 +28,10 @@
       "role": "cashier",
       "pin": "12345",
       "phone": "+998901234509",
-      "color": "#059669"
+      "color": "#059669",
+      "permissions": [
+        "pos"
+      ]
     },
     {
       "id": "islam",
@@ -23,7 +39,13 @@
       "name": "Ислам",
       "role": "designer",
       "pin": "12345",
-      "color": "#3b82f6"
+      "color": "#3b82f6",
+      "permissions": [
+        "orders",
+        "chat",
+        "leaderboard",
+        "portal"
+      ]
     },
     {
       "id": "beksultan",
@@ -31,7 +53,13 @@
       "name": "Бексултан (Бека)",
       "role": "designer",
       "pin": "12345",
-      "color": "#10b981"
+      "color": "#10b981",
+      "permissions": [
+        "orders",
+        "chat",
+        "leaderboard",
+        "portal"
+      ]
     },
     {
       "id": "aziz",
@@ -39,7 +67,13 @@
       "name": "Азиз",
       "role": "designer",
       "pin": "12345",
-      "color": "#f59e0b"
+      "color": "#f59e0b",
+      "permissions": [
+        "orders",
+        "chat",
+        "leaderboard",
+        "portal"
+      ]
     },
     {
       "id": "makhmud",
@@ -47,7 +81,13 @@
       "name": "Махмуд",
       "role": "master",
       "pin": "12345",
-      "color": "#ec4899"
+      "color": "#ec4899",
+      "permissions": [
+        "orders",
+        "warehouse",
+        "chat",
+        "leaderboard"
+      ]
     },
     {
       "id": "azhiniyaz",
@@ -55,7 +95,13 @@
       "name": "Ажинияз",
       "role": "master",
       "pin": "12345",
-      "color": "#8b5cf6"
+      "color": "#8b5cf6",
+      "permissions": [
+        "orders",
+        "warehouse",
+        "chat",
+        "leaderboard"
+      ]
     },
     {
       "id": "timur",
@@ -63,7 +109,11 @@
       "name": "Тимур",
       "role": "worker",
       "pin": "12345",
-      "color": "#06b6d4"
+      "color": "#06b6d4",
+      "permissions": [
+        "orders",
+        "chat"
+      ]
     },
     {
       "id": "abzal",
@@ -71,7 +121,11 @@
       "name": "Абзал",
       "role": "worker",
       "pin": "12345",
-      "color": "#14b8a6"
+      "color": "#14b8a6",
+      "permissions": [
+        "orders",
+        "chat"
+      ]
     },
     {
       "id": "marcel",
@@ -79,7 +133,11 @@
       "name": "Марсель",
       "role": "worker",
       "pin": "12345",
-      "color": "#84cc16"
+      "color": "#84cc16",
+      "permissions": [
+        "orders",
+        "chat"
+      ]
     }
   ],
   "quickServices": [
@@ -406,6 +464,30 @@
     }
   ],
   "orders": [
+    {
+      "id": "ord_1789144468227",
+      "orderNumber": 1027,
+      "clientName": "Розничный клиент",
+      "clientId": null,
+      "category": "quick_pos",
+      "title": "Ксерокопия А4 x2",
+      "items": [
+        {
+          "id": "qs_xerox_a4",
+          "title": "Ксерокопия А4",
+          "price": 1000,
+          "qty": 2
+        }
+      ],
+      "subtotal": 2000,
+      "discount": 0,
+      "totalAmount": 2000,
+      "paidAmount": 2000,
+      "paymentMethod": "cash",
+      "status": "Выдан",
+      "createdBy": "islam",
+      "createdAt": "2026-09-11T16:34:28.227Z"
+    },
     {
       "id": "ord_1789134644098",
       "orderNumber": 1026,
@@ -1681,7 +1763,7 @@
       "id": "wh_paper_a4_80",
       "name": "Бумага А4 80г (Снегурочка/DoubleA)",
       "category": "polygraphy",
-      "inStock": 2577,
+      "inStock": 2575,
       "unit": "лист",
       "minStock": 500,
       "price": 100
@@ -1922,6 +2004,20 @@
     "defaultPin": "12345"
   },
   "stockLogs": [
+    {
+      "id": "log_1789144468227_7hyk",
+      "date": "2026-09-11",
+      "timestamp": "2026-09-11T16:34:28.227Z",
+      "type": "deduction",
+      "materialId": "wh_paper_a4_80",
+      "materialName": "Бумага А4 80г (Снегурочка/DoubleA)",
+      "delta": -2,
+      "unit": "лист",
+      "remainingStock": 2575,
+      "reason": "Чек №1027 (Ксерокопия А4 x2 -> расход: Бумага А4 80г (Снегурочка/DoubleA) x2)",
+      "orderId": "ord_1789144468227",
+      "userId": "islam"
+    },
     {
       "id": "log_1789134644098_iksq",
       "date": "2026-09-11",
@@ -2361,7 +2457,7 @@
       "openedBy": "islam",
       "initialCash": 500000,
       "status": "open",
-      "cashSales": 277000,
+      "cashSales": 279000,
       "clickSales": 1000000,
       "expensesCash": 92115000,
       "expectedCash": 0,

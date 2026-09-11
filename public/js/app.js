@@ -1,5 +1,348 @@
 
 // =========================================================================
+// RBAC & DIRECTOR PANEL EMPLOYEE & PERMISSION MANAGEMENT
+// =========================================================================
+const ALL_SYSTEM_MODULES = [
+  { id: 'pos', label: 'Быстрая Касса (POS)', icon: 'point_of_sale' },
+  { id: 'orders', label: 'Заказы CRM', icon: 'assignment' },
+  { id: 'finance', label: 'Финансы & Касса', icon: 'payments' },
+  { id: 'warehouse', label: 'Склад & Сырье', icon: 'inventory_2' },
+  { id: 'staff', label: 'Кадры & Зарплата', icon: 'badge' },
+  { id: 'reports', label: 'Месячные отчёты', icon: 'analytics' },
+  { id: 'clients', label: 'Клиенты & Долги', icon: 'group' },
+  { id: 'leaderboard', label: 'Рейтинг & KPI', icon: 'military_tech' },
+  { id: 'chat', label: 'Корпоративный чат', icon: 'forum' },
+  { id: 'portal', label: 'Кабинет клиента', icon: 'person' },
+  { id: 'settings', label: 'Панель Директора', icon: 'settings' }
+];
+
+function applyUserPermissions(user) {
+  if (!user) return;
+
+  const isAdmin = user.role === 'admin';
+  const allowed = isAdmin 
+    ? ALL_SYSTEM_MODULES.map(m => m.id)
+    : (user.permissions && Array.isArray(user.permissions) ? user.permissions : ['pos']);
+
+  // Iterate over all navigation items
+  ALL_SYSTEM_MODULES.forEach(mod => {
+    const navBtn = document.getElementById(`nav-${mod.id}`);
+    if (navBtn) {
+      if (allowed.includes(mod.id)) {
+        navBtn.classList.remove('hidden');
+        navBtn.style.display = 'flex';
+      } else {
+        navBtn.classList.add('hidden');
+        navBtn.style.display = 'none';
+      }
+    }
+  });
+
+  // Specifically for Cashier: hide Director sections and non-cashier controls
+  const directorAccessSection = document.getElementById('directorStaffAccessSection');
+  if (directorAccessSection) {
+    if (isAdmin) {
+      directorAccessSection.classList.remove('hidden');
+      directorAccessSection.style.display = 'block';
+    } else {
+      directorAccessSection.classList.add('hidden');
+      directorAccessSection.style.display = 'none';
+    }
+  }
+
+  // If current active tab is not allowed, switch to the first allowed tab
+  const currentTab = state.currentTab || 'pos';
+  if (!allowed.includes(currentTab)) {
+    const fallbackTab = allowed[0] || 'pos';
+    switchTab(fallbackTab);
+  }
+}
+
+async function loadEmployeesSettingsTable() {
+  const container = document.getElementById('employeesSettingsTableBody');
+  if (!container) return;
+
+  try {
+    const res = await fetch(`${API_BASE}/users?full=1`, {
+      headers: { 'x-user-role': state.currentUser?.role || 'admin' }
+    });
+    const users = await res.json();
+    state.usersFullList = users;
+
+    if (!Array.isArray(users) || users.length === 0) {
+      container.innerHTML = '<tr><td colspan="6" class="p-4 text-center text-on-surface-variant">Сотрудники не найдены</td></tr>';
+      return;
+    }
+
+    const roleBadges = {
+      admin: '<span class="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-red-100 text-red-800 border border-red-200">Директор (Админ)</span>',
+      cashier: '<span class="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-emerald-100 text-emerald-800 border border-emerald-200">Кассир (Только касса)</span>',
+      designer: '<span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-100 text-blue-800 border border-blue-200">Дизайнер / Менеджер</span>',
+      master: '<span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-purple-100 text-purple-800 border border-purple-200">Мастер цеха</span>',
+      worker: '<span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-gray-100 text-gray-800 border border-gray-200">Сотрудник</span>'
+    };
+
+    const moduleLabels = {
+      pos: 'Касса',
+      orders: 'Заказы',
+      finance: 'Финансы',
+      warehouse: 'Склад',
+      staff: 'Кадры',
+      reports: 'Отчёты',
+      clients: 'Клиенты',
+      leaderboard: 'Рейтинг',
+      chat: 'Чат',
+      portal: 'Портал',
+      settings: 'Директор'
+    };
+
+    container.innerHTML = users.map(u => {
+      const perms = Array.isArray(u.permissions) ? u.permissions : (u.role === 'admin' ? ['all'] : ['pos']);
+      const isCashierOnly = u.role === 'cashier' || (perms.length === 1 && perms[0] === 'pos');
+
+      const permBadges = isCashierOnly
+        ? '<span class="px-2 py-0.5 rounded bg-emerald-50 text-emerald-800 border border-emerald-300 font-extrabold text-[10px]">🎯 Только Быстрая Касса</span>'
+        : (u.role === 'admin' 
+            ? '<span class="px-2 py-0.5 rounded bg-red-50 text-red-800 border border-red-300 font-extrabold text-[10px]">👑 Полный доступ ко всем модулям</span>'
+            : perms.map(p => `<span class="px-1.5 py-0.5 rounded bg-surface-container-low border border-outline-variant text-[10px] font-semibold text-on-surface mr-1 mb-1 inline-block">${moduleLabels[p] || p}</span>`).join(''));
+
+      return `
+        <tr class="hover:bg-surface-container-low/50 transition">
+          <td class="p-3.5 pl-5 whitespace-nowrap">
+            <div class="flex items-center gap-2.5">
+              <div class="w-7 h-7 rounded-lg flex items-center justify-center font-bold text-white text-xs shadow-xs" style="background-color: ${u.color || '#dc2626'}">
+                ${u.name.substring(0, 1)}
+              </div>
+              <div>
+                <div class="font-bold text-xs text-on-surface">${u.name}</div>
+                ${u.phone ? `<div class="text-[10px] text-on-surface-variant font-data-sm">${u.phone}</div>` : ''}
+              </div>
+            </div>
+          </td>
+
+          <td class="p-3.5 whitespace-nowrap">
+            ${roleBadges[u.role] || u.role}
+          </td>
+
+          <td class="p-3.5 font-data-sm text-xs font-bold text-on-surface whitespace-nowrap">
+            ${u.id}
+          </td>
+
+          <td class="p-3.5 whitespace-nowrap">
+            <div class="flex items-center gap-1.5">
+              <span class="font-data-md font-black text-xs text-primary bg-surface-container-low px-2 py-0.5 rounded border border-outline-variant tracking-wider">${u.pin || '12345'}</span>
+            </div>
+          </td>
+
+          <td class="p-3.5 max-w-xs">
+            <div class="flex flex-wrap gap-1">
+              ${permBadges}
+            </div>
+          </td>
+
+          <td class="p-3.5 pr-5 text-center whitespace-nowrap">
+            <div class="flex items-center justify-center gap-1">
+              <button onclick="openEmployeeModal('${u.id}')" class="px-2.5 py-1 bg-surface-container-low hover:bg-primary-container/10 hover:text-primary rounded-lg text-[11px] font-bold transition flex items-center gap-1 cursor-pointer">
+                <span class="material-symbols-outlined text-sm">edit</span>
+                <span>Изменить</span>
+              </button>
+              ${u.id !== 'admin' ? `
+                <button onclick="deleteEmployee('${u.id}')" class="p-1 text-on-surface-variant hover:text-error rounded hover:bg-surface-container-low transition cursor-pointer" title="Удалить сотрудника">
+                  <span class="material-symbols-outlined text-base">delete</span>
+                </button>
+              ` : ''}
+            </div>
+          </td>
+        </tr>
+      `;
+    }).join('');
+  } catch (err) {
+    console.error('Error loading employees settings table:', err);
+  }
+}
+
+function openEmployeeModal(empId = null) {
+  const modal = document.getElementById('employeeModal');
+  if (!modal) return;
+
+  const titleEl = document.getElementById('employeeModalTitle');
+  const idInput = document.getElementById('empId');
+  const origIdInput = document.getElementById('empOriginalId');
+  const nameInput = document.getElementById('empName');
+  const roleSelect = document.getElementById('empRole');
+  const pinInput = document.getElementById('empPin');
+  const phoneInput = document.getElementById('empPhone');
+
+  // Reset checkboxes
+  ALL_SYSTEM_MODULES.forEach(m => {
+    const cb = document.getElementById(`perm-${m.id}`);
+    if (cb) cb.checked = false;
+  });
+
+  if (empId && state.usersFullList) {
+    const user = state.usersFullList.find(u => u.id === empId);
+    if (user) {
+      if (titleEl) titleEl.textContent = `Редактирование: ${user.name}`;
+      origIdInput.value = user.id;
+      idInput.value = user.id;
+      idInput.disabled = user.id === 'admin';
+      nameInput.value = user.name;
+      roleSelect.value = user.role;
+      pinInput.value = user.pin || '12345';
+      phoneInput.value = user.phone || '';
+
+      const perms = Array.isArray(user.permissions) ? user.permissions : (user.role === 'admin' ? ALL_SYSTEM_MODULES.map(m=>m.id) : ['pos']);
+      perms.forEach(p => {
+        const cb = document.getElementById(`perm-${p}`);
+        if (cb) cb.checked = true;
+      });
+
+      modal.classList.remove('hidden');
+      return;
+    }
+  }
+
+  // New employee defaults
+  if (titleEl) titleEl.textContent = '+ Новый сотрудник';
+  origIdInput.value = '';
+  idInput.value = '';
+  idInput.disabled = false;
+  nameInput.value = '';
+  roleSelect.value = 'cashier';
+  pinInput.value = '12345';
+  phoneInput.value = '';
+
+  // Default preset for new cashier
+  setPermissionPreset('cashier');
+
+  modal.classList.remove('hidden');
+}
+
+function closeEmployeeModal() {
+  const modal = document.getElementById('employeeModal');
+  if (modal) modal.classList.add('hidden');
+}
+
+function onRolePresetChange() {
+  const role = document.getElementById('empRole')?.value;
+  if (role) setPermissionPreset(role);
+}
+
+function setPermissionPreset(preset) {
+  ALL_SYSTEM_MODULES.forEach(m => {
+    const cb = document.getElementById(`perm-${m.id}`);
+    if (!cb) return;
+
+    if (preset === 'cashier') {
+      cb.checked = (m.id === 'pos'); // STRICTLY POS ONLY FOR CASHIER!
+    } else if (preset === 'admin') {
+      cb.checked = true;
+    } else if (preset === 'designer') {
+      cb.checked = ['orders', 'chat', 'leaderboard', 'portal'].includes(m.id);
+    } else if (preset === 'master') {
+      cb.checked = ['orders', 'warehouse', 'chat', 'leaderboard'].includes(m.id);
+    } else if (preset === 'worker') {
+      cb.checked = ['orders', 'chat'].includes(m.id);
+    }
+  });
+}
+
+async function saveEmployeeForm(event) {
+  event.preventDefault();
+
+  const origId = document.getElementById('empOriginalId')?.value;
+  const id = document.getElementById('empId')?.value.trim();
+  const name = document.getElementById('empName')?.value.trim();
+  const role = document.getElementById('empRole')?.value;
+  const pin = document.getElementById('empPin')?.value.trim();
+  const phone = document.getElementById('empPhone')?.value.trim();
+
+  if (!name || !pin) {
+    showToast('Ошибка', 'Укажите ФИО и PIN-код сотрудника', true);
+    return;
+  }
+
+  // Gather checked permissions
+  const permissions = [];
+  ALL_SYSTEM_MODULES.forEach(m => {
+    const cb = document.getElementById(`perm-${m.id}`);
+    if (cb && cb.checked) permissions.push(m.id);
+  });
+
+  const payload = {
+    id: id || origId,
+    name,
+    role,
+    pin,
+    phone,
+    permissions
+  };
+
+  try {
+    const isEdit = !!origId;
+    const url = isEdit ? `${API_BASE}/users/${origId}` : `${API_BASE}/users`;
+    const method = isEdit ? 'PUT' : 'POST';
+
+    const res = await fetch(url, {
+      method,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+
+    const data = await res.json();
+    if (!res.ok) {
+      showToast('Ошибка', data.error || 'Не удалось сохранить сотрудника', true);
+      return;
+    }
+
+    closeEmployeeModal();
+    showToast('Успешно', isEdit ? `Сотрудник ${name} обновлён (PIN: ${pin})` : `Сотрудник ${name} добавлен (PIN: ${pin})`);
+
+    // If current logged-in user is the one updated, update their state
+    if (state.currentUser && (state.currentUser.id === origId || state.currentUser.id === id)) {
+      state.currentUser.name = name;
+      state.currentUser.role = role;
+      state.currentUser.permissions = permissions;
+      localStorage.setItem('printerp_user', JSON.stringify(state.currentUser));
+      updateUserUI();
+      applyUserPermissions(state.currentUser);
+    }
+
+    await loadUsers();
+    await loadEmployeesSettingsTable();
+  } catch (err) {
+    console.error('Error saving employee:', err);
+    showToast('Ошибка', 'Сбой при сохранении сотрудника', true);
+  }
+}
+
+async function deleteEmployee(empId) {
+  if (empId === 'admin') {
+    showToast('Запрещено', 'Нельзя удалить главного администратора (Директора)', true);
+    return;
+  }
+
+  if (!confirm('Вы уверены, что хотите удалить этого сотрудника?')) return;
+
+  try {
+    const res = await fetch(`${API_BASE}/users/${empId}`, { method: 'DELETE' });
+    const data = await res.json();
+    if (!res.ok) {
+      showToast('Ошибка', data.error || 'Не удалось удалить сотрудника', true);
+      return;
+    }
+
+    showToast('Удалено', 'Сотрудник удалён из системы');
+    await loadUsers();
+    await loadEmployeesSettingsTable();
+  } catch (err) {
+    console.error('Error deleting employee:', err);
+    showToast('Ошибка', 'Сбой при удалении сотрудника', true);
+  }
+}
+
+
+// =========================================================================
 // CASHIER PAYMENT CONFIRMATION WORKFLOW
 // =========================================================================
 function openConfirmPaymentModal(orderId) {
@@ -830,6 +1173,16 @@ function updateUserUI() {
 // TAB NAVIGATION
 // =========================================================================
 function switchTab(tabId) {
+  // Check user permission
+  if (state.currentUser && state.currentUser.role !== 'admin') {
+    const perms = state.currentUser.permissions || ['pos'];
+    if (!perms.includes(tabId)) {
+      showToast('Доступ ограничен', 'У вас нет прав для перехода в раздел ' + tabId, true);
+      return;
+    }
+  }
+
+  state.currentTab = tabId;
   document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
   document.querySelectorAll('nav button').forEach(el => {
     el.className = 'w-full flex items-center gap-3 px-4 py-3 text-on-surface-variant hover:bg-surface-container-low transition-colors rounded-r-lg group';

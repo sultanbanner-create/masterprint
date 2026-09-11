@@ -815,6 +815,41 @@
         </form>
       </div>
 
+      
+      <!-- Director Panel: Employee Accounts, Passwords (PIN) & Access Control -->
+      <div id="directorStaffAccessSection" class="bg-surface-container-lowest border border-outline-variant rounded-2xl shadow-xs overflow-hidden">
+        <div class="p-5 border-b border-outline-variant flex flex-col md:flex-row md:items-center justify-between gap-3 bg-surface-bright">
+          <div>
+            <h3 class="font-bold text-base text-on-surface flex items-center gap-2">
+              <span class="material-symbols-outlined text-primary-container">manage_accounts</span>
+              <span>Сотрудники, Пароли (ПИН-коды) & Настройка доступа (Панель Директора)</span>
+            </h3>
+            <p class="text-xs text-on-surface-variant mt-0.5">Индивидуальные логины, смена паролей сотрудников и разграничение доступа к модулям системы</p>
+          </div>
+
+          <button onclick="openEmployeeModal()" class="px-4 py-2.5 bg-primary-container hover:bg-primary text-white rounded-xl text-xs font-bold shadow-sm transition active:scale-95 flex items-center gap-1.5 cursor-pointer shrink-0">
+            <span class="material-symbols-outlined text-base">person_add</span>
+            <span>+ Добавить сотрудника</span>
+          </button>
+        </div>
+
+        <div class="overflow-x-auto">
+          <table class="w-full text-left border-collapse text-xs">
+            <thead>
+              <tr class="bg-surface-container text-on-surface-variant font-semibold uppercase tracking-wider border-b border-outline-variant text-[11px]">
+                <th class="p-3.5 pl-5">Сотрудник</th>
+                <th class="p-3.5">Должность / Роль</th>
+                <th class="p-3.5">Логин</th>
+                <th class="p-3.5">Пароль (PIN)</th>
+                <th class="p-3.5">Разрешённый доступ к модулям</th>
+                <th class="p-3.5 pr-5 text-center">Действия</th>
+              </tr>
+            </thead>
+            <tbody id="employeesSettingsTableBody" class="divide-y divide-outline-variant text-on-surface"></tbody>
+          </table>
+        </div>
+      </div>
+
       <!-- Main: Services Pricing & Multi-Ingredient Recipe Manager -->
       <div class="bg-surface-container-lowest border border-outline-variant rounded-2xl shadow-xs overflow-hidden">
         <div class="p-5 border-b border-outline-variant flex flex-col md:flex-row md:items-center justify-between gap-3 bg-surface-bright">
@@ -854,6 +889,137 @@
   </main>
 
   <!-- MODALS -->
+  <!-- Employee Add / Edit Modal (Director Panel) -->
+  <div id="employeeModal" class="fixed inset-0 z-50 bg-[#0b1c30]/60 backdrop-blur-xs hidden flex items-center justify-center p-4">
+    <div class="bg-surface-container-lowest border border-outline-variant rounded-3xl p-6 max-w-lg w-full max-h-[92vh] overflow-y-auto shadow-2xl animate-in fade-in zoom-in duration-150">
+      <div class="flex items-center justify-between pb-3 border-b border-outline-variant mb-4">
+        <div class="flex items-center gap-2.5">
+          <div class="w-9 h-9 rounded-xl bg-primary-container/10 text-primary flex items-center justify-center">
+            <span class="material-symbols-outlined text-xl">person</span>
+          </div>
+          <div>
+            <h3 id="employeeModalTitle" class="font-extrabold text-sm text-on-surface">Сотрудник и права доступа</h3>
+            <p class="text-[11px] text-on-surface-variant font-medium">Настройка учётной записи и уровней доступа</p>
+          </div>
+        </div>
+        <button onclick="closeEmployeeModal()" class="w-8 h-8 rounded-full bg-surface-container-low hover:bg-surface-container text-on-surface-variant flex items-center justify-center cursor-pointer text-sm">✕</button>
+      </div>
+
+      <form id="employeeForm" onsubmit="saveEmployeeForm(event)" class="space-y-4">
+        <input type="hidden" id="empOriginalId">
+
+        <div class="grid grid-cols-2 gap-3">
+          <div class="col-span-2">
+            <label class="block text-xs font-semibold text-on-surface-variant mb-1">ФИО / Имя сотрудника *</label>
+            <input id="empName" required type="text" placeholder="Напр. Наргиза (Кассир)" class="w-full bg-surface-container-low border border-outline-variant rounded-xl px-3 py-2 text-xs text-on-surface outline-none focus:border-primary">
+          </div>
+
+          <div>
+            <label class="block text-xs font-semibold text-on-surface-variant mb-1">Должность / Роль *</label>
+            <select id="empRole" onchange="onRolePresetChange()" class="w-full bg-surface-container-low border border-outline-variant rounded-xl px-3 py-2 text-xs text-on-surface outline-none">
+              <option value="cashier">Кассир (Главная касса)</option>
+              <option value="designer">Дизайнер / Менеджер</option>
+              <option value="master">Мастер цеха</option>
+              <option value="worker">Сотрудник</option>
+              <option value="admin">Директор (Администратор)</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="block text-xs font-semibold text-on-surface-variant mb-1">Пароль / PIN-код *</label>
+            <input id="empPin" required type="text" placeholder="12345" class="w-full bg-surface-container-low text-primary font-bold font-data-md border border-outline-variant rounded-xl px-3 py-2 text-xs outline-none focus:border-primary">
+          </div>
+
+          <div>
+            <label class="block text-xs font-semibold text-on-surface-variant mb-1">Логин (ID в системе) *</label>
+            <input id="empId" required type="text" placeholder="nargiza" class="w-full bg-surface-container-low border border-outline-variant rounded-xl px-3 py-2 text-xs text-on-surface outline-none">
+          </div>
+
+          <div>
+            <label class="block text-xs font-semibold text-on-surface-variant mb-1">Телефон</label>
+            <input id="empPhone" type="text" placeholder="+998 90 123 45 67" class="w-full bg-surface-container-low border border-outline-variant rounded-xl px-3 py-2 text-xs text-on-surface outline-none">
+          </div>
+        </div>
+
+        <!-- Permissions Access Matrix Checkboxes -->
+        <div class="bg-surface-container-low border border-outline-variant rounded-2xl p-4 space-y-3">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-bold text-on-surface flex items-center gap-1.5">
+              <span class="material-symbols-outlined text-primary-container text-base">shield_person</span>
+              <span>Разрешённые разделы (Ограничение доступа)</span>
+            </span>
+            <div class="flex gap-1">
+              <button type="button" onclick="setPermissionPreset('cashier')" class="px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 text-[10px] font-bold cursor-pointer hover:bg-emerald-200 transition">Только касса</button>
+              <button type="button" onclick="setPermissionPreset('admin')" class="px-2 py-0.5 rounded bg-primary-container/10 text-primary text-[10px] font-bold cursor-pointer hover:bg-primary-container/20 transition">Полный</button>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-2 gap-2 text-xs">
+            <label class="flex items-center gap-2 p-2 rounded-xl bg-surface-container-lowest border border-outline-variant cursor-pointer hover:bg-surface-container-low">
+              <input type="checkbox" id="perm-pos" value="pos" class="rounded text-primary focus:ring-0">
+              <span class="font-bold text-emerald-800">Быстрая Касса (POS)</span>
+            </label>
+
+            <label class="flex items-center gap-2 p-2 rounded-xl bg-surface-container-lowest border border-outline-variant cursor-pointer hover:bg-surface-container-low">
+              <input type="checkbox" id="perm-orders" value="orders" class="rounded text-primary focus:ring-0">
+              <span class="font-semibold text-on-surface">Управление заказами CRM</span>
+            </label>
+
+            <label class="flex items-center gap-2 p-2 rounded-xl bg-surface-container-lowest border border-outline-variant cursor-pointer hover:bg-surface-container-low">
+              <input type="checkbox" id="perm-finance" value="finance" class="rounded text-primary focus:ring-0">
+              <span class="font-semibold text-on-surface">Финансы & Касса цеха</span>
+            </label>
+
+            <label class="flex items-center gap-2 p-2 rounded-xl bg-surface-container-lowest border border-outline-variant cursor-pointer hover:bg-surface-container-low">
+              <input type="checkbox" id="perm-warehouse" value="warehouse" class="rounded text-primary focus:ring-0">
+              <span class="font-semibold text-on-surface">Склад & Остатки сырья</span>
+            </label>
+
+            <label class="flex items-center gap-2 p-2 rounded-xl bg-surface-container-lowest border border-outline-variant cursor-pointer hover:bg-surface-container-low">
+              <input type="checkbox" id="perm-staff" value="staff" class="rounded text-primary focus:ring-0">
+              <span class="font-semibold text-on-surface">Кадры & Зарплата</span>
+            </label>
+
+            <label class="flex items-center gap-2 p-2 rounded-xl bg-surface-container-lowest border border-outline-variant cursor-pointer hover:bg-surface-container-low">
+              <input type="checkbox" id="perm-reports" value="reports" class="rounded text-primary focus:ring-0">
+              <span class="font-semibold text-on-surface">Месячные отчёты (Excel)</span>
+            </label>
+
+            <label class="flex items-center gap-2 p-2 rounded-xl bg-surface-container-lowest border border-outline-variant cursor-pointer hover:bg-surface-container-low">
+              <input type="checkbox" id="perm-clients" value="clients" class="rounded text-primary focus:ring-0">
+              <span class="font-semibold text-on-surface">Клиенты & Долги</span>
+            </label>
+
+            <label class="flex items-center gap-2 p-2 rounded-xl bg-surface-container-lowest border border-outline-variant cursor-pointer hover:bg-surface-container-low">
+              <input type="checkbox" id="perm-leaderboard" value="leaderboard" class="rounded text-primary focus:ring-0">
+              <span class="font-semibold text-on-surface">Рейтинг & KPI</span>
+            </label>
+
+            <label class="flex items-center gap-2 p-2 rounded-xl bg-surface-container-lowest border border-outline-variant cursor-pointer hover:bg-surface-container-low">
+              <input type="checkbox" id="perm-chat" value="chat" class="rounded text-primary focus:ring-0">
+              <span class="font-semibold text-on-surface">Корпоративный чат</span>
+            </label>
+
+            <label class="flex items-center gap-2 p-2 rounded-xl bg-surface-container-lowest border border-outline-variant cursor-pointer hover:bg-surface-container-low">
+              <input type="checkbox" id="perm-portal" value="portal" class="rounded text-primary focus:ring-0">
+              <span class="font-semibold text-on-surface">Кабинет клиента</span>
+            </label>
+
+            <label class="col-span-2 flex items-center gap-2 p-2.5 rounded-xl bg-primary-container/5 border border-primary-container/30 cursor-pointer">
+              <input type="checkbox" id="perm-settings" value="settings" class="rounded text-primary focus:ring-0">
+              <span class="font-bold text-primary">Панель Директора (Цены, Настройки, Сотрудники)</span>
+            </label>
+          </div>
+        </div>
+
+        <div class="flex justify-end gap-2 pt-2">
+          <button type="button" onclick="closeEmployeeModal()" class="px-4 py-2 text-xs font-semibold text-on-surface-variant hover:bg-surface-container-low rounded-xl cursor-pointer">Отмена</button>
+          <button type="submit" class="px-5 py-2.5 bg-primary-container hover:bg-primary text-white rounded-xl text-xs font-extrabold shadow-sm transition cursor-pointer">Сохранить сотрудника</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
   <!-- Confirm Payment Modal for Cashier -->
   <div id="confirmPaymentModal" class="fixed inset-0 z-50 bg-[#0b1c30]/60 backdrop-blur-xs hidden flex items-center justify-center p-4">
     <div class="bg-surface-container-lowest border border-outline-variant rounded-3xl p-6 max-w-md w-full shadow-2xl animate-in fade-in zoom-in duration-150">
