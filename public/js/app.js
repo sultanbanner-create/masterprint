@@ -1456,7 +1456,7 @@ function switchTab(tabId) {
     finance: 'Финансы & Касса',
     warehouse: 'Склад & Остатки',
     clients: 'Клиенты & Долги',
-    reports: 'Месячные отчёты (МАЙ.xlsx)',
+    reports: 'Месячный финансовый отчёт',
     staff: 'Кадры & Зарплата',
     chat: 'Корпоративный чат',
     leaderboard: 'Рейтинг & KPI',
@@ -2405,65 +2405,386 @@ async function submitRepayDebt(event) {
 }
 
 // =========================================================================
-// TAB 6: МЕСЯЧНАЯ ВЫРУЧКА (МАЙ.xlsx)
+// TAB 6: МЕСЯЧНЫЙ ФИНАНСОВЫЙ ОТЧЁТ (ЭКСПОРТ EXCEL & МАТРИЦА)
 // =========================================================================
-async function loadMonthlyReport() {
-  const monthStr = document.getElementById('reportMonthSelect')?.value || '2026-05';
+
+const RU_MONTHS_FULL = [
+  'Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь',
+  'Июль', 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь'
+];
+
+state.currentReportMonth = '2026-09';
+state.reportActiveOnly = false;
+state.reportSubTab = 'matrix';
+state.reportExpenseFilter = '';
+
+async function loadMonthlyReport(targetMonth) {
+  if (targetMonth) {
+    state.currentReportMonth = targetMonth;
+  } else if (!state.currentReportMonth) {
+    const inputVal = document.getElementById('reportMonthSelect')?.value;
+    state.currentReportMonth = inputVal || '2026-09';
+  }
+
+  // Synchronize input
+  const monthInput = document.getElementById('reportMonthSelect');
+  if (monthInput && monthInput.value !== state.currentReportMonth) {
+    monthInput.value = state.currentReportMonth;
+  }
+
+  // Format month badge: e.g. "Сентябрь 2026"
+  const [yStr, mStr] = state.currentReportMonth.split('-');
+  const y = parseInt(yStr) || 2026;
+  const m = parseInt(mStr) || 9;
+  const monthTitle = `${RU_MONTHS_FULL[m - 1] || 'Сентябрь'} ${y}`;
+  const badgeEl = document.getElementById('reportMonthBadge');
+  if (badgeEl) badgeEl.textContent = monthTitle;
+
   try {
-    const res = await fetch(`${API_BASE}/reports/monthly?month=${monthStr}`);
+    const res = await fetch(`${API_BASE}/reports/monthly?month=${state.currentReportMonth}`);
+    if (!res.ok) throw new Error('Ошибка загрузки отчёта: ' + res.status);
     state.monthlyReport = await res.json();
+
+    // Populate dropdown with available months
+    const quickSelect = document.getElementById('reportMonthQuickSelect');
+    if (quickSelect && state.monthlyReport.availableMonths) {
+      quickSelect.innerHTML = state.monthlyReport.availableMonths.map(mVal => {
+        const [yr, mn] = mVal.split('-');
+        const name = `${RU_MONTHS_FULL[parseInt(mn) - 1] || mn} ${yr}`;
+        const isCurrent = mVal === state.currentReportMonth;
+        return `<option value="${mVal}" ${isCurrent ? 'selected' : ''}>${name}</option>`;
+      }).join('');
+    }
+
+    renderReportKPI();
     renderReportIncomeMatrix();
+    renderReportExpenses();
+    renderReportStaffKPI();
   } catch (err) {
     console.error('Error loading monthly report:', err);
+    showToast('Ошибка', 'Не удалось загрузить месячный отчёт: ' + err.message, true);
   }
+}
+
+function onReportMonthDropdownChange(val) {
+  if (!val) return;
+  loadMonthlyReport(val);
+}
+
+function changeReportMonth(delta) {
+  const cur = state.currentReportMonth || '2026-09';
+  let [year, month] = cur.split('-').map(Number);
+  month += delta;
+  if (month < 1) {
+    month = 12;
+    year -= 1;
+  } else if (month > 12) {
+    month = 1;
+    year += 1;
+  }
+  const newMonth = `${year}-${String(month).padStart(2, '0')}`;
+  loadMonthlyReport(newMonth);
+}
+
+function setReportMonthCurrent() {
+  const cur = new Date().toISOString().slice(0, 7);
+  loadMonthlyReport(cur);
+}
+
+function renderReportKPI() {
+  if (!state.monthlyReport || !state.monthlyReport.summary) return;
+  const sum = state.monthlyReport.summary;
+
+  const incEl = document.getElementById('repKpiIncome');
+  const ordEl = document.getElementById('repKpiOrders');
+  const expEl = document.getElementById('repKpiExpense');
+  const expCountEl = document.getElementById('repKpiExpensesCount');
+  const profEl = document.getElementById('repKpiProfit');
+  const marginEl = document.getElementById('repKpiMargin');
+  const clickEl = document.getElementById('repKpiClick');
+  const cashEl = document.getElementById('repKpiCash');
+  const debtEl = document.getElementById('repKpiDebt');
+  const badgeExpCount = document.getElementById('repBadgeExpensesCount');
+
+  if (incEl) incEl.textContent = formatMoney(sum.totalIncome);
+  if (ordEl) ordEl.textContent = `${sum.ordersCount || 0} заказов`;
+  if (expEl) expEl.textContent = formatMoney(sum.totalExpense);
+  if (expCountEl) expCountEl.textContent = `${sum.expensesCount || 0} расходов`;
+
+  if (profEl) {
+    profEl.textContent = formatMoney(sum.netProfit);
+    profEl.className = `text-base sm:text-lg font-black font-data-md ${sum.netProfit >= 0 ? 'text-emerald-600' : 'text-rose-600'}`;
+  }
+  if (marginEl) {
+    marginEl.textContent = `Рентабельность: ${sum.margin || 0}%`;
+  }
+  if (clickEl) clickEl.textContent = formatMoney(sum.totalClick);
+  if (cashEl) cashEl.textContent = formatMoney(sum.totalCash);
+  if (debtEl) debtEl.textContent = formatMoney(sum.totalDebt);
+  if (badgeExpCount) badgeExpCount.textContent = sum.expensesCount || 0;
+}
+
+function toggleReportActiveOnly(checked) {
+  state.reportActiveOnly = checked;
+  renderReportIncomeMatrix();
+}
+
+function switchReportSubTab(subTab) {
+  state.reportSubTab = subTab;
+  const viewMatrix = document.getElementById('repViewMatrix');
+  const viewExpenses = document.getElementById('repViewExpenses');
+  const viewStaff = document.getElementById('repViewStaff');
+  const toolbar = document.getElementById('repMatrixToolbar');
+
+  const btnMatrix = document.getElementById('subtab-btn-matrix');
+  const btnExpenses = document.getElementById('subtab-btn-expenses');
+  const btnStaff = document.getElementById('subtab-btn-staff');
+
+  const activeBtnClass = 'px-3.5 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer bg-primary text-white shadow-xs';
+  const inactiveBtnClass = 'px-3.5 py-1.5 rounded-lg text-xs font-semibold text-on-surface-variant hover:text-on-surface hover:bg-surface-container-low transition cursor-pointer';
+
+  if (viewMatrix) viewMatrix.classList.toggle('hidden', subTab !== 'matrix');
+  if (viewExpenses) viewExpenses.classList.toggle('hidden', subTab !== 'expenses');
+  if (viewStaff) viewStaff.classList.toggle('hidden', subTab !== 'staff');
+  if (toolbar) toolbar.classList.toggle('hidden', subTab !== 'matrix');
+
+  if (btnMatrix) btnMatrix.className = subTab === 'matrix' ? activeBtnClass : inactiveBtnClass;
+  if (btnExpenses) btnExpenses.className = subTab === 'expenses' ? activeBtnClass : inactiveBtnClass;
+  if (btnStaff) btnStaff.className = subTab === 'staff' ? activeBtnClass : inactiveBtnClass;
 }
 
 function renderReportIncomeMatrix() {
   const container = document.getElementById('reportIncomeMatrixBody');
   const footer = document.getElementById('reportIncomeMatrixFooter');
+  const countText = document.getElementById('repDaysCountText');
   if (!container || !state.monthlyReport) return;
 
   const matrix = state.monthlyReport.matrix || [];
   const sum = state.monthlyReport.summary || {};
+  const staffTotals = sum.staffTotals || {};
 
-  container.innerHTML = matrix.map(row => `
-    <tr class="hover:bg-surface-container-low/50 transition">
-      <td class="p-2 text-center font-bold">${row.day}</td>
-      <td class="p-2 text-right">${row.staff.islam ? formatMoney(row.staff.islam) : '—'}</td>
-      <td class="p-2 text-right">${row.staff.beksultan ? formatMoney(row.staff.beksultan) : '—'}</td>
-      <td class="p-2 text-right">${row.staff.aziz ? formatMoney(row.staff.aziz) : '—'}</td>
-      <td class="p-2 text-right">${row.staff.makhmud ? formatMoney(row.staff.makhmud) : '—'}</td>
-      <td class="p-2 text-right">${row.staff.azhiniyaz ? formatMoney(row.staff.azhiniyaz) : '—'}</td>
-      <td class="p-2 text-right text-on-secondary-container">${row.debt ? formatMoney(row.debt) : '—'}</td>
-      <td class="p-2 text-right font-bold text-on-surface bg-surface-container-low">${row.totalIncome ? formatMoney(row.totalIncome) : '0'}</td>
-      <td class="p-2 text-right text-error">${row.totalExpense ? formatMoney(row.totalExpense) : '0'}</td>
-      <td class="p-2 text-right font-bold text-secondary bg-surface-container-low">${formatMoney(row.balance)}</td>
-      <td class="p-2 text-right text-tertiary">${row.click ? formatMoney(row.click) : '—'}</td>
-    </tr>
-  `).join('');
+  const visibleRows = state.reportActiveOnly ? matrix.filter(r => r.hasActivity) : matrix;
+
+  if (countText) {
+    const activeCount = matrix.filter(r => r.hasActivity).length;
+    countText.textContent = `Активных дней: ${activeCount} из ${matrix.length}`;
+  }
+
+  if (visibleRows.length === 0) {
+    container.innerHTML = `
+      <tr>
+        <td colspan="11" class="p-8 text-center text-on-surface-variant">
+          <div class="flex flex-col items-center justify-center gap-2">
+            <span class="material-symbols-outlined text-4xl text-outline">event_busy</span>
+            <div class="font-bold text-sm">В этом месяце пока нет операций</div>
+            <div class="text-xs">Все дни месяца нулевые. Создайте заказы в кассе или внесите расходы.</div>
+          </div>
+        </td>
+      </tr>
+    `;
+    if (footer) footer.innerHTML = '';
+    return;
+  }
+
+  container.innerHTML = visibleRows.map(row => {
+    const isWeekend = row.dayOfWeek === 'Сб' || row.dayOfWeek === 'Вс';
+    const rowBg = row.hasActivity 
+      ? 'hover:bg-primary/5 transition' 
+      : (isWeekend ? 'bg-surface-container-lowest/50 text-outline hover:bg-surface-container-low transition' : 'hover:bg-surface-container-low/50 transition');
+    
+    return `
+      <tr class="${rowBg}">
+        <td class="p-2.5 text-center font-bold">
+          <div class="inline-flex items-center gap-1">
+            <span class="font-mono ${row.hasActivity ? 'text-primary font-bold' : ''}">${String(row.day).padStart(2, '0')}</span>
+            <span class="text-[10px] px-1 py-0.2 rounded font-normal ${isWeekend ? 'text-rose-500 bg-rose-500/10 font-bold' : 'text-on-surface-variant'}">${row.dayOfWeek || ''}</span>
+          </div>
+        </td>
+        <td class="p-2.5 text-right font-mono">${row.staff.islam ? formatMoney(row.staff.islam) : '—'}</td>
+        <td class="p-2.5 text-right font-mono">${row.staff.beksultan ? formatMoney(row.staff.beksultan) : '—'}</td>
+        <td class="p-2.5 text-right font-mono">${row.staff.aziz ? formatMoney(row.staff.aziz) : '—'}</td>
+        <td class="p-2.5 text-right font-mono">${row.staff.makhmud ? formatMoney(row.staff.makhmud) : '—'}</td>
+        <td class="p-2.5 text-right font-mono">${row.staff.azhiniyaz ? formatMoney(row.staff.azhiniyaz) : '—'}</td>
+        <td class="p-2.5 text-right font-mono ${row.debt > 0 ? 'text-rose-600 font-bold bg-rose-50/40 dark:bg-rose-950/20' : 'text-on-surface-variant'}">${row.debt ? formatMoney(row.debt) : '—'}</td>
+        <td class="p-2.5 text-right font-mono font-bold ${row.totalIncome > 0 ? 'text-emerald-700 dark:text-emerald-400 bg-emerald-50/40 dark:bg-emerald-950/20' : 'text-on-surface'}">${row.totalIncome ? formatMoney(row.totalIncome) : '0'}</td>
+        <td class="p-2.5 text-right font-mono font-bold ${row.totalExpense > 0 ? 'text-rose-600 bg-rose-50/40 dark:bg-rose-950/20' : 'text-on-surface-variant'}">${row.totalExpense ? formatMoney(row.totalExpense) : '0'}</td>
+        <td class="p-2.5 text-right font-mono font-black ${row.balance > 0 ? 'text-blue-700 dark:text-blue-400' : (row.balance < 0 ? 'text-rose-600' : 'text-on-surface')}">${formatMoney(row.balance)}</td>
+        <td class="p-2.5 text-right font-mono text-violet-700 dark:text-violet-400">${row.click ? formatMoney(row.click) : '—'}</td>
+      </tr>
+    `;
+  }).join('');
 
   if (footer) {
     footer.innerHTML = `
-      <tr>
-        <td class="p-2 text-center">ИТОГО:</td>
-        <td class="p-2 text-right">—</td>
-        <td class="p-2 text-right">—</td>
-        <td class="p-2 text-right">—</td>
-        <td class="p-2 text-right">—</td>
-        <td class="p-2 text-right">—</td>
-        <td class="p-2 text-right text-on-secondary-container">${formatMoney(sum.totalDebt)}</td>
-        <td class="p-2 text-right text-on-surface">${formatMoney(sum.totalIncome)}</td>
-        <td class="p-2 text-right text-error">${formatMoney(sum.totalExpense)}</td>
-        <td class="p-2 text-right text-secondary">${formatMoney(sum.netProfit)}</td>
-        <td class="p-2 text-right text-tertiary">${formatMoney(sum.totalClick)}</td>
+      <tr class="bg-surface-container font-black text-on-surface">
+        <td class="p-3 text-center uppercase tracking-wider text-[11px]">ИТОГО:</td>
+        <td class="p-3 text-right font-mono text-indigo-700 dark:text-indigo-400">${staffTotals.islam ? formatMoney(staffTotals.islam) : '0'}</td>
+        <td class="p-3 text-right font-mono text-sky-700 dark:text-sky-400">${staffTotals.beksultan ? formatMoney(staffTotals.beksultan) : '0'}</td>
+        <td class="p-3 text-right font-mono text-teal-700 dark:text-teal-400">${staffTotals.aziz ? formatMoney(staffTotals.aziz) : '0'}</td>
+        <td class="p-3 text-right font-mono text-amber-700 dark:text-amber-400">${staffTotals.makhmud ? formatMoney(staffTotals.makhmud) : '0'}</td>
+        <td class="p-3 text-right font-mono text-orange-700 dark:text-orange-400">${staffTotals.azhiniyaz ? formatMoney(staffTotals.azhiniyaz) : '0'}</td>
+        <td class="p-3 text-right font-mono text-rose-600">${formatMoney(sum.totalDebt)}</td>
+        <td class="p-3 text-right font-mono text-emerald-700 dark:text-emerald-400 bg-emerald-100/40 dark:bg-emerald-950/40">${formatMoney(sum.totalIncome)}</td>
+        <td class="p-3 text-right font-mono text-rose-600 bg-rose-100/40 dark:bg-rose-950/40">${formatMoney(sum.totalExpense)}</td>
+        <td class="p-3 text-right font-mono text-blue-700 dark:text-blue-400 bg-blue-100/40 dark:bg-blue-950/40">${formatMoney(sum.netProfit)}</td>
+        <td class="p-3 text-right font-mono text-violet-700 dark:text-violet-400">${formatMoney(sum.totalClick)}</td>
       </tr>
     `;
   }
 }
 
-function downloadExcel() {
-  const monthStr = document.getElementById('reportMonthSelect')?.value || '2026-05';
-  window.location.href = `${API_BASE}/reports/export-excel?month=${monthStr}`;
+function filterReportExpenses(query) {
+  state.reportExpenseFilter = (query || '').toLowerCase().trim();
+  renderReportExpenses();
+}
+
+function renderReportExpenses() {
+  const container = document.getElementById('repExpensesTableBody');
+  const footer = document.getElementById('repExpensesTableFooter');
+  if (!container || !state.monthlyReport) return;
+
+  const expenses = state.monthlyReport.expenses || [];
+  const q = state.reportExpenseFilter || '';
+  const filtered = q ? expenses.filter(e => 
+    (e.title || '').toLowerCase().includes(q) || 
+    (e.category || '').toLowerCase().includes(q) ||
+    (e.date || '').includes(q)
+  ) : expenses;
+
+  if (filtered.length === 0) {
+    container.innerHTML = `
+      <tr>
+        <td colspan="5" class="p-8 text-center text-on-surface-variant">
+          <div class="flex flex-col items-center justify-center gap-2">
+            <span class="material-symbols-outlined text-4xl text-outline">receipt_long</span>
+            <div class="font-bold text-sm">Расходов в этом месяце не найдено</div>
+            <div class="text-xs">Все расходы, внесённые в кассу цеха за выбранный месяц, будут отображаться здесь.</div>
+          </div>
+        </td>
+      </tr>
+    `;
+    if (footer) footer.innerHTML = '';
+    return;
+  }
+
+  container.innerHTML = filtered.map((e, idx) => `
+    <tr class="hover:bg-surface-container-low/50 transition">
+      <td class="p-3 text-center text-on-surface-variant font-mono text-[11px]">${idx + 1}</td>
+      <td class="p-3 text-left font-mono">${e.date || '—'}</td>
+      <td class="p-3 text-left">
+        <span class="px-2 py-0.5 rounded-full text-[11px] font-bold bg-surface-container text-on-surface">
+          ${e.category || 'Цех'}
+        </span>
+      </td>
+      <td class="p-3 text-left font-medium text-on-surface">${e.title || 'Расход'}</td>
+      <td class="p-3 text-right font-mono font-bold text-rose-600">${formatMoney(e.amount || 0)}</td>
+    </tr>
+  `).join('');
+
+  const totalFiltered = filtered.reduce((s, e) => s + (Number(e.amount) || 0), 0);
+  if (footer) {
+    footer.innerHTML = `
+      <tr class="bg-surface-container font-black text-on-surface">
+        <td colspan="4" class="p-3 text-right uppercase tracking-wider text-[11px]">ИТОГО РАСХОДОВ:</td>
+        <td class="p-3 text-right font-mono text-rose-600 font-bold">${formatMoney(totalFiltered)}</td>
+      </tr>
+    `;
+  }
+}
+
+function renderReportStaffKPI() {
+  const container = document.getElementById('repStaffGrid');
+  if (!container || !state.monthlyReport) return;
+
+  const sum = state.monthlyReport.summary || {};
+  const staffTotals = sum.staffTotals || {};
+  const totalIncome = sum.totalIncome || 0;
+
+  const staffList = [
+    { key: 'islam', name: 'Ислам', role: 'Дизайнер / Менеджер', color: '#6366f1' },
+    { key: 'beksultan', name: 'Бексултан', role: 'Дизайнер / Менеджер', color: '#0ea5e9' },
+    { key: 'aziz', name: 'Азиз', role: 'Дизайнер / Менеджер', color: '#14b8a6' },
+    { key: 'makhmud', name: 'Махмуд', role: 'Мастер печатник', color: '#f59e0b' },
+    { key: 'azhiniyaz', name: 'Ажинияз', role: 'Мастер постпечать', color: '#f97316' }
+  ];
+
+  container.innerHTML = staffList.map(st => {
+    const rev = staffTotals[st.key] || 0;
+    const share = totalIncome > 0 ? ((rev / totalIncome) * 100).toFixed(1) : 0;
+
+    return `
+      <div class="p-4 bg-surface-container-lowest border border-outline-variant rounded-2xl shadow-xs hover:shadow-md transition">
+        <div class="flex items-center justify-between mb-3">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl flex items-center justify-center text-white font-bold shadow-xs text-sm" style="background-color: ${st.color}">
+              ${st.name.substring(0, 1)}
+            </div>
+            <div>
+              <div class="font-bold text-sm text-on-surface">${st.name}</div>
+              <div class="text-[11px] text-on-surface-variant">${st.role}</div>
+            </div>
+          </div>
+          ${rev > 0 ? `<span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/10 text-emerald-600">Активен</span>` : `<span class="text-[10px] text-outline">Нет выручки</span>`}
+        </div>
+
+        <div class="space-y-2 pt-2 border-t border-outline-variant">
+          <div class="flex items-baseline justify-between">
+            <span class="text-xs text-on-surface-variant">Принесено в кассу:</span>
+            <span class="text-base font-black font-data-md text-on-surface">${formatMoney(rev)}</span>
+          </div>
+
+          <div>
+            <div class="flex justify-between text-[11px] text-on-surface-variant mb-1">
+              <span>Доля от месячного прихода:</span>
+              <span class="font-bold font-mono">${share}%</span>
+            </div>
+            <div class="w-full h-2 bg-surface-container rounded-full overflow-hidden">
+              <div class="h-full rounded-full transition-all duration-500" style="width: ${share}%; background-color: ${st.color}"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+async function downloadExcel() {
+  const monthStr = state.currentReportMonth || document.getElementById('reportMonthSelect')?.value || '2026-09';
+  const btn = document.getElementById('btnDownloadExcel');
+  const originalHtml = btn ? btn.innerHTML : '';
+
+  if (btn) {
+    btn.disabled = true;
+    btn.innerHTML = '<span class="material-symbols-outlined animate-spin text-base">progress_activity</span> <span>Формирование Excel...</span>';
+  }
+
+  try {
+    const res = await fetch(`${API_BASE}/reports/export-excel?month=${monthStr}`);
+    if (!res.ok) {
+      const errJson = await res.json().catch(() => ({}));
+      throw new Error(errJson.error || `Ошибка сервера (${res.status})`);
+    }
+
+    const blob = await res.blob();
+    const blobUrl = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = blobUrl;
+    link.download = `MASTER_PRINT_Otchet_${monthStr}.xlsx`;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    window.URL.revokeObjectURL(blobUrl);
+
+    showToast('Отчёт сформирован', `Файл Excel за ${monthStr} успешно скачан!`, false);
+  } catch (err) {
+    console.error('Error downloading Excel:', err);
+    showToast('Ошибка скачивания', err.message || 'Не удалось скачать Excel отчёт', true);
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.innerHTML = originalHtml;
+    }
+  }
 }
 
 // =========================================================================

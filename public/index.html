@@ -643,42 +643,217 @@
     </div>
 
     <!-- ========================================================================= -->
-    <!-- TAB 6: МЕСЯЧНАЯ ВЫРУЧКА (МАЙ.xlsx) -->
+    <!-- TAB 6: МЕСЯЧНЫЙ ФИНАНСОВЫЙ ОТЧЁТ -->
     <!-- ========================================================================= -->
-    <div id="tab-reports" class="tab-content hidden flex-1 p-6 overflow-y-auto space-y-4">
-      <div class="flex items-center justify-between pb-3 border-b border-outline-variant">
+    <div id="tab-reports" class="tab-content hidden flex-1 p-4 md:p-6 overflow-y-auto space-y-4">
+      
+      <!-- Top Bar: Title & Month Navigation & Download Button -->
+      <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-4 border-b border-outline-variant">
         <div>
-          <h2 class="text-lg font-bold text-on-surface">Месячная выручка (Точная копия МАЙ.xlsx)</h2>
-          <p class="text-xs text-on-surface-variant">Матрица прихода 1-31 по мастерам и журнал расходов</p>
+          <div class="flex items-center gap-2">
+            <span class="material-symbols-outlined text-primary text-2xl">analytics</span>
+            <h2 class="text-lg md:text-xl font-bold text-on-surface">Месячный финансовый отчёт</h2>
+            <span id="reportMonthBadge" class="text-xs px-2.5 py-0.5 rounded-full bg-primary/10 text-primary font-bold">Сентябрь 2026</span>
+          </div>
+          <p class="text-xs text-on-surface-variant mt-0.5">Сводная аналитика выручки, кассы, расходов цеха и эффективности мастеров</p>
         </div>
-        <div class="flex items-center gap-2">
-          <input id="reportMonthSelect" type="month" value="2026-05" onchange="loadMonthlyReport()" class="bg-surface-container-lowest border border-outline-variant rounded-lg px-3 py-1.5 text-xs font-bold shadow-xs">
-          <button onclick="downloadExcel()" class="px-4 py-1.5 bg-secondary text-white rounded-lg text-xs font-bold shadow-xs hover:bg-secondary/90 transition cursor-pointer">📥 Скачать Excel (.xlsx)</button>
+
+        <!-- Controls: Navigation & Download -->
+        <div class="flex flex-wrap items-center gap-2">
+          <!-- Month Switcher Controls -->
+          <div class="flex items-center bg-surface-container-lowest border border-outline-variant rounded-xl p-1 shadow-xs">
+            <button onclick="changeReportMonth(-1)" title="Предыдущий месяц" class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-surface-container-low text-on-surface-variant hover:text-on-surface transition cursor-pointer">
+              <span class="material-symbols-outlined text-base">chevron_left</span>
+            </button>
+
+            <select id="reportMonthQuickSelect" onchange="onReportMonthDropdownChange(this.value)" class="bg-transparent border-0 text-xs font-bold text-on-surface px-2 py-1 outline-none cursor-pointer">
+              <option value="2026-09">Сентябрь 2026</option>
+              <option value="2026-05">Май 2026</option>
+            </select>
+
+            <input id="reportMonthSelect" type="month" value="2026-09" onchange="loadMonthlyReport(this.value)" class="bg-transparent border-0 text-xs font-bold text-on-surface px-1 py-1 outline-none cursor-pointer">
+
+            <button onclick="changeReportMonth(1)" title="Следующий месяц" class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-surface-container-low text-on-surface-variant hover:text-on-surface transition cursor-pointer">
+              <span class="material-symbols-outlined text-base">chevron_right</span>
+            </button>
+          </div>
+
+          <button onclick="setReportMonthCurrent()" title="Текущий месяц" class="px-3 py-2 bg-surface-container-lowest hover:bg-surface-container-low border border-outline-variant rounded-xl text-xs font-semibold text-on-surface transition cursor-pointer">
+            Сегодня
+          </button>
+
+          <!-- Download Excel Button -->
+          <button id="btnDownloadExcel" onclick="downloadExcel()" class="flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white rounded-xl text-xs font-bold shadow-xs transition cursor-pointer">
+            <span class="material-symbols-outlined text-base">download</span>
+            <span>Скачать Excel (.xlsx)</span>
+          </button>
         </div>
       </div>
-      <div class="bg-surface-container-lowest border border-outline-variant rounded-xl overflow-hidden p-3 shadow-xs">
-        <div class="overflow-x-auto max-h-[550px]">
-          <table class="w-full text-xs text-on-surface font-data-sm">
-            <thead class="bg-surface-container-low text-on-surface-variant sticky top-0 border-b border-outline-variant">
+
+      <!-- KPI Summary Cards Grid (6 cards) -->
+      <div class="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-3">
+        <!-- 1. Total Income -->
+        <div class="p-3.5 bg-surface-container-lowest border border-outline-variant rounded-2xl shadow-xs flex flex-col justify-between">
+          <div class="flex items-center justify-between mb-1.5">
+            <span class="text-[11px] font-bold text-on-surface-variant uppercase tracking-wider">Выручка</span>
+            <div class="w-7 h-7 rounded-lg bg-emerald-500/10 text-emerald-600 flex items-center justify-center">
+              <span class="material-symbols-outlined text-base">payments</span>
+            </div>
+          </div>
+          <div>
+            <div id="repKpiIncome" class="text-base sm:text-lg font-black font-data-md text-emerald-600">0 сум</div>
+            <div id="repKpiOrders" class="text-[10px] text-on-surface-variant mt-0.5">0 заказов</div>
+          </div>
+        </div>
+
+        <!-- 2. Expenses -->
+        <div class="p-3.5 bg-surface-container-lowest border border-outline-variant rounded-2xl shadow-xs flex flex-col justify-between">
+          <div class="flex items-center justify-between mb-1.5">
+            <span class="text-[11px] font-bold text-on-surface-variant uppercase tracking-wider">Расходы</span>
+            <div class="w-7 h-7 rounded-lg bg-rose-500/10 text-rose-600 flex items-center justify-center">
+              <span class="material-symbols-outlined text-base">trending_down</span>
+            </div>
+          </div>
+          <div>
+            <div id="repKpiExpense" class="text-base sm:text-lg font-black font-data-md text-rose-600">0 сум</div>
+            <div id="repKpiExpensesCount" class="text-[10px] text-on-surface-variant mt-0.5">0 расходов</div>
+          </div>
+        </div>
+
+        <!-- 3. Net Profit / Balance -->
+        <div class="p-3.5 bg-surface-container-lowest border border-outline-variant rounded-2xl shadow-xs flex flex-col justify-between">
+          <div class="flex items-center justify-between mb-1.5">
+            <span class="text-[11px] font-bold text-on-surface-variant uppercase tracking-wider">Остаток (Прибыль)</span>
+            <div class="w-7 h-7 rounded-lg bg-blue-500/10 text-blue-600 flex items-center justify-center">
+              <span class="material-symbols-outlined text-base">account_balance_wallet</span>
+            </div>
+          </div>
+          <div>
+            <div id="repKpiProfit" class="text-base sm:text-lg font-black font-data-md text-on-surface">0 сум</div>
+            <div id="repKpiMargin" class="text-[10px] text-on-surface-variant mt-0.5">Рентабельность: 0%</div>
+          </div>
+        </div>
+
+        <!-- 4. Click / Card -->
+        <div class="p-3.5 bg-surface-container-lowest border border-outline-variant rounded-2xl shadow-xs flex flex-col justify-between">
+          <div class="flex items-center justify-between mb-1.5">
+            <span class="text-[11px] font-bold text-on-surface-variant uppercase tracking-wider">Click / Безнал</span>
+            <div class="w-7 h-7 rounded-lg bg-violet-500/10 text-violet-600 flex items-center justify-center">
+              <span class="material-symbols-outlined text-base">credit_card</span>
+            </div>
+          </div>
+          <div>
+            <div id="repKpiClick" class="text-base sm:text-lg font-black font-data-md text-violet-600">0 сум</div>
+            <div class="text-[10px] text-on-surface-variant mt-0.5">Оплата картой/QR</div>
+          </div>
+        </div>
+
+        <!-- 5. Cash -->
+        <div class="p-3.5 bg-surface-container-lowest border border-outline-variant rounded-2xl shadow-xs flex flex-col justify-between">
+          <div class="flex items-center justify-between mb-1.5">
+            <span class="text-[11px] font-bold text-on-surface-variant uppercase tracking-wider">Касса (Наличные)</span>
+            <div class="w-7 h-7 rounded-lg bg-amber-500/10 text-amber-600 flex items-center justify-center">
+              <span class="material-symbols-outlined text-base">point_of_sale</span>
+            </div>
+          </div>
+          <div>
+            <div id="repKpiCash" class="text-base sm:text-lg font-black font-data-md text-amber-600">0 сум</div>
+            <div class="text-[10px] text-on-surface-variant mt-0.5">Наличные в кассе</div>
+          </div>
+        </div>
+
+        <!-- 6. Unpaid Debt -->
+        <div class="p-3.5 bg-surface-container-lowest border border-outline-variant rounded-2xl shadow-xs flex flex-col justify-between">
+          <div class="flex items-center justify-between mb-1.5">
+            <span class="text-[11px] font-bold text-on-surface-variant uppercase tracking-wider">Долги (Карыз)</span>
+            <div class="w-7 h-7 rounded-lg bg-orange-500/10 text-orange-600 flex items-center justify-center">
+              <span class="material-symbols-outlined text-base">pending_actions</span>
+            </div>
+          </div>
+          <div>
+            <div id="repKpiDebt" class="text-base sm:text-lg font-black font-data-md text-orange-600">0 сум</div>
+            <div class="text-[10px] text-on-surface-variant mt-0.5">Неоплаченный остаток</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Navigation tabs inside report -->
+      <div class="flex flex-wrap items-center justify-between gap-3 pt-2">
+        <div class="flex items-center gap-1 bg-surface-container-lowest border border-outline-variant rounded-xl p-1 shadow-xs">
+          <button id="subtab-btn-matrix" onclick="switchReportSubTab('matrix')" class="px-3.5 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer bg-primary text-white shadow-xs">
+            📊 Матрица 1-31 (Выручка)
+          </button>
+          <button id="subtab-btn-expenses" onclick="switchReportSubTab('expenses')" class="px-3.5 py-1.5 rounded-lg text-xs font-semibold text-on-surface-variant hover:text-on-surface hover:bg-surface-container-low transition cursor-pointer">
+            🧾 Детализация расходов (<span id="repBadgeExpensesCount">0</span>)
+          </button>
+          <button id="subtab-btn-staff" onclick="switchReportSubTab('staff')" class="px-3.5 py-1.5 rounded-lg text-xs font-semibold text-on-surface-variant hover:text-on-surface hover:bg-surface-container-low transition cursor-pointer">
+            👥 Вклад мастеров
+          </button>
+        </div>
+
+        <!-- Filter / Quick controls for matrix -->
+        <div id="repMatrixToolbar" class="flex items-center gap-3">
+          <label class="flex items-center gap-2 text-xs text-on-surface cursor-pointer select-none bg-surface-container-lowest border border-outline-variant px-3 py-1.5 rounded-xl shadow-xs hover:bg-surface-container-low transition">
+            <input type="checkbox" id="repFilterActiveOnly" onchange="toggleReportActiveOnly(this.checked)" class="rounded text-primary focus:ring-0">
+            <span class="font-medium">Только активные дни</span>
+          </label>
+          <span id="repDaysCountText" class="text-xs text-on-surface-variant font-medium"></span>
+        </div>
+      </div>
+
+      <!-- VIEW 1: MATRIX 1-31 -->
+      <div id="repViewMatrix" class="bg-surface-container-lowest border border-outline-variant rounded-2xl overflow-hidden shadow-xs">
+        <div class="overflow-x-auto max-h-[600px]">
+          <table class="w-full text-xs text-on-surface font-data-sm whitespace-nowrap">
+            <thead class="bg-surface-container-low text-on-surface-variant sticky top-0 z-10 border-b border-outline-variant shadow-xs">
               <tr>
-                <th class="p-2.5 text-center font-bold">День</th>
-                <th class="p-2.5 text-right font-bold">Ислам</th>
-                <th class="p-2.5 text-right font-bold">Бексултан</th>
-                <th class="p-2.5 text-right font-bold">Азиз</th>
-                <th class="p-2.5 text-right font-bold">Махмуд</th>
-                <th class="p-2.5 text-right font-bold">Ажинияз</th>
-                <th class="p-2.5 text-right font-bold text-on-secondary-container">Карыз</th>
-                <th class="p-2.5 text-right font-bold text-on-surface bg-surface-container">Итого Приход</th>
-                <th class="p-2.5 text-right font-bold text-error">Расход</th>
-                <th class="p-2.5 text-right font-bold text-secondary bg-surface-container">Остаток</th>
-                <th class="p-2.5 text-right font-bold text-tertiary">Клик</th>
+                <th class="p-3 text-center font-bold">День</th>
+                <th class="p-3 text-right font-bold text-indigo-700 dark:text-indigo-400">Ислам</th>
+                <th class="p-3 text-right font-bold text-sky-700 dark:text-sky-400">Бексултан</th>
+                <th class="p-3 text-right font-bold text-teal-700 dark:text-teal-400">Азиз</th>
+                <th class="p-3 text-right font-bold text-amber-700 dark:text-amber-400">Махмуд</th>
+                <th class="p-3 text-right font-bold text-orange-700 dark:text-orange-400">Ажинияз</th>
+                <th class="p-3 text-right font-bold text-rose-600 bg-rose-50/50 dark:bg-rose-950/20">Карыз (Долг)</th>
+                <th class="p-3 text-right font-bold text-emerald-700 bg-emerald-50/50 dark:bg-emerald-950/20">ИТОГО Приход</th>
+                <th class="p-3 text-right font-bold text-rose-600 bg-rose-50/50 dark:bg-rose-950/20">Расход</th>
+                <th class="p-3 text-right font-bold text-blue-700 bg-blue-50/50 dark:bg-blue-950/20">Остаток</th>
+                <th class="p-3 text-right font-bold text-violet-700 bg-violet-50/50 dark:bg-violet-950/20">Click</th>
               </tr>
             </thead>
             <tbody id="reportIncomeMatrixBody" class="divide-y divide-outline-variant"></tbody>
-            <tfoot id="reportIncomeMatrixFooter" class="bg-surface-container-low font-bold text-on-surface border-t-2 border-outline-variant"></tfoot>
+            <tfoot id="reportIncomeMatrixFooter" class="bg-surface-container-low font-bold text-on-surface border-t-2 border-outline-variant sticky bottom-0 z-10"></tfoot>
           </table>
         </div>
       </div>
+
+      <!-- VIEW 2: EXPENSES LOG -->
+      <div id="repViewExpenses" class="hidden bg-surface-container-lowest border border-outline-variant rounded-2xl overflow-hidden shadow-xs">
+        <div class="p-3 border-b border-outline-variant flex items-center justify-between gap-3">
+          <div class="text-xs font-bold text-on-surface">Журнал расходов цеха за выбранный месяц</div>
+          <input id="repExpenseSearch" type="text" oninput="filterReportExpenses(this.value)" placeholder="Поиск по описанию или категории..." class="bg-surface-container-low border border-outline-variant rounded-lg px-3 py-1 text-xs w-64 outline-none focus:bg-surface-container-lowest">
+        </div>
+        <div class="overflow-x-auto max-h-[600px]">
+          <table class="w-full text-xs text-on-surface font-data-sm">
+            <thead class="bg-surface-container-low text-on-surface-variant sticky top-0 border-b border-outline-variant">
+              <tr>
+                <th class="p-3 text-center font-bold w-12">№</th>
+                <th class="p-3 text-left font-bold w-28">Дата</th>
+                <th class="p-3 text-left font-bold w-36">Категория</th>
+                <th class="p-3 text-left font-bold">Статья расхода / Описание</th>
+                <th class="p-3 text-right font-bold w-36 text-rose-600">Сумма (сум)</th>
+              </tr>
+            </thead>
+            <tbody id="repExpensesTableBody" class="divide-y divide-outline-variant"></tbody>
+            <tfoot id="repExpensesTableFooter" class="bg-surface-container-low font-bold text-on-surface border-t-2 border-outline-variant"></tfoot>
+          </table>
+        </div>
+      </div>
+
+      <!-- VIEW 3: STAFF KPI -->
+      <div id="repViewStaff" class="hidden space-y-4">
+        <div id="repStaffGrid" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4"></div>
+      </div>
+
     </div>
 
     <!-- ========================================================================= -->
