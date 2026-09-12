@@ -9,6 +9,7 @@
   "dependencies": {
     "cors": "^2.8.5",
     "exceljs": "^4.4.0",
-    "express": "^4.19.2"
+    "express": "^4.19.2",
+    "localtunnel": "^2.0.2"
   }
 }
