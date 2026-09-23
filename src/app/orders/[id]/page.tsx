@@ -28,7 +28,8 @@ import {
   FolderOpen,
   FileCode,
   ExternalLink,
-  Zap
+  Zap,
+  Hammer
 } from "lucide-react";
 import { formatCurrency, formatDate, formatDateTime, getDeadlineInfo, STATUS_CONFIG } from "@/lib/utils";
 import { PrintReceipt } from "@/components/PrintReceipt";
@@ -402,6 +403,36 @@ export default function OrderDetailPage({ params }: { params: { id: string } }) 
             <ShieldCheck className="w-4 h-4 text-emerald-600" />
             Акт & Гарантия
           </button>
+
+          {/* Кнопка быстрой передачи Альберту в печать */}
+          {order.status !== "PRINTING" && order.status !== "READY" && order.status !== "COMPLETED" && order.items?.some((i: any) => i.serviceType === "BANNER" || i.serviceType === "ORACAL") && (
+            <button
+              onClick={() => {
+                const albert = employees.find((e: any) => e.name === "Альберт");
+                updateField({ status: "PRINTING", assignedToId: albert ? albert.id : order.assignedToId });
+              }}
+              className="px-3.5 py-2 rounded-xl bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold transition flex items-center gap-1.5 shadow-sm shadow-purple-600/30 active:scale-95"
+              title="Направить наряд в цех широкоформатной печати к Альберту"
+            >
+              <Printer className="w-4 h-4 text-purple-200" />
+              <span>🖨️ Отправить Альберту в печать</span>
+            </button>
+          )}
+
+          {/* Кнопка быстрой передачи Абзалу на сборку */}
+          {order.status !== "ASSEMBLY" && order.status !== "MOUNTING" && order.status !== "READY" && order.status !== "COMPLETED" && order.items?.some((i: any) => ["LETTERS", "LIGHTBOX", "STAND", "INSTALL"].includes(i.serviceType)) && (
+            <button
+              onClick={() => {
+                const abzal = employees.find((e: any) => e.name === "Абзал");
+                updateField({ status: "ASSEMBLY", assignedToId: abzal ? abzal.id : order.assignedToId });
+              }}
+              className="px-3.5 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold transition flex items-center gap-1.5 shadow-sm shadow-blue-600/30 active:scale-95"
+              title="Направить наряд в сборочный цех к Абзалу"
+            >
+              <Hammer className="w-4 h-4 text-blue-200" />
+              <span>🛠️ Отправить Абзалу на сборку</span>
+            </button>
+          )}
 
           {order.status !== "READY" && order.status !== "COMPLETED" ? (
             <button

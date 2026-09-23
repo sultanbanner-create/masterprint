@@ -76,7 +76,16 @@ export function KanbanBoard({
   };
 
   const filteredOrders = orders.filter((o) => {
-    if (filterEmployee !== "ALL" && o.assignedToId !== filterEmployee) return false;
+    if (filterEmployee !== "ALL") {
+      const isAssigned = o.assignedToId === filterEmployee;
+      const emp = employees.find((e) => e.id === filterEmployee);
+      const isAlbertFilter = emp?.name === "Альберт";
+      const isAbzalFilter = emp?.name === "Абзал";
+      const isBannerJob = isAlbertFilter && (o.status === "PRINTING" || o.items?.some((i: any) => i.serviceType === "BANNER" || i.serviceType === "ORACAL"));
+      const isAssemblyJob = isAbzalFilter && (["ASSEMBLY", "MOUNTING"].includes(o.status) || o.items?.some((i: any) => ["LETTERS", "LIGHTBOX", "STAND", "INSTALL"].includes(i.serviceType)));
+
+      if (!isAssigned && !isBannerJob && !isAssemblyJob) return false;
+    }
     return true;
   });
 

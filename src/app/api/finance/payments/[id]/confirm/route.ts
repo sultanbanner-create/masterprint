@@ -52,13 +52,51 @@ export async function POST(
 
         const newDebt = Math.max(0, order.totalAmount - confirmedPaid);
 
+        // Автоматический перевод наряда в цех мастеру при подтверждении оплаты Тимуром
+        let nextStatus = order.status;
+        let nextAssignedToId = order.assignedToId;
+
+        if (order.status === "NEW" || order.status === "DESIGN") {
+          const orderWithItems = await prisma.order.findUnique({
+            where: { id: order.id },
+            include: { items: true },
+          });
+
+          const hasPrint = orderWithItems?.items.some(
+            (it) => it.serviceType === "BANNER" || it.serviceType === "ORACAL"
+          );
+          const [albert, abzal] = await Promise.all([
+            prisma.employee.findFirst({ where: { name: "Альберт" } }),
+            prisma.employee.findFirst({ where: { name: "Абзал" } }),
+          ]);
+
+          if (hasPrint && albert) {
+            nextStatus = "PRINTING";
+            nextAssignedToId = albert.id;
+          } else if (abzal) {
+            nextStatus = "ASSEMBLY";
+            nextAssignedToId = abzal.id;
+          }
+        }
+
         await prisma.order.update({
           where: { id: order.id },
           data: {
             paidAmount: confirmedPaid,
             debtAmount: newDebt,
+            status: nextStatus,
+            assignedToId: nextAssignedToId,
           },
         });
+
+        // Создаем автоматическую запись в истории наряда
+        await prisma.orderComment.create({
+          data: {
+            orderId: order.id,
+            authorName: "Тимур (Директор)",
+            text: `💵 Оплата подтверждена в кассу. Наряд автоматически направлен в цех (${nextStatus === "PRINTING" ? "Альберту в печать 🖨️" : "Абзалу на сборку 🛠️"}).`,
+          },
+        }).catch((e) => console.error("Auto comment error:", e));
       }
     }
 

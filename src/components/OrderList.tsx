@@ -84,7 +84,16 @@ export function OrderList({ initialOrders, employees, currentUser }: OrderListPr
   const debtCount = orders.filter((o) => o.debtAmount > 0).length;
 
   const filteredOrders = orders.filter((order) => {
-    if (filterEmployee !== "ALL" && order.assignedToId !== filterEmployee) return false;
+    if (filterEmployee !== "ALL") {
+      const isAssigned = order.assignedToId === filterEmployee;
+      const emp = employees.find((e) => e.id === filterEmployee);
+      const isAlbertFilter = emp?.name === "Альберт";
+      const isAbzalFilter = emp?.name === "Абзал";
+      const isBannerJob = isAlbertFilter && (order.status === "PRINTING" || order.items?.some((i: any) => i.serviceType === "BANNER" || i.serviceType === "ORACAL"));
+      const isAssemblyJob = isAbzalFilter && (["ASSEMBLY", "MOUNTING"].includes(order.status) || order.items?.some((i: any) => ["LETTERS", "LIGHTBOX", "STAND", "INSTALL"].includes(i.serviceType)));
+
+      if (!isAssigned && !isBannerJob && !isAssemblyJob) return false;
+    }
     if (filterStatus !== "ALL" && order.status !== filterStatus) return false;
     if (filterUrgentOnly && order.priority !== "URGENT") return false;
     if (filterDebtOnly && order.debtAmount <= 0) return false;

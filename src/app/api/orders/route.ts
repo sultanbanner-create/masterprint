@@ -90,14 +90,47 @@ export async function POST(req: Request) {
     const advance = Number(advanceAmount || 0);
     const debt = Math.max(0, total - advance);
 
+    // Автоматическая маршрутизация ответственного мастера цеха
+    let finalAssignedToId = assignedToId;
+    let finalStatus = status;
+
+    const hasPrint = (items || []).some(
+      (it: any) => it.serviceType === "BANNER" || it.serviceType === "ORACAL"
+    );
+    const hasAssembly = (items || []).some((it: any) =>
+      ["LETTERS", "LIGHTBOX", "STAND", "INSTALL", "AUTO_BRANDING"].includes(it.serviceType)
+    );
+
+    const [albert, abzal] = await Promise.all([
+      prisma.employee.findFirst({ where: { name: "Альберт" } }),
+      prisma.employee.findFirst({ where: { name: "Абзал" } }),
+    ]);
+
+    if (!finalAssignedToId) {
+      if (hasPrint && albert) {
+        finalAssignedToId = albert.id;
+        if (finalStatus === "NEW") finalStatus = "PRINTING";
+      } else if (hasAssembly && abzal) {
+        finalAssignedToId = abzal.id;
+        if (finalStatus === "NEW") finalStatus = "ASSEMBLY";
+      }
+    } else {
+      if (albert && finalAssignedToId === albert.id && finalStatus === "NEW") {
+        finalStatus = "PRINTING";
+      }
+      if (abzal && finalAssignedToId === abzal.id && finalStatus === "NEW") {
+        finalStatus = "ASSEMBLY";
+      }
+    }
+
     // 3. Создаем заказ
     const order = await prisma.order.create({
       data: {
         orderNumber,
         title: title || items?.[0]?.title || "Заказ наружной рекламы",
         clientId: clientRecord.id,
-        assignedToId: assignedToId || null,
-        status,
+        assignedToId: finalAssignedToId || null,
+        status: finalStatus,
         priority,
         deadline: deadline ? new Date(deadline) : null,
         installAddress: installAddress || null,

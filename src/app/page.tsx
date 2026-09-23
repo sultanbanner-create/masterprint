@@ -50,10 +50,16 @@ export default async function DashboardPage() {
     }),
   ]);
 
-  // Расчет персональной выработки сотрудника
-  const myOrders = orders.filter(
-    (o) => o.assignedToId === currentUser?.id || o.assignedTo?.name === currentUser?.name
-  );
+  // Расчет персональной выработки сотрудника (с учетом специфики цеха)
+  const isAlbert = currentUser?.role === "WORKSHOP_PRINTING" || currentUser?.name === "Альберт";
+  const isAbzal = currentUser?.role === "WORKSHOP_ASSEMBLY" || currentUser?.name === "Абзал";
+
+  const myOrders = orders.filter((o) => {
+    if (o.assignedToId === currentUser?.id || o.assignedTo?.name === currentUser?.name) return true;
+    if (isAlbert && (o.status === "PRINTING" || o.items?.some((i) => i.serviceType === "BANNER" || i.serviceType === "ORACAL"))) return true;
+    if (isAbzal && (["ASSEMBLY", "MOUNTING"].includes(o.status) || o.items?.some((i) => ["LETTERS", "LIGHTBOX", "STAND", "INSTALL"].includes(i.serviceType)))) return true;
+    return false;
+  });
   const myCompletedOrders = myOrders.filter(
     (o) => o.status === "COMPLETED" || o.status === "READY"
   );
