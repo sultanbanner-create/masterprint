@@ -210,7 +210,7 @@ export function CommercialProposal({ order, isOpen, onClose }: CommercialProposa
           <div className="grid grid-cols-2 gap-8 pt-6 border-t border-slate-300 text-xs">
             <div>
               <span className="font-bold text-slate-800 block mb-1">Исполнитель:</span>
-              <div className="text-slate-600">OUTDOOR PRODUCTION</div>
+              <div className="text-slate-600 font-bold">РПК «MASTER PRINT»</div>
               <div className="mt-8 border-b border-slate-400 w-48"></div>
               <div className="text-[10px] text-slate-400 mt-1">Директор: Тимур / М.П.</div>
             </div>

@@ -64,7 +64,7 @@ export function ClientWhatsAppModal({
         (order && order.debtAmount > 0
           ? `Остаток к оплате при получении/сдаче: ${debt}.\n\n`
           : `Заказ полностью оплачен. Спасибо за сотрудничество!\n\n`) +
-        `С уважением, рекламно-производственная компания Outdoor Production.`
+        `С уважением, рекламно-производственная компания Master Print.`
       );
     } else if (selectedTemplate === "TRACK") {
       const origin = typeof window !== "undefined" ? window.location.origin : "";
@@ -74,7 +74,7 @@ export function ClientWhatsAppModal({
         `Ваш заказ № ${orderNum} («${title}») находится в работе в нашем цехе.\n\n` +
         `Вы можете отслеживать статус готовности, фото с производства и гарантийный паспорт онлайн:\n` +
         `🔗 ${trackUrl}\n\n` +
-        `С уважением, рекламно-производственная компания Outdoor Production.`
+        `С уважением, рекламно-производственная компания Master Print.`
       );
     } else if (selectedTemplate === "REVIEW") {
       setMessageText(
@@ -84,7 +84,7 @@ export function ClientWhatsAppModal({
         `Пожалуйста, уделите полминуты и оцените качество нашей работы — для нас это очень важно:\n` +
         `⭐ Ссылка для отзыва: https://maps.google.com\n\n` +
         `Будем рады новым проектам и оформлению ваших новых филиалов!\n` +
-        `Мастер монтажа Абзал и команда Outdoor Production.`
+        `Мастер монтажа Абзал и команда Master Print.`
       );
     } else if (selectedTemplate === "DEBT") {
       setMessageText(

@@ -1,7 +1,7 @@
 {
-  "name": "OUTDOOR ERP — Наружная реклама",
-  "short_name": "OutdoorERP",
-  "description": "ERP и CRM система управления цехом наружной рекламы и широкоформатной печати",
+  "name": "MASTER PRINT — Рекламное агентство",
+  "short_name": "MasterPrint",
+  "description": "ERP и CRM система управления цехом рекламы и широкоформатной печати Master Print",
   "start_url": "/",
   "display": "standalone",
   "orientation": "portrait",

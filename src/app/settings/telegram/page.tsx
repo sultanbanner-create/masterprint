@@ -76,7 +76,7 @@ export default function TelegramSettingsPage() {
         body: JSON.stringify({
           token: botToken,
           chatId: chatId,
-          message: `🔥 <b>OUTDOOR ERP — ТЕСТОВОЕ ОПОВЕЩЕНИЕ</b>\n\n✅ Связь с цехом рекламы успешно установлена!\n\n👥 <b>Команда:</b>\n• Тимур (Директор)\n• Жалгас (Продажи & Дизайн)\n• Абзал (Сборка & Монтаж)\n• Альберт (Печать баннеров)\n\n⚡ Оповещения о горящих дедлайнах и новых нарядах активны.`,
+          message: `🔥 <b>MASTER PRINT — ТЕСТОВОЕ ОПОВЕЩЕНИЕ</b>\n\n✅ Связь с цехом рекламы успешно установлена!\n\n👥 <b>Команда:</b>\n• Тимур (Директор)\n• Жалгас (Продажи & Дизайн)\n• Абзал (Сборка & Монтаж)\n• Альберт (Печать баннеров)\n\n⚡ Оповещения о горящих дедлайнах и новых нарядах активны.`,
         }),
       });
 
@@ -262,7 +262,7 @@ export default function TelegramSettingsPage() {
                 Отправьте команду <code className="bg-slate-100 px-1 py-0.5 rounded font-mono font-bold">/newbot</code>
               </li>
               <li>
-                Введите название бота (например: <i>Outdoor_ERP_Bot</i>)
+                Введите название бота (например: <i>MasterPrint_Bot</i>)
               </li>
               <li>
                 Скопируйте полученный <b>HTTP API Token</b> в поле слева

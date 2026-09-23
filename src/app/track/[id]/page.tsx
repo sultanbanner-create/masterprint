@@ -75,7 +75,7 @@ export default async function ClientOrderTrackingPage({ params }: { params: { id
         <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm text-center space-y-2">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-teal-50 border border-teal-200 text-teal-700 text-xs font-bold">
             <Layers className="w-4 h-4" />
-            <span>OUTDOOR PRODUCTION &bull; ТРЕКЕР ЗАКАЗА</span>
+            <span>MASTER PRINT &bull; ТРЕКЕР ЗАКАЗА</span>
           </div>
 
           <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
@@ -220,13 +220,13 @@ export default async function ClientOrderTrackingPage({ params }: { params: { id
           </p>
           <div className="pt-2 flex items-center justify-between border-t border-emerald-200/60 text-[11px]">
             <span>Сервисная служба: <b>+998 91 222 33 44</b></span>
-            <span className="font-mono">Outdoor Production</span>
+            <span className="font-mono">Master Print</span>
           </div>
         </div>
 
         {/* Подвал */}
         <div className="text-center text-xs text-slate-400 py-4">
-          Outdoor ERP &bull; Профессиональное производство наружной рекламы
+          Master Print ERP &bull; Профессиональное производство наружной рекламы
         </div>
       </div>
     </div>

@@ -92,7 +92,7 @@ export function SupplierOrderModal({
 
   const generateOrderText = () => {
     let text = `Здравствуйте, ${supplierName}!\n`;
-    text += `Заявка на материалы для цеха наружной рекламы Outdoor Production:\n\n`;
+    text += `Заявка на материалы для цеха рекламы Master Print:\n\n`;
 
     orderItems.forEach((item, index) => {
       text += `${index + 1}. ${item.name} — ${item.orderQuantity} ${item.unit}\n`;

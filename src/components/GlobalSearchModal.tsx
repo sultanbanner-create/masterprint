@@ -303,7 +303,7 @@ export function GlobalSearchModal({ isOpen, onClose }: GlobalSearchModalProps) {
         {/* Нижний подсказчик */}
         <div className="p-3 bg-slate-50 border-t border-slate-200 text-[11px] text-slate-500 flex items-center justify-between">
           <span>Нажмите <b>ESC</b> для выхода</span>
-          <span>OUTDOOR ERP Омни-поиск</span>
+          <span>MASTER PRINT ERP Омни-поиск</span>
         </div>
       </div>
     </div>

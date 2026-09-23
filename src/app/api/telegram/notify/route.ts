@@ -27,7 +27,7 @@ export async function POST(req: Request) {
       );
     }
 
-    const textToSend = message || "🔔 Тестовое уведомление из OUTDOOR ERP цеха рекламы!";
+    const textToSend = message || "🔔 Тестовое уведомление из MASTER PRINT цеха рекламы!";
 
     const telegramRes = await fetch(
       `https://api.telegram.org/bot${botToken}/sendMessage`,

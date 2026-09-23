@@ -21,7 +21,7 @@ export async function GET(req: Request) {
       return new Response(fileBuffer, {
         headers: {
           "Content-Type": "application/x-sqlite3",
-          "Content-Disposition": `attachment; filename="outdoor_erp_database_${new Date().toISOString().split("T")[0]}.db"`,
+          "Content-Disposition": `attachment; filename="masterprint_database_${new Date().toISOString().split("T")[0]}.db"`,
         },
       });
     }
@@ -52,7 +52,7 @@ export async function GET(req: Request) {
     const backupData = {
       version: "1.0",
       timestamp: new Date().toISOString(),
-      appName: "Outdoor Advertising ERP",
+      appName: "Master Print ERP",
       data: {
         orders,
         clients,
@@ -76,7 +76,7 @@ export async function GET(req: Request) {
     return new Response(JSON.stringify(backupData, null, 2), {
       headers: {
         "Content-Type": "application/json",
-        "Content-Disposition": `attachment; filename="outdoor_erp_backup_${new Date().toISOString().split("T")[0]}.json"`,
+        "Content-Disposition": `attachment; filename="masterprint_backup_${new Date().toISOString().split("T")[0]}.json"`,
       },
     });
   } catch (error: any) {

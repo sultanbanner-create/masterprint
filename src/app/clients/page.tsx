@@ -175,7 +175,7 @@ export default function ClientsPage() {
                             href={`https://wa.me/${client.phone.replace(/[^0-9]/g, "")}?text=${encodeURIComponent(
                               `Здравствуйте, ${client.name}! Напоминаем об остатке оплаты ${formatCurrency(
                                 client.debt
-                              )} по заказу наружной рекламы в OUTDOOR PRODUCTION. Пожалуйста, сообщите, когда будет удобно закрыть наряд. Спасибо!`
+                              )} по заказу наружной рекламы в MASTER PRINT. Пожалуйста, сообщите, когда будет удобно закрыть наряд. Спасибо!`
                             )}`}
                             target="_blank"
                             rel="noopener noreferrer"
