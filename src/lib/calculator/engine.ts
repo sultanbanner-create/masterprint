@@ -386,7 +386,59 @@ export function calculateAdvertisingItem(
     });
   }
 
-  // Д. Монтаж и выезды (C02, C03, C05)
+  // Д. Короба из акрила (свет) - расчет по сумме за кв. метр (ручной ввод)
+  if (params.lightbox) {
+    const lb = params.lightbox;
+    const ratePerSqm = parseDecimal(lb.ratePerSqm || 0);
+
+    if (ratePerSqm.isZero()) {
+      status = "blocked";
+      missingFields.push("lightbox.ratePerSqm (укажите сумму за квадратный метр)");
+    } else {
+      const lightboxTotal = billableArea.times(ratePerSqm);
+      components.push({
+        code: "LIGHTBOX_ACRYLIC",
+        name: `Изготовление короба из акрила (свет) • ${billableArea.toString()} м²`,
+        unit: "м²",
+        quantity: billableArea.toString(),
+        unitPrice: ratePerSqm.toString(),
+        totalPrice: lightboxTotal.toString(),
+        scope: "item",
+      });
+    }
+
+    if (lb.lightingRate && lb.lightingType && lb.lightingType !== "none") {
+      const lr = parseDecimal(lb.lightingRate);
+      const lrTotal = billableArea.times(lr);
+      components.push({
+        code: "LIGHTBOX_LIGHTING",
+        name: lb.lightingType === "led_modules" 
+          ? "Светодиодные линзованные модули LED 12V IP67 + Блок питания" 
+          : "Светодиодная подсветка LED лента + Блок питания",
+        unit: "м²",
+        quantity: billableArea.toString(),
+        unitPrice: lr.toString(),
+        totalPrice: lrTotal.toString(),
+        scope: "item",
+      });
+    }
+
+    if (lb.profileRate && lb.profileType) {
+      const pr = parseDecimal(lb.profileRate);
+      const prTotal = perimeterTotal.times(pr);
+      components.push({
+        code: "LIGHTBOX_PROFILE",
+        name: lb.profileType === "aluminum" ? "Алюминиевый профиль для короба" : "Борт из светорассеивающего акрила/ПВХ",
+        unit: "пог. м",
+        quantity: perimeterTotal.toString(),
+        unitPrice: pr.toString(),
+        totalPrice: prTotal.toString(),
+        scope: "item",
+      });
+    }
+  }
+
+  // Е. Монтаж и выезды (C02, C03, C05)
   if (params.installation && params.installation.enabled) {
     const inst = params.installation;
     const baseRate = parseDecimal(inst.rate || 0);

@@ -39,6 +39,7 @@ export async function POST(req: NextRequest) {
       film: parameters.film,
       stand: parameters.stand,
       letters: parameters.letters,
+      lightbox: parameters.lightbox,
       costPlus: parameters.costPlus,
       discount: parameters.discount,
       minimumOrder: parameters.minimumOrder,

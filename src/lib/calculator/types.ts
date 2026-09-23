@@ -83,6 +83,15 @@ export interface CalculationParameterInputs {
     powerSupplyRate?: string | number;
   };
 
+  // Короба из акрила (свет)
+  lightbox?: {
+    ratePerSqm: string | number; // сумма за квадратный метр (вручную)
+    lightingType?: "led_modules" | "led_strip" | "none";
+    lightingRate?: string | number;
+    profileType?: "acrylic_side" | "aluminum" | "pvc";
+    profileRate?: string | number;
+  };
+
   // Подробный режим (Cost Plus)
   costPlus?: {
     directCost: string | number;

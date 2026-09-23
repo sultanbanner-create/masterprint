@@ -146,14 +146,14 @@ export function OrderCalculator({ employees }: { employees: any[] }) {
       newItem = {
         id: newId,
         serviceType: "LIGHTBOX",
-        title: "Световой короб (Лайтбокс)",
-        width: undefined,
-        height: undefined,
-        area: 0,
+        title: "Изготовление короба из акрила (свет)",
+        width: 1,
+        height: 1,
+        area: 1,
         quantity: 1,
-        unitPrice: 750000,
-        options: "Профиль алюминиевый, светорассеивающий акрил",
-        totalPrice: 0,
+        unitPrice: 850000,
+        options: "Акрил светорассеивающий молочный, подсветка LED 12V IP67, блок питания",
+        totalPrice: 850000,
       };
     } else if (type === "ORACAL") {
       newItem = {
@@ -388,7 +388,7 @@ export function OrderCalculator({ employees }: { employees: any[] }) {
   const categoryChips = [
     { type: "BANNER" as const, label: "Баннер", icon: "🖨️", master: "Альберт", desc: "30 000 / 50 000 сум" },
     { type: "LETTERS" as const, label: "Буквы LED", icon: "💡", master: "Абзал", desc: "от 6 500 сум/см" },
-    { type: "LIGHTBOX" as const, label: "Лайтбокс", icon: "📦", master: "Короб", desc: "750 000 сум/м²" },
+    { type: "LIGHTBOX" as const, label: "Короб из акрила (свет)", icon: "📦", master: "Абзал", desc: "сумма за м² вручную" },
     { type: "ORACAL" as const, label: "Оракал", icon: "🎨", master: "Пленка", desc: "50 000 сум/м²" },
     { type: "AUTO_BRANDING" as const, label: "Авто", icon: "🚐", master: "Damas/Labo", desc: "650 000 сум" },
     { type: "STAND" as const, label: "Стенд", icon: "📋", master: "ПВХ", desc: "350 000 сум/м²" },
@@ -905,7 +905,107 @@ export function OrderCalculator({ employees }: { employees: any[] }) {
                       ))}
                     </div>
                   </div>
-                ) : ["LIGHTBOX", "ORACAL", "STAND"].includes(item.serviceType) ? (
+                ) : item.serviceType === "LIGHTBOX" ? (
+                  <div className="space-y-2">
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 text-xs">
+                      <div>
+                        <label className="block text-[10px] font-bold text-slate-500 mb-1">
+                          Ширина (м)
+                        </label>
+                        <input
+                          type="number"
+                          step="0.05"
+                          placeholder="0.00"
+                          value={item.width ?? ""}
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            updateItem(item.id, { width: val === "" ? undefined : parseFloat(val) });
+                          }}
+                          className="w-full px-3 py-1.5 bg-white border border-slate-300 rounded-lg font-mono font-bold text-xs focus:border-blue-600 focus:outline-none"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-[10px] font-bold text-slate-500 mb-1">
+                          Высота (м)
+                        </label>
+                        <input
+                          type="number"
+                          step="0.05"
+                          placeholder="0.00"
+                          value={item.height ?? ""}
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            updateItem(item.id, { height: val === "" ? undefined : parseFloat(val) });
+                          }}
+                          className="w-full px-3 py-1.5 bg-white border border-slate-300 rounded-lg font-mono font-bold text-xs focus:border-blue-600 focus:outline-none"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-[10px] font-bold text-blue-700 mb-1 flex items-center justify-between">
+                          <span>Сумма за 1 м² (вручную) *</span>
+                          <span className="text-[9px] text-slate-400 font-normal">UZS/м²</span>
+                        </label>
+                        <div className="flex items-center gap-1.5">
+                          <span className="px-2 py-1.5 bg-blue-100 text-blue-900 rounded-lg font-mono font-black text-xs shrink-0">
+                            {item.area || 0} м²
+                          </span>
+                          <input
+                            type="number"
+                            step="10000"
+                            placeholder="Вручную сум/м²"
+                            value={item.unitPrice ?? ""}
+                            onChange={(e) => {
+                              const val = e.target.value;
+                              updateItem(item.id, { unitPrice: val === "" ? 0 : Number(val) });
+                            }}
+                            className="w-full px-2 py-1.5 bg-white border-2 border-blue-500 rounded-lg font-mono text-xs font-black text-blue-900 focus:outline-none shadow-xs"
+                          />
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className="block text-[10px] font-bold text-slate-500 mb-1">
+                          Комплектация & Опции
+                        </label>
+                        <input
+                          type="text"
+                          placeholder="Светорассеивающий акрил, LED..."
+                          value={item.options || ""}
+                          onChange={(e) => updateItem(item.id, { options: e.target.value })}
+                          className="w-full px-3 py-1.5 bg-white border border-slate-300 rounded-lg text-xs focus:border-blue-600 focus:outline-none"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Быстрые тарифы за 1 кв. метр */}
+                    <div className="flex flex-wrap items-center gap-1.5 text-[11px] pt-1">
+                      <span className="text-slate-400 font-semibold mr-0.5">Тариф за м²:</span>
+                      {[
+                        { label: "750 000 сум", price: 750000, desc: "Акрил светорассеивающий + LED лента" },
+                        { label: "850 000 сум", price: 850000, desc: "Акрил молочный + модули LED 12V IP67 + БП" },
+                        { label: "950 000 сум", price: 950000, desc: "Акрил + алюминиевый профиль + LED модули" },
+                        { label: "1 200 000 сум", price: 1200000, desc: "Фигурный акриловый короб со световым бортом" },
+                        { label: "1 500 000 сум", price: 1500000, desc: "Двусторонний консольный короб из акрила" },
+                      ].map((opt) => (
+                        <button
+                          key={opt.label}
+                          type="button"
+                          onClick={() => updateItem(item.id, { unitPrice: opt.price, options: opt.desc })}
+                          className={cn(
+                            "px-2 py-0.5 rounded-lg border transition font-medium text-xs",
+                            item.unitPrice === opt.price
+                              ? "bg-blue-50 border-blue-500 text-blue-800 font-bold shadow-2xs"
+                              : "bg-white border-slate-200 text-slate-600 hover:bg-slate-50"
+                          )}
+                        >
+                          {opt.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                ) : ["ORACAL", "STAND"].includes(item.serviceType) ? (
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 text-xs">
                     <div>
                       <label className="block text-[10px] font-bold text-slate-500 mb-1">

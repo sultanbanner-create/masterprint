@@ -14,6 +14,7 @@ import {
   Eye,
   EyeOff,
   Zap,
+  Box,
   Sliders,
   DollarSign,
   ShieldAlert,
@@ -29,7 +30,7 @@ import { CommercialProposal } from "@/components/CommercialProposal";
 
 export default function SmartCalculatorPage() {
   // Выбор услуги
-  const [activeCategory, setActiveCategory] = useState<"BANNER" | "ORACAL" | "STANDS" | "LETTERS" | "COST_PLUS">("BANNER");
+  const [activeCategory, setActiveCategory] = useState<"BANNER" | "ORACAL" | "STANDS" | "LETTERS" | "LIGHTBOX" | "COST_PLUS">("BANNER");
   const [pricingMode, setPricingMode] = useState<"tariff" | "cost_plus">("tariff");
 
   // Роль для демонстрации серверного скрытия себестоимости
@@ -41,6 +42,11 @@ export default function SmartCalculatorPage() {
   const [heightVal, setHeightVal] = useState("2");
   const [heightUnit, setHeightUnit] = useState<"m" | "cm" | "mm">("m");
   const [quantity, setQuantity] = useState(1);
+
+  // Короба из акрила (свет) - сумма за кв. метр вручную
+  const [lightboxRatePerSqm, setLightboxRatePerSqm] = useState(850000);
+  const [lightboxLightingType, setLightboxLightingType] = useState<"led_modules" | "led_strip" | "none">("led_modules");
+  const [lightboxProfileType, setLightboxProfileType] = useState<"acrylic_side" | "aluminum" | "pvc">("acrylic_side");
 
   // Баннеры
   const [printRate, setPrintRate] = useState(30000);
@@ -139,6 +145,7 @@ export default function SmartCalculatorPage() {
       const defaultTitle = 
         activeCategory === "BANNER" ? `Баннер ${widthVal}×${heightVal}м` :
         activeCategory === "LETTERS" ? `Буквы ${letterText}` :
+        activeCategory === "LIGHTBOX" ? `Короб из акрила (свет) ${widthVal}×${heightVal}м` :
         activeCategory === "ORACAL" ? `Пленка Oracal ${widthVal}×${heightVal}м` :
         activeCategory === "STANDS" ? `Стенд ${widthVal}×${heightVal}м` :
         "Рекламное изделие";
@@ -159,7 +166,11 @@ export default function SmartCalculatorPage() {
           notes: `Калькулятор Master Print (Токен: ${calcResult.calculation_token})`,
           items: [
             {
-              serviceType: activeCategory === "BANNER" ? "BANNER" : activeCategory === "LETTERS" ? "LETTERS" : activeCategory === "STANDS" ? "STAND" : "ORACAL",
+              serviceType: 
+                activeCategory === "BANNER" ? "BANNER" : 
+                activeCategory === "LETTERS" ? "LETTERS" : 
+                activeCategory === "LIGHTBOX" ? "LIGHTBOX" :
+                activeCategory === "STANDS" ? "STAND" : "ORACAL",
               title: orderTitle.trim() || defaultTitle,
               width: Number(widthVal) || 0,
               height: Number(heightVal) || 0,
@@ -272,6 +283,18 @@ export default function SmartCalculatorPage() {
         scope: installScope,
         rate: installRate,
       };
+    } else if (activeCategory === "LIGHTBOX") {
+      payload.parameters.lightbox = {
+        ratePerSqm: lightboxRatePerSqm,
+        lightingType: lightboxLightingType,
+        profileType: lightboxProfileType,
+      };
+      payload.parameters.installation = {
+        enabled: installEnabled,
+        scope: installScope,
+        rate: installRate,
+        heightFactor: heightFactor,
+      };
     }
 
     fetch("/api/calculations/preview", {
@@ -343,6 +366,9 @@ export default function SmartCalculatorPage() {
     minOrderEnabled,
     minOrderAmount,
     roundingStep,
+    lightboxRatePerSqm,
+    lightboxLightingType,
+    lightboxProfileType,
   ]);
 
   // Запуск тестов спецификации в один клик
@@ -473,6 +499,17 @@ export default function SmartCalculatorPage() {
         >
           <Zap className="w-4 h-4" />
           Световые & Золотые буквы
+        </button>
+        <button
+          onClick={() => setActiveCategory("LIGHTBOX")}
+          className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition ${
+            activeCategory === "LIGHTBOX"
+              ? "bg-white text-blue-700 shadow-sm border border-slate-200"
+              : "text-slate-600 hover:text-slate-900"
+          }`}
+        >
+          <Box className="w-4 h-4 text-amber-500" />
+          Короб из акрила (свет)
         </button>
         <button
           onClick={() => setActiveCategory("COST_PLUS")}
@@ -825,6 +862,145 @@ export default function SmartCalculatorPage() {
                         {t.label}
                       </button>
                     ))}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Специализированные опции Световых акриловых коробов */}
+            {activeCategory === "LIGHTBOX" && (
+              <div className="space-y-4 pt-4 border-t border-slate-100">
+                {/* Главный блок ручного ввода суммы за 1 м² */}
+                <div className="p-4 bg-gradient-to-br from-amber-50 to-orange-50/50 rounded-2xl border-2 border-amber-300 space-y-3">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
+                    <div>
+                      <label className="block text-xs font-black text-amber-950 uppercase tracking-wide">
+                        Сумма за 1 квадратный метр (вручную в UZS) *
+                      </label>
+                      <p className="text-[11px] text-amber-800">
+                        Введите вручную стоимость 1 м² или выберите готовый тариф
+                      </p>
+                    </div>
+                    {calcResult?.normalized_inputs?.billableAreaM2 && (
+                      <span className="px-2.5 py-1 bg-amber-200/80 text-amber-900 rounded-lg text-xs font-black self-start sm:self-auto">
+                        Площадь: {calcResult.normalized_inputs.billableAreaM2} м²
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="flex">
+                    <input
+                      type="number"
+                      step="10000"
+                      value={lightboxRatePerSqm}
+                      onChange={(e) => setLightboxRatePerSqm(Math.max(0, Number(e.target.value) || 0))}
+                      placeholder="Например: 850000"
+                      className="w-full px-4 py-2.5 bg-white border-2 border-amber-400 rounded-l-xl text-base font-black text-slate-900 focus:outline-none focus:border-amber-600 shadow-xs"
+                    />
+                    <span className="px-4 bg-amber-200/60 border-y-2 border-r-2 border-amber-400 rounded-r-xl text-xs font-black flex items-center text-amber-950">
+                      UZS / м²
+                    </span>
+                  </div>
+
+                  {/* Быстрые пресеты тарифов */}
+                  <div className="flex flex-wrap items-center gap-1.5 pt-1">
+                    <span className="text-[10px] text-amber-800 font-bold uppercase">Быстрый выбор:</span>
+                    {[
+                      { label: "750 000 сум", rate: 750000 },
+                      { label: "850 000 сум", rate: 850000 },
+                      { label: "950 000 сум", rate: 950000 },
+                      { label: "1 200 000 сум", rate: 1200000 },
+                      { label: "1 500 000 сум", rate: 1500000 },
+                    ].map((p) => (
+                      <button
+                        key={p.rate}
+                        type="button"
+                        onClick={() => setLightboxRatePerSqm(p.rate)}
+                        className={`px-2.5 py-1 rounded-lg text-xs font-bold border transition ${
+                          lightboxRatePerSqm === p.rate
+                            ? "bg-amber-500 text-white border-amber-600 shadow-xs"
+                            : "bg-white text-slate-700 border-amber-200 hover:bg-amber-100/60"
+                        }`}
+                      >
+                        {p.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Подсветка LED */}
+                <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200 space-y-3">
+                  <label className="block text-xs font-bold text-slate-800">
+                    Тип свечения и электрики
+                  </label>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                    {[
+                      { id: "led_modules", label: "💡 Линзованные модули LED 12V", desc: "Герметичные линзы IP67 + блок питания" },
+                      { id: "led_strip", label: "✨ LED лента высокой плотности", desc: "Интерьерная подсветка + блок питания" },
+                      { id: "none", label: "🔲 Без электрики", desc: "Только корпус из акрила без диодов" },
+                    ].map((t) => (
+                      <button
+                        key={t.id}
+                        type="button"
+                        onClick={() => setLightboxLightingType(t.id as any)}
+                        className={`p-3 rounded-xl text-left border transition ${
+                          lightboxLightingType === t.id
+                            ? "bg-blue-50 text-blue-900 border-blue-500 shadow-2xs font-bold"
+                            : "bg-white text-slate-700 border-slate-200 hover:bg-slate-100"
+                        }`}
+                      >
+                        <div className="text-xs font-bold">{t.label}</div>
+                        <div className="text-[10px] text-slate-500 mt-0.5">{t.desc}</div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Конструкция борта / профиля */}
+                <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200 space-y-3">
+                  <label className="block text-xs font-bold text-slate-800">
+                    Материал борта короба
+                  </label>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                    {[
+                      { id: "acrylic_side", label: "Световой акриловый борт", desc: "Короб светится целиком (лицо + борта)" },
+                      { id: "aluminum", label: "Алюминиевый профиль", desc: "Профиль 90-130мм с порошковой покраской" },
+                      { id: "pvc", label: "ПВХ пластик (оклейка)", desc: "Глухой борт из ПВХ 5-8мм с пленкой Oracal" },
+                    ].map((p) => (
+                      <button
+                        key={p.id}
+                        type="button"
+                        onClick={() => setLightboxProfileType(p.id as any)}
+                        className={`p-3 rounded-xl text-left border transition ${
+                          lightboxProfileType === p.id
+                            ? "bg-blue-50 text-blue-900 border-blue-500 shadow-2xs font-bold"
+                            : "bg-white text-slate-700 border-slate-200 hover:bg-slate-100"
+                        }`}
+                      >
+                        <div className="text-xs font-bold">{p.label}</div>
+                        <div className="text-[10px] text-slate-500 mt-0.5">{p.desc}</div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Выездной монтаж */}
+                <div className="p-4 bg-blue-50/50 rounded-2xl border border-blue-100 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <label className="text-xs font-bold text-slate-900 flex items-center gap-2">
+                      <input
+                        type="checkbox"
+                        checked={installEnabled}
+                        onChange={(e) => setInstallEnabled(e.target.checked)}
+                        className="w-4 h-4 text-blue-600 rounded"
+                      />
+                      Выездной монтаж короба на объекте (Chevrolet Labo)
+                    </label>
+                    {installEnabled && (
+                      <span className="text-[11px] font-bold text-blue-700">
+                        {installScope === "site_visit" ? "150 000 UZS (единый на объект)" : "за штуку"}
+                      </span>
+                    )}
                   </div>
                 </div>
               </div>
