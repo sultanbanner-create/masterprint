@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { 
   Flame, 
@@ -33,6 +33,35 @@ export function KanbanBoard({
 
   // По умолчанию для всех открываем полный конвейер цеха
   const [filterEmployee, setFilterEmployee] = useState<string>("ALL");
+
+  // Фоновая синхронизация канбана с базой данных
+  const reloadOrders = async () => {
+    try {
+      const res = await fetch("/api/orders", { cache: "no-store" });
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data)) {
+          setOrders(data);
+        }
+      }
+    } catch (e) {
+      console.error("Kanban auto-sync error:", e);
+    }
+  };
+
+  useEffect(() => {
+    reloadOrders();
+    const timer = setInterval(reloadOrders, 4000);
+    const onFocus = () => reloadOrders();
+    window.addEventListener("focus", onFocus);
+    window.addEventListener("visibilitychange", onFocus);
+
+    return () => {
+      clearInterval(timer);
+      window.removeEventListener("focus", onFocus);
+      window.removeEventListener("visibilitychange", onFocus);
+    };
+  }, []);
 
   // Галочка выполнения на Канбане
   const toggleCompletion = async (order: any) => {

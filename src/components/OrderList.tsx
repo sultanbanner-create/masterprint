@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { 
   Clock, 
@@ -41,6 +41,40 @@ export function OrderList({ initialOrders, employees, currentUser }: OrderListPr
   const [filterDebtOnly, setFilterDebtOnly] = useState(false);
   const [filterProductType, setFilterProductType] = useState<string>("ALL");
   const [search, setSearch] = useState("");
+
+  // Фоновое автоматическое обновление списка нарядов в реальном времени
+  const reloadOrders = async () => {
+    try {
+      const res = await fetch("/api/orders", { cache: "no-store" });
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data)) {
+          setOrders(data);
+        }
+      }
+    } catch (e) {
+      console.error("Auto-sync error:", e);
+    }
+  };
+
+  useEffect(() => {
+    // 1. Свежие данные из базы при монтировании
+    reloadOrders();
+
+    // 2. Фоновый опрос каждые 4 сек (новые наряды появляются у мастеров автоматически)
+    const timer = setInterval(reloadOrders, 4000);
+
+    // 3. Мгновенное обновление при возврате на вкладку или разблокировке смартфона
+    const onFocus = () => reloadOrders();
+    window.addEventListener("focus", onFocus);
+    window.addEventListener("visibilitychange", onFocus);
+
+    return () => {
+      clearInterval(timer);
+      window.removeEventListener("focus", onFocus);
+      window.removeEventListener("visibilitychange", onFocus);
+    };
+  }, []);
 
   const updateStatus = async (orderId: number, nextStatus: string) => {
     try {

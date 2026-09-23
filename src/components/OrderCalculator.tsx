@@ -375,6 +375,7 @@ export function OrderCalculator({ employees }: { employees: any[] }) {
 
       if (!res.ok) throw new Error("Ошибка создания наряда");
       const created = await res.json();
+      router.refresh();
       router.push(`/orders/${created.id}`);
     } catch (e) {
       console.error(e);

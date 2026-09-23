@@ -5,6 +5,8 @@ import { verifyToken } from "@/lib/auth";
 import { OrderList } from "@/components/OrderList";
 import { PlusCircle, KanbanSquare } from "lucide-react";
 
+export const dynamic = "force-dynamic";
+export const fetchCache = "force-no-store";
 export const revalidate = 0;
 
 export default async function OrdersPage() {

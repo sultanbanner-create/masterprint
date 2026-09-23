@@ -5,6 +5,8 @@ import { verifyToken } from "@/lib/auth";
 import { KanbanBoard } from "@/components/KanbanBoard";
 import { PlusCircle, ClipboardList } from "lucide-react";
 
+export const dynamic = "force-dynamic";
+export const fetchCache = "force-no-store";
 export const revalidate = 0;
 
 export default async function KanbanPage() {
