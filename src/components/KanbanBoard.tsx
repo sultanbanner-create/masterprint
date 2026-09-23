@@ -11,7 +11,9 @@ import {
   ArrowRight,
   Printer,
   Award,
-  CheckCircle2
+  CheckCircle2,
+  Square,
+  CheckSquare
 } from "lucide-react";
 import { formatCurrency, formatDateTime, getDeadlineInfo, STAGES } from "@/lib/utils";
 
@@ -29,14 +31,49 @@ export function KanbanBoard({
   const isDirector = currentUser?.role === "DIRECTOR";
   const isWorkshop = currentUser?.role === "WORKSHOP_ASSEMBLY" || currentUser?.role === "WORKSHOP_PRINTING";
 
-  // По умолчанию для мастеров цеха включаем их участок
-  const [filterEmployee, setFilterEmployee] = useState<string>(() => {
-    if (currentUser && currentUser.role !== "DIRECTOR") {
-      const match = employees.find((e) => e.id === currentUser.id || e.name === currentUser.name);
-      if (match) return match.id;
+  // По умолчанию для всех открываем полный конвейер цеха
+  const [filterEmployee, setFilterEmployee] = useState<string>("ALL");
+
+  // Галочка выполнения на Канбане
+  const toggleCompletion = async (order: any) => {
+    const isCurrentlyDone = order.status === "READY" || order.status === "COMPLETED" || !!order.completedBy;
+    const willBeDone = !isCurrentlyDone;
+    const performerName = currentUser?.name || "Мастер цеха";
+
+    setOrders((prev) =>
+      prev.map((o) => {
+        if (o.id === order.id) {
+          const hasPrint = o.items?.some((i: any) => i.serviceType === "BANNER" || i.serviceType === "ORACAL");
+          return {
+            ...o,
+            status: willBeDone ? "READY" : (hasPrint ? "PRINTING" : "ASSEMBLY"),
+            completedBy: willBeDone ? performerName : null,
+            completedAt: willBeDone ? new Date().toISOString() : null,
+          };
+        }
+        return o;
+      })
+    );
+
+    try {
+      const res = await fetch(`/api/orders/${order.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          isCompletedToggle: willBeDone,
+          completedBy: performerName,
+          cancelledBy: performerName,
+          assignedToId: order.assignedToId || currentUser?.id,
+        }),
+      });
+      if (res.ok) {
+        const updated = await res.json();
+        setOrders((prev) => prev.map((o) => (o.id === order.id ? updated : o)));
+      }
+    } catch (err) {
+      console.error("Kanban completion toggle error:", err);
     }
-    return "ALL";
-  });
+  };
 
   // Персональные показатели выработки
   const myOrders = orders.filter(
@@ -280,15 +317,25 @@ export function KanbanBoard({
                         </div>
 
                         <div className="flex items-center gap-1 shrink-0">
-                          {order.status !== "READY" && order.status !== "COMPLETED" && (
+                          {order.status === "READY" || order.status === "COMPLETED" || order.completedBy ? (
                             <button
                               type="button"
-                              onClick={() => updateOrderStatus(order.id, "READY")}
-                              className="px-2 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-[10px] font-bold transition flex items-center gap-0.5 shadow-2xs active:scale-95"
-                              title="Отметить наряд как готовый (снимает тревогу дедлайна)"
+                              onClick={() => toggleCompletion(order)}
+                              className="px-2 py-1 bg-emerald-100 hover:bg-emerald-200 text-emerald-900 border border-emerald-300 rounded-lg text-[10px] font-bold transition flex items-center gap-0.5 shadow-2xs active:scale-95"
+                              title={`Выполнено! Нажмите для отмены отметки. Выполнил: ${order.completedBy || order.assignedTo?.name || "Мастер"}`}
                             >
-                              <CheckCircle2 className="w-3 h-3" />
-                              <span>{order.assignedTo?.name === "Альберт" ? "Напечатан" : "Готов"}</span>
+                              <CheckSquare className="w-3 h-3 text-emerald-600 shrink-0" />
+                              <span className="truncate max-w-[70px]">{order.completedBy || "Готов"}</span>
+                            </button>
+                          ) : (
+                            <button
+                              type="button"
+                              onClick={() => toggleCompletion(order)}
+                              className="px-2 py-1 bg-slate-50 hover:bg-emerald-50 text-slate-700 hover:text-emerald-800 border border-slate-300 hover:border-emerald-400 rounded-lg text-[10px] font-semibold transition flex items-center gap-0.5 shadow-2xs active:scale-95 group"
+                              title={`Поставить галочку: Отметить наряд выполненным (${currentUser?.name || "Мастер"})`}
+                            >
+                              <Square className="w-3 h-3 text-slate-400 group-hover:text-emerald-600 shrink-0" />
+                              <span>Галочка</span>
                             </button>
                           )}
 

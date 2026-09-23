@@ -51,6 +51,8 @@ model Order {
   totalAmount    Float           @default(0)
   paidAmount     Float           @default(0)
   debtAmount     Float           @default(0)
+  completedBy    String?         // Имя сотрудника, который поставил галочку выполнения (Альберт, Абзал, Жалгас, Тимур)
+  completedAt    DateTime?       // Дата и время выполнения наряда
   items          OrderItem[]
   payments       Payment[]
   comments       OrderComment[]

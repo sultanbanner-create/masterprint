@@ -15,7 +15,9 @@ import {
   ArrowRight,
   Printer,
   Download,
-  Award
+  Award,
+  Square,
+  CheckSquare
 } from "lucide-react";
 import { formatCurrency, formatDate, formatDateTime, getDeadlineInfo, STATUS_CONFIG } from "@/lib/utils";
 
@@ -31,14 +33,8 @@ export function OrderList({ initialOrders, employees, currentUser }: OrderListPr
   const isDirector = currentUser?.role === "DIRECTOR";
   const isWorkshop = currentUser?.role === "WORKSHOP_ASSEMBLY" || currentUser?.role === "WORKSHOP_PRINTING";
 
-  // Для мастеров и менеджера по умолчанию показываем их собственные наряды
-  const [filterEmployee, setFilterEmployee] = useState<string>(() => {
-    if (currentUser && currentUser.role !== "DIRECTOR") {
-      const match = employees.find((e) => e.id === currentUser.id || e.name === currentUser.name);
-      if (match) return match.id;
-    }
-    return "ALL";
-  });
+  // Все наряды видны ВСЕМ сотрудникам в реестре по умолчанию
+  const [filterEmployee, setFilterEmployee] = useState<string>("ALL");
 
   const [filterStatus, setFilterStatus] = useState<string>("ALL");
   const [filterUrgentOnly, setFilterUrgentOnly] = useState(false);
@@ -60,6 +56,48 @@ export function OrderList({ initialOrders, employees, currentUser }: OrderListPr
       }
     } catch (e) {
       console.error(e);
+    }
+  };
+
+  // Галочка выполнения: кто выполнил наряд ставит галочку
+  const toggleCompletion = async (order: any) => {
+    const isCurrentlyDone = order.status === "READY" || order.status === "COMPLETED" || !!order.completedBy;
+    const willBeDone = !isCurrentlyDone;
+    const performerName = currentUser?.name || "Мастер цеха";
+
+    // Оптимистичное обновление интерфейса
+    setOrders((prev) =>
+      prev.map((o) => {
+        if (o.id === order.id) {
+          const hasPrint = o.items?.some((i: any) => i.serviceType === "BANNER" || i.serviceType === "ORACAL");
+          return {
+            ...o,
+            status: willBeDone ? "READY" : (hasPrint ? "PRINTING" : "ASSEMBLY"),
+            completedBy: willBeDone ? performerName : null,
+            completedAt: willBeDone ? new Date().toISOString() : null,
+          };
+        }
+        return o;
+      })
+    );
+
+    try {
+      const res = await fetch(`/api/orders/${order.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          isCompletedToggle: willBeDone,
+          completedBy: performerName,
+          cancelledBy: performerName,
+          assignedToId: order.assignedToId || currentUser?.id,
+        }),
+      });
+      if (res.ok) {
+        const updated = await res.json();
+        setOrders((prev) => prev.map((o) => (o.id === order.id ? updated : o)));
+      }
+    } catch (err) {
+      console.error("Completion toggle error:", err);
     }
   };
 
@@ -384,6 +422,9 @@ export function OrderList({ initialOrders, employees, currentUser }: OrderListPr
                 <th className="py-3 px-4">Изделие / Задача</th>
                 <th className="py-3 px-4">Ответственный мастер</th>
                 <th className="py-3 px-4 text-center">Статус</th>
+                <th className="py-3 px-4 text-center bg-emerald-50/60 text-emerald-900 border-x border-emerald-200">
+                  Выполнение (Галочка)
+                </th>
                 <th className="py-3 px-4">Время исполнения (Дедлайн)</th>
                 <th className="py-3 px-4 text-right">{isWorkshop ? "Сумма наряда" : "Сумма / Оплата"}</th>
                 <th className="py-3 px-5 text-center">Действие</th>
@@ -474,6 +515,33 @@ export function OrderList({ initialOrders, employees, currentUser }: OrderListPr
                       </select>
                     </td>
 
+                    {/* Колонка «Выполнение (Галочка)»: кто выполнил заказ ставит галочку */}
+                    <td className="py-3.5 px-4 text-center whitespace-nowrap bg-emerald-50/20 border-x border-emerald-100/60">
+                      {order.status === "READY" || order.status === "COMPLETED" || order.completedBy ? (
+                        <button
+                          type="button"
+                          onClick={() => toggleCompletion(order)}
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-100 hover:bg-emerald-200 text-emerald-900 border border-emerald-300 font-bold text-xs transition active:scale-95 shadow-2xs group"
+                          title={`Выполнено! Нажмите, если нужно снять галочку. Отметил: ${order.completedBy || order.assignedTo?.name || "Мастер"}`}
+                        >
+                          <CheckSquare className="w-4 h-4 text-emerald-600 shrink-0" />
+                          <span className="font-extrabold">
+                            {order.completedBy ? `Выполнил: ${order.completedBy}` : (order.assignedTo?.name ? `Выполнил: ${order.assignedTo.name}` : "Выполнен ✅")}
+                          </span>
+                        </button>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => toggleCompletion(order)}
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white hover:bg-emerald-50 text-slate-700 hover:text-emerald-800 border border-slate-300 hover:border-emerald-400 font-semibold text-xs transition active:scale-95 shadow-2xs group"
+                          title={`Поставить галочку: Я выполнил этот наряд (${currentUser?.name || "Мастер"})`}
+                        >
+                          <Square className="w-4 h-4 text-slate-400 group-hover:text-emerald-600 shrink-0" />
+                          <span className="group-hover:font-bold">Поставить галочку</span>
+                        </button>
+                      )}
+                    </td>
+
                     {/* Время исполнения / дедлайн */}
                     <td className="py-3.5 px-4 whitespace-nowrap">
                       <div className="space-y-1">
@@ -519,34 +587,15 @@ export function OrderList({ initialOrders, employees, currentUser }: OrderListPr
                       )}
                     </td>
 
-                    {/* Кнопки действия: быстрая отметка готовности для Альберта/мастеров + Открыть */}
+                    {/* Кнопка действия: Открыть карточку наряда */}
                     <td className="py-3.5 px-5 text-center whitespace-nowrap">
-                      <div className="flex items-center justify-center gap-1.5">
-                        {order.status !== "READY" && order.status !== "COMPLETED" ? (
-                          <button
-                            type="button"
-                            onClick={() => updateStatus(order.id, "READY")}
-                            className="px-2.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs transition inline-flex items-center gap-1 shadow-xs active:scale-95"
-                            title="Отметить заказ как готовый (снимает тревогу дедлайна)"
-                          >
-                            <CheckCircle2 className="w-3.5 h-3.5" />
-                            <span>{order.assignedTo?.name === "Альберт" ? "Напечатан" : "Готов"}</span>
-                          </button>
-                        ) : order.status === "READY" ? (
-                          <span className="px-2 py-1 rounded-xl bg-emerald-50 text-emerald-800 border border-emerald-200 font-bold text-[11px] flex items-center gap-1">
-                            <CheckCircle2 className="w-3 h-3 text-emerald-600" />
-                            <span>Готов</span>
-                          </span>
-                        ) : null}
-
-                        <Link
-                          href={`/orders/${order.id}`}
-                          className="px-2.5 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition inline-flex items-center gap-0.5 shadow-2xs"
-                        >
-                          <span>Открыть</span>
-                          <ChevronRight className="w-3.5 h-3.5" />
-                        </Link>
-                      </div>
+                      <Link
+                        href={`/orders/${order.id}`}
+                        className="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition inline-flex items-center gap-0.5 shadow-2xs"
+                      >
+                        <span>Открыть</span>
+                        <ChevronRight className="w-3.5 h-3.5" />
+                      </Link>
                     </td>
                   </tr>
                 );
@@ -554,7 +603,7 @@ export function OrderList({ initialOrders, employees, currentUser }: OrderListPr
 
               {filteredOrders.length === 0 && (
                 <tr>
-                  <td colSpan={8} className="py-12 text-center text-slate-400">
+                  <td colSpan={9} className="py-12 text-center text-slate-400">
                     <p className="font-bold text-sm">Заказы не найдены</p>
                     <p className="text-xs mt-1">Попробуйте изменить параметры фильтрации или создать новый наряд</p>
                   </td>

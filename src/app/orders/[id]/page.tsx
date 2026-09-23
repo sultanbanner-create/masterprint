@@ -29,7 +29,9 @@ import {
   FileCode,
   ExternalLink,
   Zap,
-  Hammer
+  Hammer,
+  Square,
+  CheckSquare
 } from "lucide-react";
 import { formatCurrency, formatDate, formatDateTime, getDeadlineInfo, STATUS_CONFIG } from "@/lib/utils";
 import { PrintReceipt } from "@/components/PrintReceipt";
@@ -434,21 +436,40 @@ export default function OrderDetailPage({ params }: { params: { id: string } }) 
             </button>
           )}
 
-          {order.status !== "READY" && order.status !== "COMPLETED" ? (
+          {/* Галочка выполнения: кто выполнил наряд */}
+          {order.status !== "READY" && order.status !== "COMPLETED" && !order.completedBy ? (
             <button
-              onClick={() => updateField({ status: "READY" })}
+              onClick={() => {
+                const performer = currentUser?.name || order.assignedTo?.name || "Мастер цеха";
+                updateField({ 
+                  isCompletedToggle: true,
+                  status: "READY",
+                  completedBy: performer,
+                  assignedToId: order.assignedToId || currentUser?.id,
+                });
+              }}
               className="px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition flex items-center gap-1.5 shadow-sm shadow-emerald-600/30 active:scale-95"
-              title="Отметить заказ как готовый к выдаче (снимает тревогу дедлайна)"
+              title={`Поставить галочку: Отметить наряд выполненным (${currentUser?.name || "Мастер"})`}
             >
-              <CheckCircle2 className="w-4 h-4" />
-              <span>{order.assignedTo?.name === "Альберт" ? "✅ Напечатан (Готов)" : "✅ Отметить готовым"}</span>
+              <Square className="w-4 h-4 text-emerald-200" />
+              <span>Поставить галочку: Выполнено ({currentUser?.name || "Мастер"})</span>
             </button>
-          ) : order.status === "READY" ? (
-            <span className="px-3 py-2 rounded-xl bg-emerald-100 text-emerald-800 border border-emerald-300 text-xs font-bold flex items-center gap-1.5">
-              <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-              <span>Готов к выдаче</span>
-            </span>
-          ) : null}
+          ) : (
+            <button
+              onClick={() => {
+                const performer = currentUser?.name || "Мастер цеха";
+                updateField({ 
+                  isCompletedToggle: false,
+                  cancelledBy: performer,
+                });
+              }}
+              className="px-3.5 py-2 rounded-xl bg-emerald-100 hover:bg-emerald-200 text-emerald-900 border border-emerald-300 text-xs font-bold flex items-center gap-1.5 transition active:scale-95 shadow-2xs"
+              title="Нажмите, чтобы снять отметку выполнения (если заказ еще в работе)"
+            >
+              <CheckSquare className="w-4 h-4 text-emerald-600" />
+              <span>✅ Выполнил: <b>{order.completedBy || order.assignedTo?.name || "Мастер"}</b> (снять)</span>
+            </button>
+          )}
 
           <button
             onClick={() => setIsPrintOpen(true)}

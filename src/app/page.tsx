@@ -260,20 +260,22 @@ export default async function DashboardPage() {
           </div>
         </div>
 
-        {/* Список текущих нарядов сотрудника */}
+        {/* Список текущих нарядов */}
         <div className="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
           <div className="px-5 py-4 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between">
             <h2 className="text-sm font-bold text-slate-900 flex items-center gap-2">
               <ClipboardList className="w-4 h-4 text-blue-600" />
-              Мои наряды в работе ({myActiveOrders.length})
+              {myActiveOrders.length > 0 
+                ? `Мои наряды в работе (${myActiveOrders.length})` 
+                : `Наряды цеха в производстве (${activeOrders.length})`}
             </h2>
             <Link href="/orders" className="text-xs text-blue-600 font-bold hover:underline">
-              Все заказы &rarr;
+              Реестр всех нарядов ({orders.length}) &rarr;
             </Link>
           </div>
 
           <div className="divide-y divide-slate-100">
-            {myActiveOrders.map((o) => {
+            {(myActiveOrders.length > 0 ? myActiveOrders : activeOrders).map((o) => {
               const statusCfg = STATUS_CONFIG[o.status] || {
                 label: o.status,
                 color: "bg-slate-100 text-slate-700",
@@ -329,22 +331,29 @@ export default async function DashboardPage() {
                       </span>
                     </div>
 
-                    <Link
-                      href={`/orders/${o.id}`}
-                      className="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition flex items-center gap-1 shadow-xs active:scale-95"
-                      title="Открыть карточку наряда и подтвердить готовность"
-                    >
-                      <CheckCircle2 className="w-3.5 h-3.5" />
-                      <span>{currentUser?.name === "Альберт" ? "Напечатан" : "Готов"}</span>
-                    </Link>
+                    {o.completedBy ? (
+                      <span className="px-2.5 py-1 rounded-xl bg-emerald-100 text-emerald-800 border border-emerald-300 font-bold text-[11px] flex items-center gap-1">
+                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                        <span>Выполнил: {o.completedBy}</span>
+                      </span>
+                    ) : (
+                      <Link
+                        href={`/orders/${o.id}`}
+                        className="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition flex items-center gap-1 shadow-xs active:scale-95"
+                        title="Открыть наряд и поставить галочку выполнения"
+                      >
+                        <CheckCircle2 className="w-3.5 h-3.5" />
+                        <span>Поставить галочку</span>
+                      </Link>
+                    )}
                   </div>
                 </div>
               );
             })}
 
-            {myActiveOrders.length === 0 && (
+            {myActiveOrders.length === 0 && activeOrders.length === 0 && (
               <div className="p-8 text-center text-slate-400 text-xs">
-                У вас нет активных нарядов в работе. Все назначенные задачи выполнены!
+                У цеха нет активных нарядов в работе. Все задачи выполнены!
               </div>
             )}
           </div>
