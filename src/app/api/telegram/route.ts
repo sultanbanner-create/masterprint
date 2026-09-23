@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 
+const DEFAULT_BOT_TOKEN = "8999743919:AAF-aDlEkG32xSaG823aSYbUcBfLIpOTDnU";
+
 export async function GET() {
   try {
     let setting = await prisma.telegramSetting.findUnique({
@@ -11,13 +13,15 @@ export async function GET() {
       setting = await prisma.telegramSetting.create({
         data: {
           id: "default",
-          botToken: "",
+          botToken: DEFAULT_BOT_TOKEN,
           chatId: "",
           notifyNewOrder: true,
           notifyDeadline: true,
           notifyStatus: true,
         },
       });
+    } else if (!setting.botToken) {
+      setting.botToken = DEFAULT_BOT_TOKEN;
     }
 
     return NextResponse.json(setting);

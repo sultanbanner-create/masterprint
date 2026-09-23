@@ -14,11 +14,8 @@ export async function POST(req: NextRequest) {
       where: { id: "default" },
     });
 
-    const botToken = setting?.botToken || process.env.TELEGRAM_BOT_TOKEN;
-    if (!botToken) {
-      console.warn("[TG Webhook] Bot token not configured");
-      return NextResponse.json({ ok: true, message: "Bot token not configured" });
-    }
+    const DEFAULT_BOT_TOKEN = "8999743919:AAF-aDlEkG32xSaG823aSYbUcBfLIpOTDnU";
+    const botToken = setting?.botToken || process.env.TELEGRAM_BOT_TOKEN || DEFAULT_BOT_TOKEN;
 
     const message = update.message || update.edited_message;
     if (!message || !message.chat) {

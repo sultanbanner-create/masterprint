@@ -10,18 +10,12 @@ export async function POST(req: NextRequest) {
     const body = await req.json().catch(() => ({}));
     let token = body.token;
 
+    const DEFAULT_BOT_TOKEN = "8999743919:AAF-aDlEkG32xSaG823aSYbUcBfLIpOTDnU";
     if (!token) {
       const setting = await prisma.telegramSetting.findUnique({
         where: { id: "default" },
       });
-      token = setting?.botToken;
-    }
-
-    if (!token) {
-      return NextResponse.json(
-        { error: "Bot Token не указан. Введите токен бота от @BotFather" },
-        { status: 400 }
-      );
+      token = setting?.botToken || DEFAULT_BOT_TOKEN;
     }
 
     // 1. Проверяем бота через getMe
