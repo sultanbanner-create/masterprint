@@ -453,6 +453,9 @@ export default async function DashboardPage() {
         </div>
       </div>
 
+      {/* Живой реестр активных нарядов цеха в реальном времени с галочками */}
+      <DashboardActiveOrders initialOrders={orders} currentUser={currentUser} />
+
       {/* Планировщик смен мастеров */}
       <DailyShiftPlanner employees={employees} orders={orders} />
     </div>

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { 
   SunMedium, 
@@ -61,10 +61,39 @@ interface DailyShiftPlannerProps {
 }
 
 export function DailyShiftPlanner({ orders }: DailyShiftPlannerProps) {
+  const [liveOrders, setLiveOrders] = useState<Order[]>(orders);
   const [selectedWorker, setSelectedWorker] = useState<"ALL" | "ALBERT" | "ABZAL" | "JALGAS" | "TIMUR">("ALL");
 
+  useEffect(() => {
+    const reloadOrders = async () => {
+      try {
+        const res = await fetch("/api/orders", { cache: "no-store" });
+        if (res.ok) {
+          const data = await res.json();
+          if (Array.isArray(data)) {
+            setLiveOrders(data);
+          }
+        }
+      } catch (e) {
+        console.error("Shift planner auto-sync error:", e);
+      }
+    };
+
+    reloadOrders();
+    const timer = setInterval(reloadOrders, 4000);
+    const onFocus = () => reloadOrders();
+    window.addEventListener("focus", onFocus);
+    window.addEventListener("visibilitychange", onFocus);
+
+    return () => {
+      clearInterval(timer);
+      window.removeEventListener("focus", onFocus);
+      window.removeEventListener("visibilitychange", onFocus);
+    };
+  }, []);
+
   // Фильтрация активных заказов
-  const activeOrders = orders.filter((o) => o.status !== "COMPLETED");
+  const activeOrders = liveOrders.filter((o) => o.status !== "COMPLETED");
 
   // Альберт: заказы в статусе PRINTING или заказы с баннером/пленкой
   const albertOrders = activeOrders.filter(
