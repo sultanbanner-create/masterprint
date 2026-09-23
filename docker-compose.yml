@@ -1,14 +1,17 @@
-version: '3.8'
+version: "3.8"
 
 services:
   masterprint-erp:
-    build: .
-    container_name: masterprint_erp
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: masterprint-erp
     restart: always
     ports:
-      - "3000:3000"
-    volumes:
-      - ./data:/app/data
+      - "80:3000"
     environment:
-      - PORT=3000
       - NODE_ENV=production
+      - PORT=3000
+    volumes:
+      - ./prisma/dev.db:/app/prisma/dev.db
+      - ./public/uploads:/app/public/uploads

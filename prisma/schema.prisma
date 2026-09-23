@@ -1,0 +1,180 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Employee {
+  id           String         @id @default(cuid())
+  login        String?        @unique
+  passwordHash String?
+  name         String
+  role         String         // DIRECTOR, SALES_DESIGNER, WORKSHOP_ASSEMBLY, WORKSHOP_PRINTING
+  roleTitle    String         // Директор, Менеджер & Дизайнер, Мастер сборки & Монтаж, Мастер & Печатник
+  phone        String?
+  avatar       String?
+  isActive     Boolean        @default(true)
+  orders       Order[]        @relation("AssignedOrders")
+  comments     OrderComment[]
+  payouts      SalaryPayout[]
+  createdAt    DateTime       @default(now())
+}
+
+model Client {
+  id        String   @id @default(cuid())
+  name      String
+  phone     String?
+  company   String?
+  notes     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  orders    Order[]
+}
+
+model Order {
+  id             Int             @id @default(autoincrement())
+  orderNumber    String          @unique
+  title          String
+  clientId       String
+  client         Client          @relation(fields: [clientId], references: [id])
+  assignedToId   String?
+  assignedTo     Employee?       @relation("AssignedOrders", fields: [assignedToId], references: [id])
+  status         String          @default("NEW") // NEW, DESIGN, PRINTING, ASSEMBLY, MOUNTING, READY, COMPLETED
+  priority       String          @default("NORMAL") // NORMAL, URGENT
+  deadline       DateTime?       // Точное время и дата исполнения
+  installAddress String?         // Адрес монтажа вывески
+  notes          String?         // Технические примечания цеху
+  previewUrl     String?         // Фото / превью макета (Base64 или URL)
+  totalAmount    Float           @default(0)
+  paidAmount     Float           @default(0)
+  debtAmount     Float           @default(0)
+  items          OrderItem[]
+  payments       Payment[]
+  comments       OrderComment[]
+  movements      StockMovement[]
+  payouts        SalaryPayout[]
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+}
+
+model OrderItem {
+  id           String  @id @default(cuid())
+  orderId      Int
+  order        Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  serviceType  String  // BANNER, LETTERS, LIGHTBOX, ORACAL, STAND, AUTO_BRANDING, INSTALL, CUSTOM
+  title        String
+  width        Float?
+  height       Float?
+  area         Float?
+  quantity     Int     @default(1)
+  letterHeight Float?
+  letterCount  Int?
+  letterText   String?
+  options      String? // Опции (люверсы, проклейка, LED модули, каркас)
+  unitPrice    Float   @default(0)
+  totalPrice   Float   @default(0)
+}
+
+model Payment {
+  id          String    @id @default(cuid())
+  orderId     Int?
+  order       Order?    @relation(fields: [orderId], references: [id], onDelete: SetNull)
+  amount      Float
+  method      String    @default("CASH") // CASH, CARD, TRANSFER
+  status      String    @default("CONFIRMED") // PENDING_CONFIRMATION, CONFIRMED, REJECTED
+  notes       String?
+  receivedBy  String    @default("Жалгас")
+  acceptedBy  String?   // Тимур (Руководитель)
+  acceptedAt  DateTime?
+  createdAt   DateTime  @default(now())
+}
+
+model OrderComment {
+  id         String    @id @default(cuid())
+  orderId    Int
+  order      Order     @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  authorId   String?
+  author     Employee? @relation(fields: [authorId], references: [id])
+  authorName String    // Жалгас, Альберт, Абзал, Тимур
+  text       String
+  photoUrl   String?   // Фотоотчет с монтажа или производства
+  createdAt  DateTime  @default(now())
+}
+
+model StockMaterial {
+  id           String          @id @default(cuid())
+  name         String          // Баннер 510г 3.2м, Оракал 641 белый, Акрил 3мм, Диоды LED Samsung 1.2W
+  category     String          // BANNER, VINYL, SHEET, LED, PROFILE, HARDWARE
+  quantity     Float           @default(0)
+  unit         String          // м², пог. м, шт, листов
+  minThreshold Float           @default(10) // Минимальный остаток для оповещения
+  costPerUnit  Float           @default(0)
+  movements    StockMovement[]
+  updatedAt    DateTime        @updatedAt
+}
+
+model StockMovement {
+  id          String        @id @default(cuid())
+  materialId  String
+  material    StockMaterial @relation(fields: [materialId], references: [id], onDelete: Cascade)
+  orderId     Int?
+  order       Order?        @relation(fields: [orderId], references: [id], onDelete: SetNull)
+  type        String        // DEDUCTION (списание), ARRIVAL (приход), ADJUSTMENT (корректировка)
+  quantity    Float
+  description String?
+  createdAt   DateTime      @default(now())
+}
+
+model SalaryPayout {
+  id          String    @id @default(cuid())
+  employeeId  String
+  employee    Employee  @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  orderId     Int?
+  order       Order?    @relation(fields: [orderId], references: [id], onDelete: SetNull)
+  amount      Float
+  type        String    @default("PIECE_RATE") // PIECE_RATE, ADVANCE, BONUS, SALARY
+  description String?
+  createdAt   DateTime  @default(now())
+}
+
+model TelegramSetting {
+  id               String   @id @default("default")
+  botToken         String?
+  chatId           String?
+  notifyNewOrder   Boolean  @default(true)
+  notifyDeadline   Boolean  @default(true)
+  notifyStatus     Boolean  @default(true)
+  updatedAt        DateTime @updatedAt
+}
+
+model Equipment {
+  id              String         @id @default(cuid())
+  name            String         // Например: Принтер 3.2м Phaeton Galaxy, Фрезер ЧПУ 1325, Плоттер Roland
+  type            String         // PRINTER, CNC, PLOTTER, WELDING, VEHICLE, OTHER
+  status          String         @default("OK") // OK (исправен), WARNING (требует ТО), REPAIR (в ремонте)
+  assignedToName  String?        // Альберт, Абзал, Жалгас
+  cyanLevel       Int?           @default(85) // % чернил для принтера
+  magentaLevel    Int?           @default(70)
+  yellowLevel     Int?           @default(90)
+  blackLevel      Int?           @default(60)
+  lastServiceDate DateTime?      @default(now())
+  nextServiceDate DateTime?
+  notes           String?
+  logs            EquipmentLog[]
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+}
+
+model EquipmentLog {
+  id          String    @id @default(cuid())
+  equipmentId String
+  equipment   Equipment @relation(fields: [equipmentId], references: [id], onDelete: Cascade)
+  action      String    // Замена головки, доливка чернил, замена ножа, замена фрезы
+  performedBy String    // Альберт, Абзал, Тимур
+  cost        Float     @default(0)
+  notes       String?
+  createdAt   DateTime  @default(now())
+}
