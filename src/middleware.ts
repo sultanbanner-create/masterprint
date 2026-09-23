@@ -6,6 +6,9 @@ const PUBLIC_PATHS = [
   "/login",
   "/api/auth/login",
   "/api/test-tz",
+  "/tma",
+  "/api/telegram/webhook",
+  "/api/telegram/setup-bot",
   "/logo.png",
   "/icon.svg",
   "/manifest.json",
@@ -15,11 +18,15 @@ const PUBLIC_PATHS = [
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  // 1. Allow public static assets and files
+  // 1. Allow public static assets, Telegram webhook, and Telegram Mini App (/tma)
   if (
     PUBLIC_PATHS.some((path) => pathname === path || pathname.startsWith("/track/")) ||
+    pathname.startsWith("/tma") ||
+    pathname.startsWith("/api/telegram") ||
     pathname.startsWith("/_next") ||
-    pathname.includes(".")
+    pathname.includes(".") ||
+    (request.headers.get("referer")?.includes("/tma") && 
+      (pathname.startsWith("/api/orders") || pathname.startsWith("/api/calculations")))
   ) {
     return NextResponse.next();
   }
