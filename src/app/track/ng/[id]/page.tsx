@@ -97,7 +97,7 @@ export default function NukusGulleriInvoicePage({ params }: { params: { id: stri
   const getTelegramMessage = () => {
     if (!data?.order) return "";
     const { order, isStatement, statement } = data;
-    const origin = typeof window !== "undefined" ? window.location.origin : "https://master-print-erp.vercel.app";
+    const origin = typeof window !== "undefined" ? window.location.origin : "https://masterprint-sultanbanner-9247s-projects.vercel.app";
     const currentUrl = `${origin}/track/ng/${order.id}`;
 
     if (isStatement) {
@@ -735,7 +735,7 @@ export default function NukusGulleriInvoicePage({ params }: { params: { id: stri
 
                         <button
                           onClick={() => {
-                            const origin = typeof window !== "undefined" ? window.location.origin : "https://master-print-erp.vercel.app";
+                            const origin = typeof window !== "undefined" ? window.location.origin : "https://masterprint-sultanbanner-9247s-projects.vercel.app";
                             const msg = `🌸 Здравствуйте, Улугбек!\nНаправляем накладную № ${stOrder.orderNumber} на сумму ${formatCurrency(stOrder.totalAmount)} (${stOrder.boxesCount} шт.).\nСсылка: ${origin}/track/ng/${stOrder.id}`;
                             navigator.clipboard.writeText(msg);
                             window.open("https://t.me/+998934856006", "_blank");

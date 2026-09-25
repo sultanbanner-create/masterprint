@@ -407,7 +407,7 @@ export default function OrderDetailPage({ params }: { params: { id: string } }) 
               </a>
               <button
                 onClick={() => {
-                  const origin = typeof window !== "undefined" ? window.location.origin : "https://master-print-erp.vercel.app";
+                  const origin = typeof window !== "undefined" ? window.location.origin : "https://masterprint-sultanbanner-9247s-projects.vercel.app";
                   const totalQty = order.items?.reduce((s: number, it: any) => s + (it.quantity || 0), 0) || 0;
                   const isAccepted = !!order.completedAt || order.completedBy?.includes("Улугбек");
                   const msg = isAccepted

@@ -186,7 +186,7 @@ export default function NukusBoxesProductionPage() {
   };
 
   const getInvoiceUrl = (orderId: number | string) => {
-    const origin = typeof window !== "undefined" ? window.location.origin : "https://master-print-erp.vercel.app";
+    const origin = typeof window !== "undefined" ? window.location.origin : "https://masterprint-sultanbanner-9247s-projects.vercel.app";
     return `${origin}/track/ng/${orderId}`;
   };
 
@@ -203,7 +203,7 @@ export default function NukusBoxesProductionPage() {
   };
 
   const handleSendStatementTelegram = () => {
-    const origin = typeof window !== "undefined" ? window.location.origin : "https://master-print-erp.vercel.app";
+    const origin = typeof window !== "undefined" ? window.location.origin : "https://masterprint-sultanbanner-9247s-projects.vercel.app";
     const statementUrl = `${origin}/track/ng/statement`;
     const totalBoxes = productionData?.stats?.totalBoxesCount || 0;
     const totalOrdered = productionData?.client?.totalOrdered || 0;

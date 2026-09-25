@@ -541,6 +541,17 @@ export function AppLayout({ children }: AppLayoutProps) {
     );
   };
 
+  // Public standalone pages (Login, Tracking, Nukus Gulleri invoices, TMA) render without internal ERP sidebar and topbar
+  const isStandalone =
+    pathname?.startsWith("/login") ||
+    pathname?.startsWith("/track") ||
+    pathname?.startsWith("/nukus-gulleri") ||
+    pathname?.startsWith("/tma");
+
+  if (isStandalone) {
+    return <>{children}</>;
+  }
+
   return (
     <div className="min-h-screen bg-slate-50 flex">
       {/* DESKTOP FIXED SIDEBAR */}

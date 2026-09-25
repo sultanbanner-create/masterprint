@@ -3,7 +3,7 @@ import { prisma } from "@/lib/db";
 
 export const dynamic = "force-dynamic";
 
-const BASE_URL = process.env.NEXT_PUBLIC_APP_URL || "https://masterprint-erp.vercel.app";
+const BASE_URL = process.env.NEXT_PUBLIC_APP_URL || "https://masterprint-sultanbanner-9247s-projects.vercel.app";
 
 export async function POST(req: NextRequest) {
   try {
