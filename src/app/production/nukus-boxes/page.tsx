@@ -25,6 +25,7 @@ import {
   Check,
   ExternalLink,
   Share2,
+  Receipt,
 } from "lucide-react";
 import { formatCurrency, formatDateTime } from "@/lib/utils";
 import { NUKUS_BOX_CATALOG, NukusBoxModel } from "@/lib/nukus-boxes-catalog";
@@ -47,6 +48,8 @@ export default function NukusBoxesProductionPage() {
   const [feedback, setFeedback] = useState<{ type: "success" | "error"; text: string } | null>(null);
   const [newBatchSuccess, setNewBatchSuccess] = useState<any>(null);
   const [copiedId, setCopiedId] = useState<number | null>(null);
+  const [batchFilter, setBatchFilter] = useState<"ALL" | "ACCEPTED" | "PENDING">("ALL");
+  const [batchSearch, setBatchSearch] = useState("");
 
   // Модалка оплаты для директора
   const [isPayModalOpen, setIsPayModalOpen] = useState(false);
@@ -199,10 +202,34 @@ export default function NukusBoxesProductionPage() {
     }
   };
 
+  const handleSendStatementTelegram = () => {
+    const origin = typeof window !== "undefined" ? window.location.origin : "https://master-print-erp.vercel.app";
+    const statementUrl = `${origin}/track/ng/statement`;
+    const totalBoxes = productionData?.stats?.totalBoxesCount || 0;
+    const totalOrdered = productionData?.client?.totalOrdered || 0;
+    const totalPaid = productionData?.client?.totalPaid || 0;
+    const totalDebt = productionData?.client?.totalDebt || 0;
+
+    const text = `🌸 Здравствуйте, Улугбек!\nНаправляем вам СВОДНЫЙ РЕЕСТР & АКТ СВЕРКИ по всем отгруженным партиям цветочных коробок «Нукус гуллери».\n📊 Всего отгружено: ${totalBoxes} шт. на сумму ${formatCurrency(totalOrdered)}\n💰 Оплачено: ${formatCurrency(totalPaid)}\n⚖️ Текущий баланс (долг): ${formatCurrency(totalDebt)}\n\nОфициальная ссылка на сводный акт со всеми накладными:\n${statementUrl}`;
+
+    if (typeof window !== "undefined") {
+      navigator.clipboard.writeText(text);
+      window.open("https://t.me/+998934856006", "_blank");
+    }
+  };
+
   const handleDirectTelegramUlugbek = (batch: any) => {
     const url = getInvoiceUrl(batch.id);
     const totalQty = batch.items?.reduce((s: number, it: any) => s + (it.quantity || 0), 0) || 0;
-    const text = `🌸 Здравствуйте, Улугбек!\nЦех Master Print отгрузил партию коробок «Нукус гуллери».\n📦 Накладная: ${batch.orderNumber}\n📊 Количество: ${totalQty} шт.\n💰 Сумма: ${formatCurrency(batch.totalAmount)}\n\nПожалуйста, ознакомьтесь со спецификацией и подтвердите приемку:\n${url}`;
+    const isAccepted = !!batch.completedAt || batch.completedBy?.includes("Улугбек");
+
+    let text = "";
+    if (isAccepted) {
+      const confirmTime = batch.completedAt ? formatDateTime(batch.completedAt) : "ранее";
+      text = `🌸 Здравствуйте, Улугбек!\nНаправляем вам электронную копию подтвержденной накладной (счет-фактуры) «Нукус гуллери».\n📦 Накладная № ${batch.orderNumber}\n📊 Количество: ${totalQty} шт.\n💰 Сумма: ${formatCurrency(batch.totalAmount)}\n✅ Статус: Принято заказчиком (Улугбек, ${confirmTime})\n\nСсылка на официальный счет-акт:\n${url}`;
+    } else {
+      text = `🌸 Здравствуйте, Улугбек!\nЦех Master Print отгрузил партию коробок «Нукус гуллери».\n📦 Накладная: ${batch.orderNumber}\n📊 Количество: ${totalQty} шт.\n💰 Сумма: ${formatCurrency(batch.totalAmount)}\n\nПожалуйста, ознакомьтесь со спецификацией и подтвердите приемку:\n${url}`;
+    }
 
     if (typeof window !== "undefined") {
       navigator.clipboard.writeText(text);
@@ -628,23 +655,111 @@ export default function NukusBoxesProductionPage() {
 
       {/* История ранее сданных партий коробок */}
       <div className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
-        <div className="p-5 border-b border-slate-100 flex items-center justify-between">
+        <div className="p-5 border-b border-slate-100 flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
             <h2 className="text-base font-black text-slate-900 flex items-center gap-2">
               <History className="w-4 h-4 text-blue-600" />
-              Журнал сданных партий («Нукус гуллери»)
+              Журнал сданных накладных («Нукус гуллери»)
             </h2>
             <p className="text-xs text-slate-500 mt-0.5">
-              Все партии коробок, изготовленные мастером Абзалом
+              Все текущие и архивные партии коробок с возможностью повторной отправки накладной
             </p>
           </div>
-          <span className="text-xs font-mono font-bold text-slate-500">
-            {productionData?.recentBatches?.length || 0} партий
-          </span>
+
+          <div className="flex items-center gap-2 flex-wrap">
+            <button
+              onClick={handleSendStatementTelegram}
+              className="px-3.5 py-2 rounded-xl bg-gradient-to-r from-[#2AABEE] to-[#229ED9] hover:brightness-110 text-white font-bold text-xs shadow-sm flex items-center gap-1.5 transition cursor-pointer"
+              title="Отправить Улугбеку общий сводный акт сверки в Telegram (+998 93 485 60 06)"
+            >
+              <Receipt className="w-3.5 h-3.5" />
+              <span>Общий акт сверки в TG</span>
+            </button>
+
+            <Link
+              href="/track/ng/statement"
+              target="_blank"
+              className="px-3 py-2 rounded-xl bg-black hover:bg-zinc-800 text-[#F6D365] border border-[#D4AF37]/50 text-xs font-bold transition flex items-center gap-1.5 shadow-xs"
+            >
+              <Sparkles className="w-3.5 h-3.5 text-[#D4AF37]" />
+              <span>Акт сверки</span>
+            </Link>
+          </div>
         </div>
 
+        {/* Toolbar: Поиск и фильтры по статусу приемки */}
+        {(() => {
+          const allBatches = productionData?.recentBatches || [];
+          const acceptedCount = allBatches.filter((b: any) => !!b.completedAt || b.completedBy?.includes("Улугбек")).length;
+          const pendingCount = allBatches.length - acceptedCount;
+
+          return (
+            <div className="px-5 py-3 bg-slate-50 border-b border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-3">
+              <div className="flex items-center gap-1.5 w-full sm:w-auto">
+                <button
+                  type="button"
+                  onClick={() => setBatchFilter("ALL")}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition ${
+                    batchFilter === "ALL"
+                      ? "bg-white text-slate-900 shadow-xs border border-slate-200"
+                      : "text-slate-500 hover:text-slate-900"
+                  }`}
+                >
+                  Все ({allBatches.length})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setBatchFilter("ACCEPTED")}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition ${
+                    batchFilter === "ACCEPTED"
+                      ? "bg-emerald-50 text-emerald-800 border border-emerald-200"
+                      : "text-slate-500 hover:text-slate-900"
+                  }`}
+                >
+                  Принятые ({acceptedCount})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setBatchFilter("PENDING")}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition ${
+                    batchFilter === "PENDING"
+                      ? "bg-amber-50 text-amber-800 border border-amber-200"
+                      : "text-slate-500 hover:text-slate-900"
+                  }`}
+                >
+                  Ожидают ({pendingCount})
+                </button>
+              </div>
+
+              <div className="w-full sm:w-64">
+                <input
+                  type="text"
+                  value={batchSearch}
+                  onChange={(e) => setBatchSearch(e.target.value)}
+                  placeholder="Поиск по накладной NG-..."
+                  className="w-full px-3 py-1.5 rounded-lg border border-slate-200 bg-white text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-blue-500 font-mono"
+                />
+              </div>
+            </div>
+          );
+        })()}
+
         <div className="divide-y divide-slate-100">
-          {productionData?.recentBatches?.map((batch: any) => (
+          {(productionData?.recentBatches || [])
+            .filter((batch: any) => {
+              const isAccepted = !!batch.completedAt || batch.completedBy?.includes("Улугбек");
+              if (batchFilter === "ACCEPTED" && !isAccepted) return false;
+              if (batchFilter === "PENDING" && isAccepted) return false;
+              if (batchSearch.trim()) {
+                const q = batchSearch.toLowerCase().trim();
+                const matchNum = batch.orderNumber?.toLowerCase().includes(q);
+                const matchTitle = batch.title?.toLowerCase().includes(q);
+                const matchItems = batch.items?.some((it: any) => it.title?.toLowerCase().includes(q));
+                if (!matchNum && !matchTitle && !matchItems) return false;
+              }
+              return true;
+            })
+            .map((batch: any) => (
             <div
               key={batch.id}
               className="p-4 sm:p-5 hover:bg-slate-50 transition flex flex-col md:flex-row md:items-center justify-between gap-4"

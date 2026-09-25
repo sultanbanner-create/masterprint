@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   Package,
   CheckCircle2,
@@ -24,6 +25,8 @@ import {
   ChevronUp,
   Receipt,
   ExternalLink,
+  History,
+  Archive,
 } from "lucide-react";
 import { formatCurrency, formatDateTime } from "@/lib/utils";
 
@@ -32,6 +35,7 @@ interface NukusInvoicePageProps {
 }
 
 export default function NukusGulleriInvoicePage({ params }: { params: { id: string } }) {
+  const router = useRouter();
   const orderIdParam = params.id;
 
   const [loading, setLoading] = useState(true);
@@ -39,12 +43,12 @@ export default function NukusGulleriInvoicePage({ params }: { params: { id: stri
   const [error, setError] = useState<string | null>(null);
 
   const [confirming, setConfirming] = useState(false);
-  const [confirmedSuccess, setConfirmedSuccess] = useState(false);
   const [clientNote, setClientNote] = useState("");
   const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
 
   const [copiedLink, setCopiedLink] = useState(false);
   const [showStatement, setShowStatement] = useState(false);
+  const [isArchiveOpen, setIsArchiveOpen] = useState(false);
 
   const loadData = async () => {
     try {
@@ -81,14 +85,41 @@ export default function NukusGulleriInvoicePage({ params }: { params: { id: stri
         throw new Error(json.error || "Ошибка при подтверждении");
       }
 
-      setConfirmedSuccess(true);
       setIsConfirmModalOpen(false);
-      // Refresh state
       await loadData();
     } catch (err: any) {
       alert(err.message || "Не удалось отправить подтверждение");
     } finally {
       setConfirming(false);
+    }
+  };
+
+  const getTelegramMessage = () => {
+    if (!data?.order) return "";
+    const { order, isStatement, statement } = data;
+    const origin = typeof window !== "undefined" ? window.location.origin : "https://master-print-erp.vercel.app";
+    const currentUrl = `${origin}/track/ng/${order.id}`;
+
+    if (isStatement) {
+      return `🌸 Здравствуйте, Улугбек!\nНаправляем вам СВОДНЫЙ РЕЕСТР & АКТ СВЕРКИ по всем отгруженным партиям цветочных коробок «Нукус гуллери».\n📊 Всего отгружено: ${statement?.totalBoxesAllTime || 0} шт. на сумму ${formatCurrency(statement?.totalOrderedAmount || 0)}\n💰 Оплачено: ${formatCurrency(statement?.totalPaidAmount || 0)}\n⚖️ Текущее сальдо (долг): ${formatCurrency(statement?.totalDebtAmount || 0)}\n\nОфициальный электронный документ:\n${origin}/track/ng/statement`;
+    }
+
+    const isAccepted = !!order.completedAt || order.completedBy?.includes("Улугбек");
+    const totalQty = order.items?.reduce((s: number, it: any) => s + (it.quantity || 0), 0) || 0;
+
+    if (isAccepted) {
+      const confirmTime = order.completedAt ? formatDateTime(order.completedAt) : "ранее";
+      return `🌸 Здравствуйте, Улугбек!\nНаправляем вам электронную копию подтвержденной накладной (счет-фактуры) «Нукус гуллери».\n📦 Накладная № ${order.orderNumber}\n📊 Объем: ${totalQty} коробок\n💰 Сумма: ${formatCurrency(order.totalAmount)}\n✅ Статус: Принято заказчиком (Улугбек, ${confirmTime})\n\nСсылка на официальный счет-акт:\n${currentUrl}`;
+    }
+
+    return `🌸 Здравствуйте, Улугбек!\nЦех Master Print отгрузил партию коробок «Нукус гуллери».\n📦 Накладная: ${order.orderNumber}\n📊 Количество: ${totalQty} шт.\n💰 Сумма: ${formatCurrency(order.totalAmount)}\n\nПожалуйста, ознакомьтесь со спецификацией и подтвердите приемку:\n${currentUrl}`;
+  };
+
+  const handleSendToTelegram = () => {
+    const text = getTelegramMessage();
+    if (typeof window !== "undefined") {
+      navigator.clipboard.writeText(text);
+      window.open("https://t.me/+998934856006", "_blank");
     }
   };
 
@@ -141,14 +172,21 @@ export default function NukusGulleriInvoicePage({ params }: { params: { id: stri
           <p className="text-xs text-slate-400 leading-relaxed">
             {error || "Возможно, номер партии указан неверно или наряд еще формируется мастером цеха."}
           </p>
-          <div className="pt-2">
+          <div className="pt-2 flex items-center justify-center gap-3">
+            <Link
+              href="/track/ng/statement"
+              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-full bg-[#1E2028] border border-[#D4AF37]/40 text-xs text-[#F6D365] font-semibold hover:bg-[#282B36] transition-all"
+            >
+              <Receipt className="w-4 h-4" />
+              Сводный акт сверки
+            </Link>
             <Link
               href="https://t.me/+998934856006"
               target="_blank"
               className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-gradient-to-r from-[#D4AF37] to-[#AA771C] text-black font-semibold text-xs shadow-lg hover:brightness-110 transition-all"
             >
               <MessageCircle className="w-4 h-4" />
-              Связаться в Telegram
+              Telegram
             </Link>
           </div>
         </div>
@@ -156,7 +194,7 @@ export default function NukusGulleriInvoicePage({ params }: { params: { id: stri
     );
   }
 
-  const { order, client, statement } = data;
+  const { order, client, statement, isStatement } = data;
   const isAccepted = !!order.completedAt || order.completedBy?.includes("Улугбек");
   const totalItemsCount = order.items?.reduce((sum: number, it: any) => sum + (it.quantity || 0), 0) || 0;
 
@@ -166,30 +204,96 @@ export default function NukusGulleriInvoicePage({ params }: { params: { id: stri
       <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-4xl h-[450px] bg-gradient-to-b from-[#D4AF37]/15 via-transparent to-transparent pointer-events-none blur-3xl -z-10" />
 
       {/* Floating Action Bar (Top) */}
-      <div className="sticky top-0 z-30 bg-[#0E0F13]/90 backdrop-blur-md border-b border-[#D4AF37]/20 px-4 py-3 print:hidden">
+      <div className="sticky top-0 z-30 bg-[#0E0F13]/95 backdrop-blur-md border-b border-[#D4AF37]/20 px-4 py-3 print:hidden">
         <div className="max-w-4xl mx-auto flex items-center justify-between gap-3">
-          <div className="flex items-center gap-2.5">
-            <div className="w-7 h-7 relative rounded-full overflow-hidden border border-[#D4AF37]/40">
+          {/* Logo & Dropdown Switcher */}
+          <div className="flex items-center gap-2.5 relative">
+            <Link href="/track/ng/latest" className="w-7 h-7 relative rounded-full overflow-hidden border border-[#D4AF37]/40 shrink-0">
               <Image
                 src="/images/nukus-gulleri-logo.png"
                 alt="NG"
                 fill
                 className="object-contain"
               />
-            </div>
-            <span className="text-xs font-serif tracking-widest text-[#F6D365] font-semibold uppercase hidden sm:inline">
-              Nukus Gulleri
-            </span>
-            <span className="text-xs text-slate-400 font-mono">
-              / {order.orderNumber}
-            </span>
+            </Link>
+
+            <button
+              onClick={() => setIsArchiveOpen(!isArchiveOpen)}
+              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-[#16171D] hover:bg-[#20222A] border border-[#D4AF37]/30 text-xs text-[#F6D365] font-serif transition-all"
+              title="Переключить накладную или открыть архив"
+            >
+              <Archive className="w-3.5 h-3.5 text-[#D4AF37]" />
+              <span className="font-bold font-mono">
+                {isStatement ? "Сводный акт сверки" : order.orderNumber}
+              </span>
+              <ChevronDown className="w-3 h-3 opacity-70" />
+            </button>
+
+            {/* Invoices Dropdown Menu */}
+            {isArchiveOpen && (
+              <div className="absolute top-full left-0 mt-2 w-72 sm:w-80 rounded-2xl bg-[#14151B] border-2 border-[#D4AF37] shadow-2xl p-2 z-50 space-y-1 animate-scale-up">
+                <div className="p-2 border-b border-slate-800 text-[11px] font-mono text-[#D4AF37] font-bold flex items-center justify-between">
+                  <span>АРХИВ НАКЛАДНЫХ УЛУГБЕКА</span>
+                  <span className="text-[10px] text-slate-400">{statement?.orders?.length || 0} шт.</span>
+                </div>
+
+                <div className="max-h-64 overflow-y-auto space-y-1 pr-1">
+                  <Link
+                    href="/track/ng/statement"
+                    onClick={() => setIsArchiveOpen(false)}
+                    className={`flex items-center justify-between p-2 rounded-xl text-xs transition-colors ${
+                      isStatement ? "bg-[#2A2415] text-[#F6D365] font-bold border border-[#D4AF37]/40" : "hover:bg-[#1E2028] text-slate-200"
+                    }`}
+                  >
+                    <div className="flex items-center gap-2">
+                      <Receipt className="w-4 h-4 text-[#D4AF37]" />
+                      <span>📑 Сводный акт сверки (Все)</span>
+                    </div>
+                    <span className="font-mono text-[11px] text-amber-300">
+                      {formatCurrency(statement?.totalOrderedAmount || 0)}
+                    </span>
+                  </Link>
+
+                  {statement?.orders?.map((stOrder: any) => (
+                    <Link
+                      key={stOrder.id}
+                      href={`/track/ng/${stOrder.id}`}
+                      onClick={() => setIsArchiveOpen(false)}
+                      className={`flex items-center justify-between p-2 rounded-xl text-xs transition-colors ${
+                        stOrder.id === order.id
+                          ? "bg-[#2A2415] text-[#F6D365] font-bold border border-[#D4AF37]/40"
+                          : "hover:bg-[#1E2028] text-slate-300"
+                      }`}
+                    >
+                      <div className="space-y-0.5">
+                        <div className="flex items-center gap-1.5">
+                          <span className="font-mono font-bold">{stOrder.orderNumber}</span>
+                          {stOrder.completedAt && (
+                            <span className="text-[10px] text-emerald-400 bg-emerald-950/60 px-1.5 py-0.2 rounded border border-emerald-500/30">
+                              Принято
+                            </span>
+                          )}
+                        </div>
+                        <span className="text-[10px] text-slate-400 block">
+                          {formatDateTime(stOrder.createdAt).split(",")[0]} &bull; {stOrder.boxesCount} шт.
+                        </span>
+                      </div>
+                      <span className="font-mono font-bold text-xs text-slate-200">
+                        {formatCurrency(stOrder.totalAmount)}
+                      </span>
+                    </Link>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
 
+          {/* Action buttons (Right) */}
           <div className="flex items-center gap-2">
             <button
               onClick={handleCopyLink}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#18191E] hover:bg-[#22242B] border border-[#D4AF37]/30 text-xs text-[#F3E5AB] font-medium transition-all"
-              title="Скопировать ссылку"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#18191E] hover:bg-[#22242B] border border-[#D4AF37]/30 text-xs text-[#F3E5AB] font-medium transition-all cursor-pointer"
+              title="Скопировать ссылку накладной"
             >
               {copiedLink ? (
                 <>
@@ -206,21 +310,21 @@ export default function NukusGulleriInvoicePage({ params }: { params: { id: stri
 
             <button
               onClick={handlePrint}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#18191E] hover:bg-[#22242B] border border-[#D4AF37]/30 text-xs text-[#F3E5AB] font-medium transition-all"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#18191E] hover:bg-[#22242B] border border-[#D4AF37]/30 text-xs text-[#F3E5AB] font-medium transition-all cursor-pointer"
               title="Распечатать накладную"
             >
               <Printer className="w-3.5 h-3.5 text-[#D4AF37]" />
               <span className="hidden sm:inline">Печать</span>
             </button>
 
-            <Link
-              href="https://t.me/+998934856006"
-              target="_blank"
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-gradient-to-r from-[#D4AF37] to-[#AA771C] text-black font-bold text-xs shadow-md hover:brightness-110 transition-all"
+            <button
+              onClick={handleSendToTelegram}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-gradient-to-r from-[#2AABEE] to-[#229ED9] hover:brightness-110 text-white font-bold text-xs shadow-md transition-all cursor-pointer"
+              title="Отправить Улугбеку в Telegram (+998934856006)"
             >
               <MessageCircle className="w-3.5 h-3.5" />
-              <span>Telegram</span>
-            </Link>
+              <span>В Telegram</span>
+            </button>
           </div>
         </div>
       </div>
@@ -230,7 +334,6 @@ export default function NukusGulleriInvoicePage({ params }: { params: { id: stri
 
         {/* Hero Card: Nukus Gulleri Luxury Header */}
         <div className="relative rounded-3xl bg-gradient-to-b from-[#16171D] via-[#111216] to-[#0D0E12] border border-[#D4AF37]/35 p-6 sm:p-10 shadow-[0_20px_50px_rgba(0,0,0,0.8)] overflow-hidden text-center space-y-5">
-          {/* Subtle gold floral border decor */}
           <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-[#D4AF37] to-transparent opacity-80" />
           <div className="absolute -top-12 -right-12 w-40 h-40 bg-[#D4AF37]/10 rounded-full blur-2xl pointer-events-none" />
           <div className="absolute -bottom-12 -left-12 w-40 h-40 bg-[#D4AF37]/10 rounded-full blur-2xl pointer-events-none" />
@@ -252,19 +355,26 @@ export default function NukusGulleriInvoicePage({ params }: { params: { id: stri
               <span>FLOWER & GIFT ATELIER &bull; NUKUS GULLERI</span>
             </div>
             <h1 className="text-2xl sm:text-4xl font-serif font-black tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-[#FFF5D0] via-[#E6C665] to-[#B38728]">
-              Электронный Акт Приемки
+              {isStatement ? "Сводный Акт Сверки" : "Электронный Акт Приемки"}
             </h1>
             <p className="text-xs sm:text-sm text-slate-300 font-light tracking-wide max-w-lg mx-auto">
-              Счет-фактура и спецификация партии подарочных цветочных коробок
+              {isStatement
+                ? "Полный реестр всех отгруженных партий коробок и сверка взаиморасчетов"
+                : "Счет-фактура и спецификация партии подарочных цветочных коробок"}
             </p>
           </div>
 
           {/* Status Badge */}
           <div className="pt-2">
-            {isAccepted ? (
+            {isStatement ? (
+              <div className="inline-flex items-center gap-2.5 px-5 py-2 rounded-2xl bg-amber-950/70 border border-[#D4AF37]/50 text-amber-200 text-xs sm:text-sm font-semibold shadow-[0_0_20px_rgba(212,175,55,0.25)]">
+                <Receipt className="w-5 h-5 text-[#F6D365]" />
+                <span>РЕЕСТР ВСЕХ ОТГРУЗОК ({statement?.totalOrdersCount || 0} ПАРТИЙ)</span>
+              </div>
+            ) : isAccepted ? (
               <div className="inline-flex items-center gap-2.5 px-5 py-2 rounded-2xl bg-emerald-950/70 border border-emerald-500/50 text-emerald-200 text-xs sm:text-sm font-semibold shadow-[0_0_20px_rgba(16,185,129,0.25)]">
                 <CheckCircle2 className="w-5 h-5 text-emerald-400" />
-                <span>ПРИЕМКА ПОДТВЕРЖДЕНА ЗАКАЗЧИКОМ</span>
+                <span>ПРИЕМКА ПОДТВЕРЖДЕНА ЗАКАЗЧИКОМ (УЛУГБЕК)</span>
               </div>
             ) : (
               <div className="inline-flex items-center gap-2.5 px-5 py-2 rounded-2xl bg-amber-950/60 border border-amber-500/40 text-amber-200 text-xs sm:text-sm font-semibold shadow-[0_0_20px_rgba(245,158,11,0.2)]">
@@ -278,7 +388,7 @@ export default function NukusGulleriInvoicePage({ params }: { params: { id: stri
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 pt-4 text-left border-t border-[#D4AF37]/20">
             <div className="p-3 rounded-2xl bg-[#16181F]/70 border border-[#D4AF37]/15">
               <span className="text-[10px] text-slate-400 uppercase tracking-wider block font-mono">
-                Накладная №
+                {isStatement ? "Документ" : "Накладная №"}
               </span>
               <span className="text-xs sm:text-sm font-bold text-[#F6D365] font-mono">
                 {order.orderNumber}
@@ -287,7 +397,7 @@ export default function NukusGulleriInvoicePage({ params }: { params: { id: stri
 
             <div className="p-3 rounded-2xl bg-[#16181F]/70 border border-[#D4AF37]/15">
               <span className="text-[10px] text-slate-400 uppercase tracking-wider block font-mono">
-                Дата отгрузки
+                Дата
               </span>
               <span className="text-xs sm:text-sm font-medium text-slate-200">
                 {formatDateTime(order.createdAt).split(",")[0]}
@@ -314,8 +424,37 @@ export default function NukusGulleriInvoicePage({ params }: { params: { id: stri
           </div>
         </div>
 
-        {/* Call to Action: Confirm Button Box (If Not Accepted) */}
-        {!isAccepted && (
+        {/* Direct Send to Telegram Banner for ANY order (Old, New or Statement) */}
+        <div className="rounded-3xl bg-gradient-to-r from-[#17202C] via-[#141822] to-[#12141A] border border-[#229ED9]/40 p-4 sm:p-5 shadow-lg flex flex-col sm:flex-row items-center justify-between gap-4 print:hidden">
+          <div className="flex items-center gap-3.5 text-center sm:text-left">
+            <div className="w-12 h-12 rounded-2xl bg-[#229ED9]/20 border border-[#229ED9]/40 flex items-center justify-center text-[#229ED9] shrink-0">
+              <MessageCircle className="w-6 h-6" />
+            </div>
+            <div>
+              <h4 className="text-sm font-bold text-white">
+                Отправить эту накладную Улугбеку в Telegram
+              </h4>
+              <p className="text-xs text-slate-300">
+                {isStatement
+                  ? "Сводный акт сверки всех отгруженных партий и текущее сальдо"
+                  : isAccepted
+                  ? `Электронная копия уже подтвержденной накладной ${order.orderNumber}`
+                  : `Ссылка для подтверждения приемки накладной ${order.orderNumber}`}
+              </p>
+            </div>
+          </div>
+
+          <button
+            onClick={handleSendToTelegram}
+            className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3 rounded-2xl bg-gradient-to-r from-[#2AABEE] to-[#229ED9] hover:brightness-110 text-white font-extrabold text-xs sm:text-sm shadow-md transition-all cursor-pointer shrink-0"
+          >
+            <MessageCircle className="w-4 h-4" />
+            <span>В Telegram (+998934856006)</span>
+          </button>
+        </div>
+
+        {/* Call to Action: Confirm Button Box (If Not Accepted and not general statement) */}
+        {!isAccepted && !isStatement && (
           <div className="rounded-3xl bg-gradient-to-r from-[#1A1812] via-[#211E16] to-[#1A1812] border-2 border-[#D4AF37] p-6 sm:p-8 shadow-[0_10px_35px_rgba(212,175,55,0.2)] text-center space-y-4 print:hidden animate-fade-in">
             <div className="w-12 h-12 rounded-full bg-[#D4AF37]/20 border border-[#D4AF37] flex items-center justify-center mx-auto text-[#F6D365]">
               <Package className="w-6 h-6" />
@@ -348,7 +487,7 @@ export default function NukusGulleriInvoicePage({ params }: { params: { id: stri
         )}
 
         {/* Accepted Certificate Badge (If Already Confirmed) */}
-        {isAccepted && (
+        {isAccepted && !isStatement && (
           <div className="rounded-3xl bg-[#0D1512] border-2 border-emerald-500/60 p-6 sm:p-7 shadow-[0_10px_35px_rgba(16,185,129,0.2)] space-y-3">
             <div className="flex flex-col sm:flex-row items-center justify-between gap-4 text-center sm:text-left">
               <div className="flex items-center gap-3.5">
@@ -378,7 +517,7 @@ export default function NukusGulleriInvoicePage({ params }: { params: { id: stri
             <div className="p-3 rounded-xl bg-black/40 border border-emerald-500/20 text-xs text-slate-300 flex items-center gap-2">
               <ShieldCheck className="w-4 h-4 text-emerald-400 shrink-0" />
               <span>
-                Претензий по качеству и количеству нет. Наряд переведен в статус выполненных.
+                Претензий по качеству и количеству нет. Копия счета-фактуры сохранена в архиве.
               </span>
             </div>
           </div>
@@ -393,7 +532,7 @@ export default function NukusGulleriInvoicePage({ params }: { params: { id: stri
                 <span>Спецификация отгрузки</span>
               </div>
               <h3 className="text-lg font-serif font-bold text-slate-100">
-                Отгруженные цветочные коробки
+                {isStatement ? "Все отгруженные цветочные коробки" : "Отгруженные цветочные коробки"}
               </h3>
             </div>
 
@@ -475,14 +614,14 @@ export default function NukusGulleriInvoicePage({ params }: { params: { id: stri
           {/* Totals Footer */}
           <div className="bg-[#17181F] p-5 sm:p-6 border-t border-[#D4AF37]/30 space-y-3">
             <div className="flex items-center justify-between text-xs text-slate-300 font-mono">
-              <span>Итого коробок в партии:</span>
+              <span>Итого коробок:</span>
               <span className="font-bold text-slate-100 text-sm">{totalItemsCount} шт.</span>
             </div>
 
             <div className="flex items-center justify-between pt-2 border-t border-[#D4AF37]/20">
               <div className="space-y-0.5">
                 <span className="text-xs uppercase tracking-wider font-mono text-[#D4AF37] font-bold block">
-                  Сумма к оплате по накладной
+                  {isStatement ? "Общая стоимость всех отгрузок" : "Сумма к оплате по накладной"}
                 </span>
                 <span className="text-[11px] text-slate-400">
                   Валюта: Узбекский сум (UZS)
@@ -498,12 +637,12 @@ export default function NukusGulleriInvoicePage({ params }: { params: { id: stri
           </div>
         </div>
 
-        {/* Historical Statement Toggle (Акт сверки всех поставок) */}
+        {/* Historical Statement & Archive Section */}
         {statement && statement.orders && (
           <div className="rounded-3xl bg-[#121317] border border-[#D4AF37]/20 overflow-hidden shadow-lg">
             <button
               onClick={() => setShowStatement(!showStatement)}
-              className="w-full p-4 sm:p-5 flex items-center justify-between text-left hover:bg-[#181920] transition-colors"
+              className="w-full p-4 sm:p-5 flex items-center justify-between text-left hover:bg-[#181920] transition-colors cursor-pointer"
             >
               <div className="flex items-center gap-3">
                 <div className="w-9 h-9 rounded-xl bg-[#1B1D24] border border-[#D4AF37]/25 flex items-center justify-center text-[#F6D365]">
@@ -511,17 +650,17 @@ export default function NukusGulleriInvoicePage({ params }: { params: { id: stri
                 </div>
                 <div>
                   <h4 className="text-sm font-bold text-slate-100 font-serif">
-                    Акт сверки и история поставок
+                    Акт сверки и архив всех накладных
                   </h4>
                   <p className="text-xs text-slate-400">
-                    Всего за все время отгружено: <b>{statement.totalBoxesAllTime} шт.</b> на сумму <b>{formatCurrency(statement.totalOrderedAmount)}</b>
+                    Всего за все время: <b>{statement.totalBoxesAllTime} шт.</b> на сумму <b>{formatCurrency(statement.totalOrderedAmount)}</b> ({statement.orders.length} накладных)
                   </p>
                 </div>
               </div>
 
               <div className="flex items-center gap-2 text-xs text-[#D4AF37] font-medium">
                 <span className="hidden sm:inline">
-                  {showStatement ? "Скрыть историю" : "Показать все партии"}
+                  {showStatement ? "Скрыть архив" : "Показать все накладные"}
                 </span>
                 {showStatement ? (
                   <ChevronUp className="w-4 h-4" />
@@ -532,8 +671,8 @@ export default function NukusGulleriInvoicePage({ params }: { params: { id: stri
             </button>
 
             {showStatement && (
-              <div className="p-5 border-t border-[#D4AF37]/15 space-y-3 bg-[#0E0F13]">
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pb-3 border-b border-[#D4AF37]/15 text-center">
+              <div className="p-5 border-t border-[#D4AF37]/15 space-y-4 bg-[#0E0F13]">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pb-2 border-b border-[#D4AF37]/15 text-center">
                   <div className="p-3 rounded-2xl bg-[#14161C] border border-[#D4AF37]/15">
                     <span className="text-[10px] text-slate-400 uppercase font-mono block">Всего отгружено</span>
                     <span className="text-sm font-bold text-[#F6D365] font-mono">{formatCurrency(statement.totalOrderedAmount)}</span>
@@ -543,41 +682,70 @@ export default function NukusGulleriInvoicePage({ params }: { params: { id: stri
                     <span className="text-sm font-bold text-emerald-400 font-mono">{formatCurrency(statement.totalPaidAmount)}</span>
                   </div>
                   <div className="p-3 rounded-2xl bg-[#14161C] border border-[#D4AF37]/15">
-                    <span className="text-[10px] text-slate-400 uppercase font-mono block">Текущий баланс (долг)</span>
+                    <span className="text-[10px] text-slate-400 uppercase font-mono block">Текущее сальдо (долг)</span>
                     <span className="text-sm font-bold text-amber-300 font-mono">{formatCurrency(statement.totalDebtAmount)}</span>
                   </div>
                 </div>
 
                 <div className="space-y-2">
-                  <span className="text-[11px] font-mono text-[#D4AF37] uppercase tracking-wider block">
-                    Предыдущие партии коробок:
-                  </span>
-                  <div className="space-y-1.5 max-h-60 overflow-y-auto pr-1">
+                  <div className="flex items-center justify-between text-[11px] font-mono text-[#D4AF37] uppercase tracking-wider">
+                    <span>Все накладные салона («Нукус гуллери»):</span>
+                    <Link
+                      href="/track/ng/statement"
+                      className="text-[#F6D365] hover:underline flex items-center gap-1 font-bold"
+                    >
+                      <ExternalLink className="w-3 h-3" />
+                      Открыть общий акт сверки
+                    </Link>
+                  </div>
+
+                  <div className="space-y-1.5 max-h-72 overflow-y-auto pr-1">
                     {statement.orders.map((stOrder: any) => (
-                      <Link
+                      <div
                         key={stOrder.id}
-                        href={`/track/ng/${stOrder.id}`}
-                        className={`flex items-center justify-between p-2.5 rounded-xl border text-xs transition-all ${
+                        className={`flex items-center justify-between p-3 rounded-xl border text-xs transition-all ${
                           stOrder.id === order.id
                             ? "bg-[#252219] border-[#D4AF37] text-white"
                             : "bg-[#14151B] border-slate-800 text-slate-300 hover:border-[#D4AF37]/40"
                         }`}
                       >
-                        <div className="flex items-center gap-2">
-                          <span className="font-mono font-bold text-[#F6D365]">{stOrder.orderNumber}</span>
-                          <span className="text-slate-400">&bull;</span>
-                          <span>{stOrder.boxesCount} шт.</span>
-                          {stOrder.completedAt && (
-                            <span className="text-emerald-400 text-[10px] flex items-center gap-1">
-                              <Check className="w-3 h-3" /> Принято
-                            </span>
-                          )}
-                        </div>
-                        <div className="flex items-center gap-2 font-mono">
-                          <span>{formatCurrency(stOrder.totalAmount)}</span>
-                          <ExternalLink className="w-3.5 h-3.5 text-slate-400" />
-                        </div>
-                      </Link>
+                        <Link
+                          href={`/track/ng/${stOrder.id}`}
+                          className="flex-1 flex flex-col sm:flex-row sm:items-center justify-between gap-1 hover:text-white"
+                        >
+                          <div className="flex items-center gap-2">
+                            <span className="font-mono font-bold text-[#F6D365]">{stOrder.orderNumber}</span>
+                            <span className="text-slate-400">&bull;</span>
+                            <span>{stOrder.boxesCount} шт.</span>
+                            {stOrder.completedAt ? (
+                              <span className="text-emerald-400 text-[10px] flex items-center gap-1 bg-emerald-950/60 px-1.5 py-0.5 rounded border border-emerald-500/30">
+                                <Check className="w-3 h-3" /> Принято {formatDateTime(stOrder.completedAt).split(",")[0]}
+                              </span>
+                            ) : (
+                              <span className="text-amber-400 text-[10px] bg-amber-950/60 px-1.5 py-0.5 rounded border border-amber-500/30">
+                                Ожидает приемки
+                              </span>
+                            )}
+                          </div>
+
+                          <div className="font-mono font-bold text-slate-200">
+                            {formatCurrency(stOrder.totalAmount)}
+                          </div>
+                        </Link>
+
+                        <button
+                          onClick={() => {
+                            const origin = typeof window !== "undefined" ? window.location.origin : "https://master-print-erp.vercel.app";
+                            const msg = `🌸 Здравствуйте, Улугбек!\nНаправляем накладную № ${stOrder.orderNumber} на сумму ${formatCurrency(stOrder.totalAmount)} (${stOrder.boxesCount} шт.).\nСсылка: ${origin}/track/ng/${stOrder.id}`;
+                            navigator.clipboard.writeText(msg);
+                            window.open("https://t.me/+998934856006", "_blank");
+                          }}
+                          className="ml-3 p-1.5 rounded-lg bg-[#229ED9]/10 hover:bg-[#229ED9] text-[#229ED9] hover:text-white border border-[#229ED9]/30 transition-all"
+                          title="Отправить эту накладную Улугбеку в Telegram"
+                        >
+                          <MessageCircle className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
                     ))}
                   </div>
                 </div>

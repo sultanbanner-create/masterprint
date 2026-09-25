@@ -31,7 +31,8 @@ import {
   Zap,
   Hammer,
   Square,
-  CheckSquare
+  CheckSquare,
+  Sparkles
 } from "lucide-react";
 import { formatCurrency, formatDate, formatDateTime, getDeadlineInfo, STATUS_CONFIG } from "@/lib/utils";
 import { PrintReceipt } from "@/components/PrintReceipt";
@@ -387,6 +388,41 @@ export default function OrderDetailPage({ params }: { params: { id: string } }) 
               )}
             </button>
           </div>
+
+          {/* Быстрый переход в роскошный акт Nukus Gulleri */}
+          {(order.orderNumber?.startsWith("NG-") ||
+            order.client?.name?.includes("Улугбек") ||
+            order.client?.company?.includes("Нукус гуллери") ||
+            order.items?.some((i: any) => i.serviceType === "BOXES_NUKUS" || i.title?.toLowerCase().includes("коробок"))) && (
+            <div className="flex items-center gap-1">
+              <a
+                href={`/track/ng/${order.id}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="px-3 py-2 rounded-xl bg-black hover:bg-zinc-800 text-[#F6D365] border border-[#D4AF37]/60 text-xs font-bold transition flex items-center gap-1.5 shadow-xs"
+                title="Открыть роскошный акт-счет Nukus Gulleri (для Улугбека)"
+              >
+                <Sparkles className="w-4 h-4 text-[#D4AF37]" />
+                <span>Акт NG</span>
+              </a>
+              <button
+                onClick={() => {
+                  const origin = typeof window !== "undefined" ? window.location.origin : "https://master-print-erp.vercel.app";
+                  const totalQty = order.items?.reduce((s: number, it: any) => s + (it.quantity || 0), 0) || 0;
+                  const isAccepted = !!order.completedAt || order.completedBy?.includes("Улугбек");
+                  const msg = isAccepted
+                    ? `🌸 Здравствуйте, Улугбек!\nНаправляем вам электронную копию подтвержденной накладной (счет-фактуры) «Нукус гуллери» № ${order.orderNumber} на сумму ${formatCurrency(order.totalAmount)} (${totalQty} шт.).\nСсылка: ${origin}/track/ng/${order.id}`
+                    : `🌸 Здравствуйте, Улугбек!\nЦех Master Print отгрузил партию коробок «Нукус гуллери» № ${order.orderNumber} (${totalQty} шт.) на сумму ${formatCurrency(order.totalAmount)}.\nПожалуйста, подтвердите приемку: ${origin}/track/ng/${order.id}`;
+                  navigator.clipboard.writeText(msg);
+                  window.open("https://t.me/+998934856006", "_blank");
+                }}
+                className="p-2 rounded-xl bg-[#229ED9]/10 hover:bg-[#229ED9] hover:text-white text-[#229ED9] border border-[#229ED9]/30 text-xs font-bold transition"
+                title="Отправить Улугбеку в Telegram (+998 93 485 60 06)"
+              >
+                <MessageSquare className="w-4 h-4" />
+              </button>
+            </div>
+          )}
 
           <button
             onClick={() => setIsProposalOpen(true)}

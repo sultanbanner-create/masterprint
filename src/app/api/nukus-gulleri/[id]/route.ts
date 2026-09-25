@@ -12,58 +12,16 @@ export async function GET(
     const rawId = params.id;
     const ulugbek = await getOrCreateUlugbekClient();
 
-    let targetOrder = null;
-
-    if (rawId === "latest") {
-      targetOrder = await prisma.order.findFirst({
-        where: { clientId: ulugbek.id },
-        orderBy: { createdAt: "desc" },
-        include: {
-          items: true,
-          client: true,
-          payments: true,
-          assignedTo: true,
-          comments: {
-            orderBy: { createdAt: "desc" },
-          },
-        },
-      });
-    } else if (rawId.startsWith("NG-")) {
-      targetOrder = await prisma.order.findFirst({
-        where: { orderNumber: rawId },
-        include: {
-          items: true,
-          client: true,
-          payments: true,
-          assignedTo: true,
-          comments: {
-            orderBy: { createdAt: "desc" },
-          },
-        },
-      });
-    } else {
-      const numId = parseInt(rawId);
-      if (!isNaN(numId)) {
-        targetOrder = await prisma.order.findUnique({
-          where: { id: numId },
-          include: {
-            items: true,
-            client: true,
-            payments: true,
-            assignedTo: true,
-            comments: {
-              orderBy: { createdAt: "desc" },
-            },
-          },
-        });
-      }
-    }
-
-    // Also fetch client's cumulative balance and all orders for reconciliation
+    // Fetch client's cumulative balance and all orders for reconciliation
     const allOrders = await prisma.order.findMany({
       where: { clientId: ulugbek.id },
       include: {
         items: true,
+        payments: true,
+        assignedTo: true,
+        comments: {
+          orderBy: { createdAt: "desc" },
+        },
       },
       orderBy: { createdAt: "desc" },
     });
@@ -80,9 +38,84 @@ export async function GET(
       });
     });
 
+    let targetOrder: any = null;
+    const isStatementMode = rawId === "statement" || rawId === "all";
+
+    if (isStatementMode) {
+      // Build a comprehensive composite statement order combining all shipments
+      const allItems: any[] = [];
+      allOrders.forEach((o) => {
+        o.items.forEach((it) => {
+          allItems.push({
+            id: it.id,
+            title: `${it.title} (накладная ${o.orderNumber})`,
+            options: `${it.options || "Стандарт"} • Дата: ${new Date(o.createdAt).toLocaleDateString("ru-RU")}`,
+            quantity: it.quantity,
+            unitPrice: it.unitPrice,
+            totalPrice: it.totalPrice,
+            orderNumber: o.orderNumber,
+          });
+        });
+      });
+
+      targetOrder = {
+        id: "statement",
+        orderNumber: "NG-СВОДНЫЙ-АКТ",
+        title: `Сводный реестр & Акт сверки всех отгрузок («Нукус гуллери»)`,
+        status: totalDebtAmount === 0 ? "COMPLETED" : "READY",
+        createdAt: allOrders[0]?.createdAt || new Date(),
+        deadline: null,
+        totalAmount: totalOrderedAmount,
+        paidAmount: totalPaidAmount,
+        debtAmount: totalDebtAmount,
+        completedBy: totalDebtAmount === 0 ? "Улугбек (Нукус гуллери)" : null,
+        completedAt: totalDebtAmount === 0 ? new Date() : null,
+        notes: `Сводная ведомость всех партий коробок, отгруженных цехом Master Print для цветочного салона «Нукус гуллери» (Улугбек). Всего партий: ${totalOrdersCount}, всего коробок: ${totalBoxesAllTime} шт.`,
+        items: allItems,
+        client: ulugbek,
+        payments: [],
+        comments: [],
+        isStatement: true,
+      };
+    } else if (rawId === "latest") {
+      targetOrder = allOrders[0] || null;
+    } else if (rawId.startsWith("NG-") || rawId.includes("-")) {
+      targetOrder = allOrders.find((o) => o.orderNumber.toLowerCase() === rawId.toLowerCase()) || null;
+      if (!targetOrder) {
+        targetOrder = await prisma.order.findFirst({
+          where: { orderNumber: rawId },
+          include: {
+            items: true,
+            client: true,
+            payments: true,
+            assignedTo: true,
+            comments: { orderBy: { createdAt: "desc" } },
+          },
+        });
+      }
+    } else {
+      const numId = parseInt(rawId);
+      if (!isNaN(numId)) {
+        targetOrder = allOrders.find((o) => o.id === numId) || null;
+        if (!targetOrder) {
+          targetOrder = await prisma.order.findUnique({
+            where: { id: numId },
+            include: {
+              items: true,
+              client: true,
+              payments: true,
+              assignedTo: true,
+              comments: { orderBy: { createdAt: "desc" } },
+            },
+          });
+        }
+      }
+    }
+
     return NextResponse.json({
       success: true,
       order: targetOrder,
+      isStatement: isStatementMode,
       client: {
         id: ulugbek.id,
         name: ulugbek.name,
