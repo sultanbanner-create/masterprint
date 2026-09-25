@@ -20,9 +20,15 @@ import {
   Award,
   ChevronRight,
   TrendingUp,
+  MessageCircle,
+  Copy,
+  Check,
+  ExternalLink,
+  Share2,
 } from "lucide-react";
 import { formatCurrency, formatDateTime } from "@/lib/utils";
 import { NUKUS_BOX_CATALOG, NukusBoxModel } from "@/lib/nukus-boxes-catalog";
+import { ULUGPEK_PHONE, ULUGPEK_TELEGRAM_LINK } from "@/lib/nukus-boxes";
 
 interface BatchItemSelection {
   [boxId: string]: {
@@ -39,6 +45,8 @@ export default function NukusBoxesProductionPage() {
   const [selectedQuantities, setSelectedQuantities] = useState<BatchItemSelection>({});
   const [notes, setNotes] = useState("");
   const [feedback, setFeedback] = useState<{ type: "success" | "error"; text: string } | null>(null);
+  const [newBatchSuccess, setNewBatchSuccess] = useState<any>(null);
+  const [copiedId, setCopiedId] = useState<number | null>(null);
 
   // Модалка оплаты для директора
   const [isPayModalOpen, setIsPayModalOpen] = useState(false);
@@ -158,8 +166,12 @@ export default function NukusBoxesProductionPage() {
 
       setFeedback({
         type: "success",
-        text: `🎉 Партия успешно принята! ${totalBatchCount} коробок на сумму ${formatCurrency(totalBatchSum)}. Долг Улугбека обновлен.`,
+        text: `🎉 Партия успешно принята! ${totalBatchCount} коробок на сумму ${formatCurrency(totalBatchSum)}. Накладная готова для отправки Улугбеку.`,
       });
+
+      if (data.order) {
+        setNewBatchSuccess(data.order);
+      }
 
       resetQuantities();
       await loadData();
@@ -167,6 +179,43 @@ export default function NukusBoxesProductionPage() {
       setFeedback({ type: "error", text: e.message });
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  const getInvoiceUrl = (orderId: number | string) => {
+    const origin = typeof window !== "undefined" ? window.location.origin : "https://master-print-erp.vercel.app";
+    return `${origin}/track/ng/${orderId}`;
+  };
+
+  const handleShareTelegram = (batch: any) => {
+    const url = getInvoiceUrl(batch.id);
+    const totalQty = batch.items?.reduce((s: number, it: any) => s + (it.quantity || 0), 0) || 0;
+    const text = `🌸 Здравствуйте, Улугбек!\nЦех Master Print отгрузил партию коробок «Нукус гуллери».\n📦 Накладная: ${batch.orderNumber}\n📊 Количество: ${totalQty} шт.\n💰 Сумма: ${formatCurrency(batch.totalAmount)}\n\nПожалуйста, ознакомьтесь со спецификацией и подтвердите приемку:\n${url}`;
+
+    if (typeof window !== "undefined") {
+      navigator.clipboard.writeText(text);
+      const shareUrl = `https://t.me/share/url?url=${encodeURIComponent(url)}&text=${encodeURIComponent(text)}`;
+      window.open(shareUrl, "_blank");
+    }
+  };
+
+  const handleDirectTelegramUlugbek = (batch: any) => {
+    const url = getInvoiceUrl(batch.id);
+    const totalQty = batch.items?.reduce((s: number, it: any) => s + (it.quantity || 0), 0) || 0;
+    const text = `🌸 Здравствуйте, Улугбек!\nЦех Master Print отгрузил партию коробок «Нукус гуллери».\n📦 Накладная: ${batch.orderNumber}\n📊 Количество: ${totalQty} шт.\n💰 Сумма: ${formatCurrency(batch.totalAmount)}\n\nПожалуйста, ознакомьтесь со спецификацией и подтвердите приемку:\n${url}`;
+
+    if (typeof window !== "undefined") {
+      navigator.clipboard.writeText(text);
+      window.open("https://t.me/+998934856006", "_blank");
+    }
+  };
+
+  const handleCopyInvoiceLink = (orderId: number) => {
+    if (typeof window !== "undefined") {
+      const url = getInvoiceUrl(orderId);
+      navigator.clipboard.writeText(url);
+      setCopiedId(orderId);
+      setTimeout(() => setCopiedId(null), 2500);
     }
   };
 
@@ -618,6 +667,18 @@ export default function NukusBoxesProductionPage() {
                   >
                     {batch.debtAmount > 0 ? "Не оплачено" : "Оплачено"}
                   </span>
+
+                  {batch.completedAt ? (
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-50 text-emerald-800 border border-emerald-300">
+                      <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                      Принято Улугбеком
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-medium bg-amber-50 text-amber-800 border border-amber-300">
+                      <Clock className="w-3 h-3 text-amber-600" />
+                      Ожидает приемки
+                    </span>
+                  )}
                 </div>
 
                 {/* Список коробок в партии */}
@@ -639,8 +700,8 @@ export default function NukusBoxesProductionPage() {
                 </div>
               </div>
 
-              {/* Финансовый статус наряда */}
-              <div className="text-right shrink-0 flex md:flex-col items-center md:items-end justify-between gap-2 border-t md:border-t-0 pt-2 md:pt-0 border-slate-100">
+              {/* Финансовый статус наряда и действия */}
+              <div className="text-right shrink-0 flex flex-col items-end gap-2.5 border-t md:border-t-0 pt-2 md:pt-0 border-slate-100">
                 <div>
                   <div className="text-base font-black font-mono text-slate-900">
                     {formatCurrency(batch.totalAmount)}
@@ -656,13 +717,47 @@ export default function NukusBoxesProductionPage() {
                   )}
                 </div>
 
-                <Link
-                  href={`/orders/${batch.id}`}
-                  className="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-blue-600 hover:text-white text-slate-700 text-xs font-bold transition flex items-center gap-1"
-                >
-                  Карточка
-                  <ChevronRight className="w-3.5 h-3.5" />
-                </Link>
+                <div className="flex items-center gap-1.5 flex-wrap justify-end">
+                  <button
+                    onClick={() => handleDirectTelegramUlugbek(batch)}
+                    className="px-2.5 py-1.5 rounded-xl bg-[#229ED9]/10 hover:bg-[#229ED9] hover:text-white text-[#229ED9] border border-[#229ED9]/30 text-xs font-bold transition flex items-center gap-1.5 cursor-pointer"
+                    title="Отправить ссылку Улугбеку в Telegram (+998 93 485 60 06)"
+                  >
+                    <MessageCircle className="w-3.5 h-3.5" />
+                    <span>В Telegram</span>
+                  </button>
+
+                  <Link
+                    href={`/track/ng/${batch.id}`}
+                    target="_blank"
+                    className="px-2.5 py-1.5 rounded-xl bg-black hover:bg-zinc-800 text-[#F6D365] border border-[#D4AF37]/50 text-xs font-bold transition flex items-center gap-1.5 shadow-xs"
+                    title="Открыть роскошный акт-счет Nukus Gulleri"
+                  >
+                    <Sparkles className="w-3.5 h-3.5 text-[#D4AF37]" />
+                    <span>Акт NG</span>
+                  </Link>
+
+                  <button
+                    onClick={() => handleCopyInvoiceLink(batch.id)}
+                    className="p-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs font-bold transition cursor-pointer"
+                    title="Скопировать ссылку для отправки"
+                  >
+                    {copiedId === batch.id ? (
+                      <Check className="w-3.5 h-3.5 text-emerald-600" />
+                    ) : (
+                      <Copy className="w-3.5 h-3.5" />
+                    )}
+                  </button>
+
+                  <Link
+                    href={`/orders/${batch.id}`}
+                    className="px-2.5 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition flex items-center gap-1"
+                    title="Перейти в карточку наряда цеха"
+                  >
+                    <span>Цех</span>
+                    <ChevronRight className="w-3.5 h-3.5" />
+                  </Link>
+                </div>
               </div>
             </div>
           ))}
@@ -790,6 +885,78 @@ export default function NukusBoxesProductionPage() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Модальное окно: Успешное создание партии и быстрая отправка Улугбеку */}
+      {newBatchSuccess && (
+        <div className="fixed inset-0 z-50 bg-slate-900/80 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-[#121318] text-white rounded-3xl max-w-md w-full p-6 sm:p-7 shadow-2xl space-y-5 border-2 border-[#D4AF37] animate-scale-up">
+            <div className="text-center space-y-2">
+              <div className="w-16 h-16 rounded-full bg-[#D4AF37]/20 border border-[#D4AF37] flex items-center justify-center mx-auto text-[#F6D365]">
+                <Package className="w-8 h-8" />
+              </div>
+              <span className="text-[10px] font-mono tracking-widest text-[#D4AF37] uppercase font-bold block">
+                Партия коробок сохранена в ERP
+              </span>
+              <h3 className="text-xl font-serif font-black text-[#FFF5D0]">
+                Накладная {newBatchSuccess.orderNumber}
+              </h3>
+              <p className="text-xs text-slate-300 leading-relaxed">
+                Сумма партии: <b className="text-[#F6D365] font-mono">{formatCurrency(newBatchSuccess.totalAmount)}</b>. Отправьте ссылку Улугбеку для подтверждения приемки в Telegram:
+              </p>
+            </div>
+
+            <div className="space-y-2.5 pt-1">
+              <button
+                type="button"
+                onClick={() => handleDirectTelegramUlugbek(newBatchSuccess)}
+                className="w-full py-3.5 px-4 rounded-2xl bg-gradient-to-r from-[#2AABEE] to-[#229ED9] hover:brightness-110 text-white font-extrabold text-xs sm:text-sm shadow-lg flex items-center justify-center gap-2 cursor-pointer transition-all"
+              >
+                <MessageCircle className="w-4 h-4" />
+                <span>Отправить Улугбеку в Telegram (+998 93 485 60 06)</span>
+              </button>
+
+              <div className="grid grid-cols-2 gap-2">
+                <Link
+                  href={`/track/ng/${newBatchSuccess.id}`}
+                  target="_blank"
+                  className="py-2.5 px-3 rounded-xl bg-black hover:bg-zinc-900 text-[#F6D365] border border-[#D4AF37]/50 text-xs font-bold flex items-center justify-center gap-1.5 transition-all text-center"
+                >
+                  <Sparkles className="w-3.5 h-3.5 text-[#D4AF37]" />
+                  <span>Открыть акт NG</span>
+                </Link>
+
+                <button
+                  type="button"
+                  onClick={() => handleCopyInvoiceLink(newBatchSuccess.id)}
+                  className="py-2.5 px-3 rounded-xl bg-[#1C1E26] hover:bg-[#252833] text-slate-200 border border-slate-700 text-xs font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer"
+                >
+                  {copiedId === newBatchSuccess.id ? (
+                    <>
+                      <Check className="w-3.5 h-3.5 text-emerald-400" />
+                      <span className="text-emerald-400">Скопировано!</span>
+                    </>
+                  ) : (
+                    <>
+                      <Copy className="w-3.5 h-3.5 text-[#D4AF37]" />
+                      <span>Копировать</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+
+            <div className="pt-2 text-center">
+              <button
+                type="button"
+                onClick={() => setNewBatchSuccess(null)}
+                className="text-xs text-slate-400 hover:text-slate-200 underline font-medium cursor-pointer"
+              >
+                Закрыть окно
+              </button>
+            </div>
           </div>
         </div>
       )}

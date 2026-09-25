@@ -5,9 +5,9 @@ echo ========================================================
 echo   ⚡ OUTDOOR ERP: Заказы, Дедлайны цеха, Мастера & Касса
 echo   Команда: Тимур, Жалгас, Абзал, Альберт
 echo ========================================================
-echo.
-cd /d "C:\Users\User\.gemini\antigravity\scratch\outdoor-erp"
+cd /d "%~dp0"
 echo Запуск локального сервера Next.js на http://localhost:3000 ...
 start http://localhost:3000
 npm run dev
 pause
+

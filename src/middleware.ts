@@ -13,14 +13,17 @@ const PUBLIC_PATHS = [
   "/icon.svg",
   "/manifest.json",
   "/favicon.ico",
+  "/images",
+  "/nukus-gulleri",
+  "/api/nukus-gulleri",
 ];
 
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  // 1. Allow public static assets, Telegram webhook, and Telegram Mini App (/tma)
+  // 1. Allow public static assets, Telegram webhook, tracking, and Nukus Gulleri confirmation
   if (
-    PUBLIC_PATHS.some((path) => pathname === path || pathname.startsWith("/track/")) ||
+    PUBLIC_PATHS.some((path) => pathname === path || pathname.startsWith("/track/") || pathname.startsWith("/nukus-gulleri/") || pathname.startsWith("/api/nukus-gulleri/")) ||
     pathname.startsWith("/tma") ||
     pathname.startsWith("/api/telegram") ||
     pathname.startsWith("/_next") ||

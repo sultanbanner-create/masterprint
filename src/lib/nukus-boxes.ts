@@ -4,6 +4,9 @@ export { NUKUS_BOX_CATALOG, type NukusBoxModel } from "./nukus-boxes-catalog";
 
 export const ULUGPEK_CLIENT_NAME = "Улугбек";
 export const ULUGPEK_COMPANY_NAME = "Нукус гуллери";
+export const ULUGPEK_PHONE = "+998934856006";
+export const ULUGPEK_PHONE_FORMATTED = "+998 93 485-60-06";
+export const ULUGPEK_TELEGRAM_LINK = "https://t.me/+998934856006";
 
 /**
  * Находит или создает в базе контрагента Улугбек (Нукус гуллери)
@@ -14,6 +17,7 @@ export async function getOrCreateUlugbekClient() {
       OR: [
         { name: ULUGPEK_CLIENT_NAME },
         { company: { contains: "Нукус гуллери" } },
+        { phone: { contains: "934856006" } },
       ],
     },
   });
@@ -23,9 +27,14 @@ export async function getOrCreateUlugbekClient() {
       data: {
         name: ULUGPEK_CLIENT_NAME,
         company: ULUGPEK_COMPANY_NAME,
-        phone: "+998 90 735-00-11",
-        notes: "Постоянный заказчик подарочных и цветочных коробок цеха",
+        phone: ULUGPEK_PHONE_FORMATTED,
+        notes: "Постоянный заказчик подарочных и цветочных коробок цеха Nukus Gulleri",
       },
+    });
+  } else if (!client.phone || client.phone.includes("735")) {
+    client = await prisma.client.update({
+      where: { id: client.id },
+      data: { phone: ULUGPEK_PHONE_FORMATTED },
     });
   }
 
