@@ -169,10 +169,37 @@ export function CommercialProposal({ order, isOpen, onClose }: CommercialProposa
                       {item.options || "—"}
                     </td>
                     <td className="p-2.5 border-r border-slate-300 text-center font-mono">
-                      {item.area ? `${item.area} м²` : item.letterCount ? `${item.letterCount} шт × ${item.letterHeight} см` : `${item.quantity || 1} шт`}
+                      {item.width && item.height ? (
+                        <div>
+                          <div className="font-bold text-slate-900">{item.quantity || 1} шт</div>
+                          <div className="text-[10px] text-slate-500">
+                            {item.width} × {item.height} м
+                          </div>
+                          <div className="text-[10px] font-bold text-emerald-800 bg-emerald-50 rounded px-1 mt-0.5 border border-emerald-200">
+                            общ. {(Math.round((item.width * item.height * (item.quantity || 1)) * 100) / 100).toFixed(2)} м²
+                          </div>
+                        </div>
+                      ) : item.area ? (
+                        <div>
+                          <div className="font-bold text-slate-900">{item.quantity || 1} шт</div>
+                          <div className="text-[10px] font-bold text-emerald-800 bg-emerald-50 rounded px-1 mt-0.5 border border-emerald-200">
+                            общ. {item.area} м²
+                          </div>
+                        </div>
+                      ) : item.letterCount ? (
+                        <div>
+                          <div className="font-bold text-slate-900">{item.quantity || 1} компл.</div>
+                          <div className="text-[10px] text-slate-500">{item.letterCount} шт × {item.letterHeight} см</div>
+                        </div>
+                      ) : (
+                        <span className="font-bold">{item.quantity || 1} шт</span>
+                      )}
                     </td>
                     <td className="p-2.5 border-r border-slate-300 text-right font-mono text-slate-600">
-                      {formatCurrency(item.unitPrice)}
+                      <div>{formatCurrency(item.unitPrice)}</div>
+                      <div className="text-[9px] text-slate-400">
+                        {item.width && item.height || item.area ? "за м²" : "за ед."}
+                      </div>
                     </td>
                     <td className="p-2.5 text-right font-mono font-bold text-slate-900">
                       {formatCurrency(item.totalPrice)}

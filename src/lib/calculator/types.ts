@@ -58,16 +58,25 @@ export interface CalculationParameterInputs {
     glueRemovalRate?: string | number;
   };
 
-  // Стенды
+  // Стенды (Стенд из Фомекса ПВХ / Оргстекла / Акрила)
   stand?: {
-    baseRate?: string | number;
-    pocketsCount?: number;
-    pocketRate?: string | number;
+    material?: "acrylic" | "fomeks" | string; // оргстекло (акрил) или фомекс (ПВХ)
+    ratePerSqm?: string | number; // ручной ввод ставки за кв. метр Фомекса (по умолч. 240 000 UZS)
+    thickness?: "3mm" | "5mm" | "8mm" | "10mm" | string; // толщина фомекса
+    baseRate?: string | number; // базовая ставка за м² (обратная совместимость C05)
+    pocketsA4Count?: number; // карманы формата А4 (шт)
+    pocketsA4Rate?: string | number; // тариф кармана А4 (по умолч. 25 000 UZS)
+    pocketsA3Count?: number; // карманы формата А3 (шт)
+    pocketsA3Rate?: string | number; // тариф кармана А3 (по умолч. 40 000 UZS)
+    pocketsCount?: number; // кол-во карманов (обратная совместимость)
+    pocketRate?: string | number; // тариф кармана (обратная совместимость)
+    profileType?: "none" | "nielsen" | "plastic_edge"; // багетный профиль Nielsen или кант
+    profileRate?: string | number; // тариф за пог. м багетного профиля (по умолч. 40 000 UZS)
+    fittingsCount?: number; // дистанционные металлические держатели (шт)
+    fittingsRate?: string | number; // тариф держателя (по умолч. 15 000 UZS)
     graphicsRate?: string | number;
     cuttingLength?: string | number;
     cuttingRate?: string | number;
-    fittingsCount?: number;
-    fittingsRate?: string | number;
     assemblyRate?: string | number;
   };
 

@@ -149,7 +149,23 @@ export function AcceptanceAct({ order, isOpen, onClose }: AcceptanceActProps) {
                       {item.options && <span className="text-slate-500 text-[11px] block">{item.options}</span>}
                     </td>
                     <td className="p-2 border-r border-slate-300 text-center font-mono">
-                      {item.area ? `${item.area} м²` : item.letterCount ? `${item.letterCount} букв` : `${item.quantity || 1} шт`}
+                      {item.width && item.height ? (
+                        <div>
+                          <div>{item.width} × {item.height} м — <b>{item.quantity || 1} шт</b></div>
+                          <div className="text-[10px] text-slate-500 font-semibold">
+                            общ. {(Math.round((item.width * item.height * (item.quantity || 1)) * 100) / 100).toFixed(2)} м²
+                          </div>
+                        </div>
+                      ) : item.area ? (
+                        <div>
+                          {item.quantity > 1 && <div>{item.quantity} шт</div>}
+                          <div>{item.area} м²</div>
+                        </div>
+                      ) : item.letterCount ? (
+                        `${item.letterCount} букв`
+                      ) : (
+                        `${item.quantity || 1} шт`
+                      )}
                     </td>
                     <td className="p-2 text-right font-mono font-bold text-slate-900">
                       {formatCurrency(item.totalPrice)}

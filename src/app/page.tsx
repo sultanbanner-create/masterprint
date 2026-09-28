@@ -92,6 +92,7 @@ export default async function DashboardPage() {
     BANNER: 0,
     LETTERS: 0,
     LIGHTBOX: 0,
+    STAND: 0,
     ORACAL: 0,
     AUTO_BRANDING: 0,
     INSTALL: 0,
@@ -108,6 +109,7 @@ export default async function DashboardPage() {
   const CATEGORY_META: Record<string, { label: string; icon: string; color: string }> = {
     LETTERS: { label: "Объемные буквы LED", icon: "💡", color: "bg-orange-500" },
     BANNER: { label: "Печать баннеров 3.2м", icon: "🖨️", color: "bg-purple-500" },
+    STAND: { label: "Стенды из Фомекса", icon: "📋", color: "bg-emerald-500" },
     LIGHTBOX: { label: "Лайтбоксы / Короба", icon: "📦", color: "bg-blue-500" },
     ORACAL: { label: "Пленка Oracal & Накатка", icon: "🎨", color: "bg-teal-500" },
     AUTO_BRANDING: { label: "Оклейка авто (Damas/Labo)", icon: "🚐", color: "bg-amber-500" },
@@ -127,6 +129,8 @@ export default async function DashboardPage() {
         totalLaborAccrued += item.area * 3000;
       } else if (item.serviceType === "LETTERS" && item.letterCount && item.letterHeight) {
         totalLaborAccrued += item.letterCount * item.letterHeight * 1200;
+      } else if (item.serviceType === "STAND" && item.area) {
+        totalLaborAccrued += item.area * 40000;
       } else if (item.serviceType === "INSTALL") {
         totalLaborAccrued += item.totalPrice * 0.30;
       }

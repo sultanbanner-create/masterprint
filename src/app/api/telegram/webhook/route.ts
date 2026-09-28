@@ -3,7 +3,7 @@ import { prisma } from "@/lib/db";
 
 export const dynamic = "force-dynamic";
 
-const BASE_URL = process.env.NEXT_PUBLIC_APP_URL || "https://masterprint-sultanbanner-9247s-projects.vercel.app";
+const BASE_URL = process.env.NEXT_PUBLIC_APP_URL || "https://masterprint-erp.vercel.app";
 
 export async function POST(req: NextRequest) {
   try {
@@ -180,7 +180,7 @@ export async function POST(req: NextRequest) {
           );
         }, 0);
 
-      // Буквы для Абзала
+      // Буквы и стенды для Абзала
       const lettersCount = orders
         .filter((o) => o.status !== "COMPLETED")
         .reduce((sum, o) => {
@@ -192,6 +192,17 @@ export async function POST(req: NextRequest) {
           );
         }, 0);
 
+      const standsCount = orders
+        .filter((o) => o.status !== "COMPLETED")
+        .reduce((sum, o) => {
+          return (
+            sum +
+            o.items
+              .filter((i) => i.serviceType === "STAND" || i.serviceType === "LIGHTBOX")
+              .reduce((s, i) => s + (i.quantity || 1), 0)
+          );
+        }, 0);
+
       const statsMsg = 
         `📊 <b>Производственная сводка Master Print:</b>\n\n` +
         `⚡ <b>Заказов в работе:</b> ${active.length} шт.\n` +
@@ -199,7 +210,7 @@ export async function POST(req: NextRequest) {
         `⏳ <b>Дебиторка (долги):</b> ${totalDebt.toLocaleString()} сум\n\n` +
         `<b>Загрузка мастеров на сегодня:</b>\n` +
         `🖨️ <b>Альберт (Печать):</b> ${printM2.toFixed(1)} м² в очереди\n` +
-        `💡 <b>Абзал (Сборка букв):</b> ${lettersCount} шт. в очереди\n`;
+        `🛠️ <b>Абзал (Сборка & Монтаж):</b> ${lettersCount} букв, ${standsCount} стендов/коробов в очереди\n`;
 
       await sendTg("sendMessage", {
         chat_id: chatId,

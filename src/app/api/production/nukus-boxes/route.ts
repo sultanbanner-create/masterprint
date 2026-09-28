@@ -129,8 +129,6 @@ export async function GET() {
         debtAmount: o.debtAmount,
         createdAt: o.createdAt,
         assignedToName: o.assignedTo?.name || "Абзал",
-        completedBy: o.completedBy,
-        completedAt: o.completedAt,
         items: o.items.map((it) => ({
           id: it.id,
           title: it.title,

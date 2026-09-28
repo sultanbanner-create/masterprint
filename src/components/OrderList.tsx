@@ -431,6 +431,7 @@ export function OrderList({ initialOrders, employees, currentUser }: OrderListPr
             className="px-3 py-1.5 font-bold rounded-xl border border-slate-200 bg-white text-slate-700 focus:outline-none cursor-pointer"
           >
             <option value="ALL">Все виды изделий</option>
+            <option value="STAND">📋 Стенды и таблички</option>
             <option value="BANNER">🖨️ Баннеры</option>
             <option value="LETTERS">💡 Световые буквы LED</option>
             <option value="LIGHTBOX">📦 Лайтбоксы</option>

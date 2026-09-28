@@ -57,13 +57,14 @@ export default function TelegramMiniApp() {
     totalDebt: 0,
     printM2: 0,
     lettersCount: 0,
+    standsCount: 0,
   });
 
   // Форма нового наряда в TMA
   const [newTitle, setNewTitle] = useState("");
   const [newClientName, setNewClientName] = useState("");
   const [newClientPhone, setNewClientPhone] = useState("");
-  const [newServiceType, setNewServiceType] = useState<"LIGHTBOX" | "BANNER" | "LETTERS" | "ORACAL" | "INSTALL">("LIGHTBOX");
+  const [newServiceType, setNewServiceType] = useState<"LIGHTBOX" | "BANNER" | "LETTERS" | "ORACAL" | "STAND" | "INSTALL">("LIGHTBOX");
   const [newWidth, setNewWidth] = useState("2");
   const [newHeight, setNewHeight] = useState("1");
   const [newQuantity, setNewQuantity] = useState(1);
@@ -74,11 +75,11 @@ export default function TelegramMiniApp() {
   const [submitSuccess, setSubmitSuccess] = useState<string | null>(null);
 
   // Калькулятор в TMA
-  const [calcService, setCalcService] = useState<"LIGHTBOX" | "BANNER" | "LETTERS" | "ORACAL">("LIGHTBOX");
-  const [calcW, setCalcW] = useState("2");
-  const [calcH, setCalcH] = useState("1");
-  const [calcQty, setCalcQty] = useState(1);
-  const [calcRate, setCalcRate] = useState(850000);
+  const [calcService, setCalcService] = useState<"LIGHTBOX" | "BANNER" | "LETTERS" | "ORACAL" | "STAND" | "STAND_ACRYLIC">("STAND_ACRYLIC");
+  const [calcW, setCalcW] = useState("0.6");
+  const [calcH, setCalcH] = useState("0.9");
+  const [calcQty, setCalcQty] = useState(5);
+  const [calcRate, setCalcRate] = useState(240000);
   const [copiedEstimate, setCopiedEstimate] = useState(false);
 
   // Виброотклик Telegram Haptic Feedback
@@ -137,6 +138,7 @@ export default function TelegramMiniApp() {
 
           let pM2 = 0;
           let lCount = 0;
+          let sCount = 0;
           active.forEach((o) => {
             o.items?.forEach((it: any) => {
               if (it.serviceType === "BANNER" || it.serviceType === "ORACAL") {
@@ -144,6 +146,9 @@ export default function TelegramMiniApp() {
               }
               if (it.serviceType === "LETTERS") {
                 lCount += it.letterCount || 0;
+              }
+              if (it.serviceType === "STAND") {
+                sCount += (it.quantity || 1);
               }
             });
           });
@@ -154,6 +159,7 @@ export default function TelegramMiniApp() {
             totalDebt: debt,
             printM2: pM2,
             lettersCount: lCount,
+            standsCount: sCount,
           });
         }
       }
@@ -260,11 +266,12 @@ export default function TelegramMiniApp() {
   };
 
   // Расчет суммы в форме нового наряда
-  const newCalculatedArea = (parseFloat(newWidth) || 0) * (parseFloat(newHeight) || 0);
+  const newSingleArea = (parseFloat(newWidth) || 0) * (parseFloat(newHeight) || 0);
+  const newCalculatedArea = newSingleArea * (newQuantity || 1);
   const newCalculatedTotal = Math.round(
     newServiceType === "LETTERS"
       ? (parseFloat(newWidth) || 1) * newRatePerUnit * newQuantity
-      : newCalculatedArea * newRatePerUnit * newQuantity
+      : newCalculatedArea * newRatePerUnit
   );
 
   // Создание нового наряда из TMA
@@ -277,8 +284,9 @@ export default function TelegramMiniApp() {
 
     const defaultTitle = 
       newServiceType === "LIGHTBOX" ? `Короб из акрила (свет) ${newWidth}x${newHeight}м` :
-      newServiceType === "BANNER" ? `Баннер ${newWidth}x${newHeight}м` :
+      newServiceType === "BANNER" ? `Баннер ${newWidth}x${newHeight}м (${newQuantity} шт)` :
       newServiceType === "LETTERS" ? `Буквы световые LED (${newQuantity} шт)` :
+      newServiceType === "STAND" ? `Стенд ${newWidth}x${newHeight}м — ${newQuantity} шт (общий: ${newCalculatedArea.toFixed(2)} м²)` :
       newServiceType === "ORACAL" ? `Пленка Oracal ${newWidth}x${newHeight}м` :
       `Монтажные работы`;
 
@@ -337,22 +345,32 @@ export default function TelegramMiniApp() {
   };
 
   // Расчет в быстром калькуляторе
-  const calcArea = (parseFloat(calcW) || 0) * (parseFloat(calcH) || 0);
+  const calcSingleArea = (parseFloat(calcW) || 0) * (parseFloat(calcH) || 0);
+  const calcTotalArea = calcSingleArea * (calcQty || 1);
   const calcTotal = Math.round(
     calcService === "LETTERS"
       ? (parseFloat(calcW) || 1) * calcRate * calcQty
-      : calcArea * calcRate * calcQty
+      : calcTotalArea * calcRate
   );
 
   const handleCopyQuote = () => {
+    const serviceName = 
+      calcService === "STAND_ACRYLIC" ? "Стенд из оргстекла (акрил)" :
+      calcService === "STAND" ? "Стенд из Фомекса (ПВХ)" :
+      calcService === "LIGHTBOX" ? "Короб из акрила (свет)" :
+      calcService === "BANNER" ? "Баннер 3.2м" :
+      calcService === "LETTERS" ? "Объемные буквы LED" :
+      "Пленка Oracal";
+
     const text = 
       `📋 *РПК «MASTER PRINT» • Расчет стоимости*\n\n` +
-      `🏷 *Изделие:* ${calcService === "LIGHTBOX" ? "Короб из акрила (свет)" : calcService === "BANNER" ? "Баннер 3.2м" : calcService === "LETTERS" ? "Объемные буквы LED" : "Пленка Oracal"}\n` +
-      `📐 *Размер:* ${calcW}м × ${calcH}м (${calcArea.toFixed(2)} м²)\n` +
+      `🏷 *Изделие:* ${serviceName}\n` +
+      `📐 *Размер (1 шт):* ${calcW}м × ${calcH}м (${calcSingleArea.toFixed(2)} м²)\n` +
       `📦 *Количество:* ${calcQty} шт.\n` +
-      `💵 *Тариф:* ${calcRate.toLocaleString()} сум / м²\n` +
+      `📏 *Общий квадрат:* ${calcTotalArea.toFixed(2)} м²\n` +
+      `💵 *Сумма за кв:* ${calcRate.toLocaleString()} сум / м²\n` +
       `━━━━━━━━━━━━━━━━━\n` +
-      `💰 *Итого к оплате:* ${calcTotal.toLocaleString()} UZS\n\n` +
+      `💰 *Общая сумма:* ${calcTotal.toLocaleString()} UZS\n\n` +
       `📞 Контакты: +998 (90) 000-00-00\n` +
       `📍 Цех рекламы: Master Print`;
 
@@ -631,6 +649,7 @@ export default function TelegramMiniApp() {
               <div className="grid grid-cols-2 gap-2 text-xs">
                 {[
                   { id: "LIGHTBOX", label: "📦 Короб из акрила (свет)", rate: 850000, master: "Абзал" },
+                  { id: "STAND", label: "📋 Стенд из Фомекса", rate: 240000, master: "Абзал" },
                   { id: "BANNER", label: "🖨️ Баннер 3.2м", rate: 35000, master: "Альберт" },
                   { id: "LETTERS", label: "💡 Буквы LED", rate: 6000, master: "Абзал" },
                   { id: "ORACAL", label: "🎨 Пленка Oracal", rate: 50000, master: "Альберт" },
@@ -802,6 +821,8 @@ export default function TelegramMiniApp() {
             {/* Выбор изделия для расчета */}
             <div className="grid grid-cols-2 gap-2 text-xs">
               {[
+                { id: "STAND_ACRYLIC", label: "💎 Стенд из оргстекла", rate: 240000 },
+                { id: "STAND", label: "📋 Стенд из Фомекса", rate: 240000 },
                 { id: "LIGHTBOX", label: "📦 Короб из акрила (свет)", rate: 850000 },
                 { id: "BANNER", label: "🖨️ Баннер 3.2м", rate: 35000 },
                 { id: "LETTERS", label: "💡 Буквы LED", rate: 6000 },
@@ -828,7 +849,7 @@ export default function TelegramMiniApp() {
             </div>
 
             {/* Параметры калькулятора */}
-            <div className="grid grid-cols-3 gap-2 text-xs">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
               <div>
                 <label className="block text-[11px] font-bold text-slate-400 mb-1">
                   Ширина (м)
@@ -855,6 +876,18 @@ export default function TelegramMiniApp() {
               </div>
               <div>
                 <label className="block text-[11px] font-bold text-slate-400 mb-1">
+                  Кол-во (шт)
+                </label>
+                <input
+                  type="number"
+                  min="1"
+                  value={calcQty}
+                  onChange={(e) => setCalcQty(Math.max(1, parseInt(e.target.value) || 1))}
+                  className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-xl font-mono text-amber-300 text-xs font-bold"
+                />
+              </div>
+              <div>
+                <label className="block text-[11px] font-bold text-slate-400 mb-1">
                   Тариф / м²
                 </label>
                 <input
@@ -862,7 +895,7 @@ export default function TelegramMiniApp() {
                   step="10000"
                   value={calcRate}
                   onChange={(e) => setCalcRate(Number(e.target.value) || 0)}
-                  className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-xl font-mono text-amber-300 text-xs font-bold"
+                  className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-xl font-mono text-emerald-400 text-xs font-bold"
                 />
               </div>
             </div>
@@ -870,15 +903,23 @@ export default function TelegramMiniApp() {
             {/* Результат расчета */}
             <div className="p-4 bg-slate-950 rounded-2xl border border-slate-800 space-y-2">
               <div className="flex items-center justify-between text-xs text-slate-400">
-                <span>Площадь изделия:</span>
-                <span className="font-mono text-white font-bold">{calcArea.toFixed(2)} м²</span>
+                <span>Размер (1 шт):</span>
+                <span className="font-mono text-white font-bold">{calcW} × {calcH} м ({calcSingleArea.toFixed(2)} м²)</span>
               </div>
               <div className="flex items-center justify-between text-xs text-slate-400">
-                <span>Цена за 1 м²:</span>
-                <span className="font-mono text-white font-bold">{calcRate.toLocaleString()} сум</span>
+                <span>Количество:</span>
+                <span className="font-mono text-amber-300 font-bold">{calcQty} шт</span>
+              </div>
+              <div className="flex items-center justify-between text-xs text-slate-400">
+                <span>Общий квадрат:</span>
+                <span className="font-mono text-cyan-300 font-bold">{calcTotalArea.toFixed(2)} м²</span>
+              </div>
+              <div className="flex items-center justify-between text-xs text-slate-400">
+                <span>Сумма за 1 м²:</span>
+                <span className="font-mono text-white font-bold">{calcRate.toLocaleString()} UZS</span>
               </div>
               <div className="pt-2 border-t border-slate-800 flex items-center justify-between">
-                <span className="text-xs font-black text-slate-300">ИТОГОВАЯ СМЕТА:</span>
+                <span className="text-xs font-black text-slate-300">ОБЩАЯ СУММА:</span>
                 <span className="text-lg font-black font-mono text-emerald-400">
                   {calcTotal.toLocaleString()} UZS
                 </span>
@@ -936,6 +977,12 @@ export default function TelegramMiniApp() {
                   <span className="text-[10px] text-slate-400 block font-semibold uppercase">Световых букв:</span>
                   <span className="text-base font-black font-mono text-cyan-400">
                     {stats.lettersCount} шт
+                  </span>
+                </div>
+                <div className="p-3 bg-slate-950 rounded-2xl border border-slate-800/80 col-span-2 sm:col-span-1">
+                  <span className="text-[10px] text-slate-400 block font-semibold uppercase">Стенды из Фомекса:</span>
+                  <span className="text-base font-black font-mono text-purple-400">
+                    {stats.standsCount} шт в цехе
                   </span>
                 </div>
               </div>

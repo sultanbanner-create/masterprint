@@ -172,15 +172,19 @@ export function OrderCalculator({ employees }: { employees: any[] }) {
       newItem = {
         id: newId,
         serviceType: "STAND",
-        title: "Информационный стенд / Табличка",
-        width: undefined,
-        height: undefined,
-        area: 0,
-        quantity: 1,
-        unitPrice: 350000,
-        options: "ПВХ 4мм, карманы А4",
-        totalPrice: 0,
+        title: "Стенд из оргстекла (акрил)",
+        width: 0.6,
+        height: 0.9,
+        area: 2.7,
+        quantity: 5,
+        unitPrice: 240000,
+        options: "Оргстекло (акрил) 4мм, дистанционные держатели, полировка торцов",
+        totalPrice: 648000,
       };
+      if (employees.length > 0) {
+        const abzal = employees.find((e) => e.name === "Абзал");
+        if (abzal) setAssignedToId(abzal.id);
+      }
     } else if (type === "INSTALL") {
       newItem = {
         id: newId,
@@ -228,11 +232,12 @@ export function OrderCalculator({ employees }: { employees: any[] }) {
         if (["BANNER", "LIGHTBOX", "ORACAL", "STAND"].includes(updated.serviceType)) {
           const w = typeof updated.width === "number" && !isNaN(updated.width) ? updated.width : 0;
           const h = typeof updated.height === "number" && !isNaN(updated.height) ? updated.height : 0;
-          const area = Math.round(w * h * 100) / 100;
-          updated.area = area;
-          const qty = typeof updated.quantity === "number" && !isNaN(updated.quantity) ? updated.quantity : 1;
+          const qty = typeof updated.quantity === "number" && !isNaN(updated.quantity) && updated.quantity > 0 ? updated.quantity : 1;
+          const singleArea = Math.round(w * h * 100) / 100;
+          const totalArea = Math.round(singleArea * qty * 100) / 100;
+          updated.area = totalArea;
           const price = typeof updated.unitPrice === "number" && !isNaN(updated.unitPrice) ? updated.unitPrice : 0;
-          updated.totalPrice = Math.round(area * price * qty);
+          updated.totalPrice = Math.round(totalArea * price);
         }
 
         if (updated.serviceType === "LETTERS") {
@@ -315,6 +320,9 @@ export function OrderCalculator({ employees }: { employees: any[] }) {
       } else if (item.serviceType === "ORACAL") {
         matCost = (item.area || 0) * 22000;
         laborCost = (item.area || 0) * 3000;
+      } else if (item.serviceType === "STAND") {
+        matCost = (item.area || 0) * 110000;
+        laborCost = (item.area || 0) * 45000;
       } else if (item.serviceType === "AUTO_BRANDING") {
         matCost = (item.unitPrice || 0) * 0.35;
         laborCost = (item.unitPrice || 0) * 0.25;
@@ -391,7 +399,7 @@ export function OrderCalculator({ employees }: { employees: any[] }) {
     { type: "LIGHTBOX" as const, label: "Короб из акрила (свет)", icon: "📦", master: "Абзал", desc: "сумма за м² вручную" },
     { type: "ORACAL" as const, label: "Оракал", icon: "🎨", master: "Пленка", desc: "50 000 сум/м²" },
     { type: "AUTO_BRANDING" as const, label: "Авто", icon: "🚐", master: "Damas/Labo", desc: "650 000 сум" },
-    { type: "STAND" as const, label: "Стенд", icon: "📋", master: "ПВХ", desc: "350 000 сум/м²" },
+    { type: "STAND" as const, label: "Стенды / Оргстекло", icon: "📋", master: "Абзал", desc: "оргстекло / фомекс" },
     { type: "INSTALL" as const, label: "Монтаж", icon: "🛠️", master: "Выезд", desc: "150 000 сум" },
     { type: "CUSTOM" as const, label: "Своя услуга", icon: "✨", master: "Вручную", desc: "Свободная цена" },
   ];
@@ -657,9 +665,16 @@ export function OrderCalculator({ employees }: { employees: any[] }) {
                   </div>
 
                   <div className="flex items-center gap-2.5 shrink-0">
-                    <span className="text-sm font-mono font-black text-blue-700">
-                      {formatCurrency(item.totalPrice)}
-                    </span>
+                    <div className="text-right">
+                      {item.width && item.height ? (
+                        <div className="text-[10px] font-mono text-slate-500">
+                          {item.quantity || 1} шт × {(Math.round(item.width * item.height * 100) / 100).toFixed(2)} м² = <span className="text-emerald-700 font-bold">{item.area || 0} м²</span>
+                        </div>
+                      ) : null}
+                      <span className="text-sm font-mono font-black text-blue-700">
+                        {formatCurrency(item.totalPrice)}
+                      </span>
+                    </div>
                     <button
                       type="button"
                       onClick={() => removeItem(item.id)}
@@ -759,8 +774,8 @@ export function OrderCalculator({ employees }: { employees: any[] }) {
                       </div>
                     </div>
 
-                    {/* Размеры и расчет площади */}
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 text-xs">
+                    {/* Размеры, количество и расчет площади */}
+                    <div className="grid grid-cols-2 sm:grid-cols-5 gap-2.5 text-xs">
                       <div>
                         <label className="block text-[10px] font-bold text-slate-500 mb-1">
                           Ширина (м)
@@ -797,7 +812,25 @@ export function OrderCalculator({ employees }: { employees: any[] }) {
 
                       <div>
                         <label className="block text-[10px] font-bold text-slate-500 mb-1">
-                          Площадь & Тариф / м²
+                          Кол-во (шт)
+                        </label>
+                        <input
+                          type="number"
+                          min="1"
+                          step="1"
+                          placeholder="1"
+                          value={item.quantity ?? 1}
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            updateItem(item.id, { quantity: val === "" ? 1 : Math.max(1, parseInt(val, 10)) });
+                          }}
+                          className="w-full px-3 py-1.5 bg-white border border-slate-300 rounded-lg font-mono font-bold text-xs focus:border-blue-600 focus:outline-none text-center"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-[10px] font-bold text-slate-500 mb-1">
+                          Общий квадрат & Тариф / м²
                         </label>
                         <div className="flex items-center gap-1.5">
                           <span className="px-2 py-1.5 bg-slate-200 rounded-lg font-mono font-black text-slate-800 text-xs shrink-0">
@@ -1005,8 +1038,280 @@ export function OrderCalculator({ employees }: { employees: any[] }) {
                       ))}
                     </div>
                   </div>
-                ) : ["ORACAL", "STAND"].includes(item.serviceType) ? (
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 text-xs">
+                ) : item.serviceType === "STAND" ? (
+                  <div className="space-y-3">
+                    {/* КАРТОЧКА ВЫБОРА МАТЕРИАЛА: ОРГСТЕКЛО (АКРИЛ) ИЛИ ФОМЕКС (ПВХ) */}
+                    <div className="bg-white border border-slate-200 rounded-xl p-3 shadow-2xs space-y-2">
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="font-bold text-slate-700 flex items-center gap-1.5">
+                          <span>💎</span>
+                          <span>Материал основания стенда:</span>
+                        </span>
+                        <span className="text-[11px] font-mono font-bold text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
+                          Тариф: {formatCurrency(item.unitPrice)} / м²
+                        </span>
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                        {/* 1. СТЕНД ИЗ ОРГСТЕКЛА / АКРИЛА */}
+                        <button
+                          type="button"
+                          onClick={() => {
+                            updateItem(item.id, {
+                              title: "Стенд из оргстекла (акрил)",
+                              options: "Прозрачное оргстекло 4мм, дистанционные держатели, полировка торцов",
+                              unitPrice: item.unitPrice && item.unitPrice >= 200000 ? item.unitPrice : 240000,
+                            });
+                          }}
+                          className={cn(
+                            "flex items-start gap-2.5 p-3 rounded-xl border text-left transition-all relative active:scale-98",
+                            (item.title || "").toLowerCase().includes("орг") || (item.title || "").toLowerCase().includes("акрил")
+                              ? "bg-teal-50/60 border-teal-600 shadow-xs ring-2 ring-teal-600/20 text-slate-900"
+                              : "bg-white/80 border-slate-200 text-slate-600 hover:border-slate-300 hover:bg-white"
+                          )}
+                        >
+                          <div className={cn(
+                            "w-5 h-5 rounded-full flex items-center justify-center shrink-0 mt-0.5 font-bold text-xs transition",
+                            (item.title || "").toLowerCase().includes("орг") || (item.title || "").toLowerCase().includes("акрил")
+                              ? "bg-teal-600 text-white"
+                              : "border border-slate-300 text-transparent"
+                          )}>
+                            ✓
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center justify-between">
+                              <span className="font-bold text-xs text-slate-900">💎 Оргстекло / Акрил</span>
+                              <span className="font-black font-mono text-xs text-teal-700">от 240 000 UZS/м²</span>
+                            </div>
+                            <p className="text-[10px] text-slate-500 mt-1">
+                              Прозрачное/молочное оргстекло на дистанционных держателях, фаска
+                            </p>
+                          </div>
+                        </button>
+
+                        {/* 2. СТЕНД ИЗ ФОМЕКСА (ПВХ) */}
+                        <button
+                          type="button"
+                          onClick={() => {
+                            updateItem(item.id, {
+                              title: "Стенд из Фомекса (ПВХ пластик)",
+                              options: "Фомекс 5мм, интерьерная накатка Oracal, карманы А4, багет Nielsen",
+                              unitPrice: item.unitPrice && item.unitPrice >= 200000 ? item.unitPrice : 240000,
+                            });
+                          }}
+                          className={cn(
+                            "flex items-start gap-2.5 p-3 rounded-xl border text-left transition-all relative active:scale-98",
+                            !(item.title || "").toLowerCase().includes("орг") && !(item.title || "").toLowerCase().includes("акрил")
+                              ? "bg-emerald-50/60 border-emerald-600 shadow-xs ring-2 ring-emerald-600/20 text-slate-900"
+                              : "bg-white/80 border-slate-200 text-slate-600 hover:border-slate-300 hover:bg-white"
+                          )}
+                        >
+                          <div className={cn(
+                            "w-5 h-5 rounded-full flex items-center justify-center shrink-0 mt-0.5 font-bold text-xs transition",
+                            !(item.title || "").toLowerCase().includes("орг") && !(item.title || "").toLowerCase().includes("акрил")
+                              ? "bg-emerald-600 text-white"
+                              : "border border-slate-300 text-transparent"
+                          )}>
+                            ✓
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center justify-between">
+                              <span className="font-bold text-xs text-slate-900">📋 Фомекс (ПВХ пластик)</span>
+                              <span className="font-black font-mono text-xs text-emerald-700">от 220 000 UZS/м²</span>
+                            </div>
+                            <p className="text-[10px] text-slate-500 mt-1">
+                              Вспененный ПВХ 3-10мм с полноцветной накаткой Oracal, карманами и багетом
+                            </p>
+                          </div>
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Параметры: Ширина, Высота, Кол-во (шт), Общий квадрат, Сумма за кв */}
+                    <div className="grid grid-cols-2 sm:grid-cols-5 gap-2.5 text-xs">
+                      <div>
+                        <label className="block text-[10px] font-bold text-slate-500 mb-1">
+                          Ширина (м)
+                        </label>
+                        <input
+                          type="number"
+                          step="0.05"
+                          placeholder="0.60"
+                          value={item.width ?? ""}
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            updateItem(item.id, { width: val === "" ? undefined : parseFloat(val) });
+                          }}
+                          className="w-full px-3 py-1.5 bg-white border border-slate-300 rounded-lg font-mono font-bold text-xs focus:border-emerald-600 focus:outline-none"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-[10px] font-bold text-slate-500 mb-1">
+                          Высота (м)
+                        </label>
+                        <input
+                          type="number"
+                          step="0.05"
+                          placeholder="0.90"
+                          value={item.height ?? ""}
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            updateItem(item.id, { height: val === "" ? undefined : parseFloat(val) });
+                          }}
+                          className="w-full px-3 py-1.5 bg-white border border-slate-300 rounded-lg font-mono font-bold text-xs focus:border-emerald-600 focus:outline-none"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-[10px] font-bold text-emerald-800 mb-1">
+                          Кол-во (шт) *
+                        </label>
+                        <div className="flex items-center">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const curr = item.quantity || 1;
+                              if (curr > 1) updateItem(item.id, { quantity: curr - 1 });
+                            }}
+                            className="w-7 h-[30px] rounded-l-lg border border-slate-300 bg-slate-100 hover:bg-slate-200 text-slate-700 font-black text-xs flex items-center justify-center shrink-0 transition"
+                          >
+                            -
+                          </button>
+                          <input
+                            type="number"
+                            min="1"
+                            step="1"
+                            placeholder="5"
+                            value={item.quantity ?? 1}
+                            onChange={(e) => {
+                              const val = e.target.value;
+                              updateItem(item.id, { quantity: val === "" ? 1 : Math.max(1, parseInt(val, 10)) });
+                            }}
+                            className="w-full px-1 py-1.5 text-center bg-white border-y border-slate-300 font-mono font-black text-xs text-slate-900 focus:outline-none"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const curr = item.quantity || 1;
+                              updateItem(item.id, { quantity: curr + 1 });
+                            }}
+                            className="w-7 h-[30px] rounded-r-lg border border-slate-300 bg-slate-100 hover:bg-slate-200 text-slate-700 font-black text-xs flex items-center justify-center shrink-0 transition"
+                          >
+                            +
+                          </button>
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className="block text-[10px] font-bold text-emerald-800 mb-1">
+                          Общий квадрат
+                        </label>
+                        <div className="px-2.5 py-1.5 bg-emerald-100 text-emerald-950 border border-emerald-300 rounded-lg font-mono font-black text-xs flex items-center justify-between">
+                          <span>{item.area || 0} м²</span>
+                          {item.width && item.height && (item.quantity || 1) > 1 && (
+                            <span className="text-[9px] font-normal text-emerald-700">
+                              (по {(Math.round((item.width * item.height) * 100) / 100).toFixed(2)} м²)
+                            </span>
+                          )}
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className="block text-[10px] font-bold text-emerald-800 mb-1 flex items-center justify-between">
+                          <span>Сумма за кв (UZS) *</span>
+                        </label>
+                        <input
+                          type="number"
+                          step="10000"
+                          placeholder="240000"
+                          value={item.unitPrice ?? ""}
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            updateItem(item.id, { unitPrice: val === "" ? 0 : Number(val) });
+                          }}
+                          className="w-full px-2.5 py-1.5 bg-white border-2 border-emerald-500 rounded-lg font-mono text-xs font-black text-emerald-950 focus:outline-none shadow-2xs"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Поле комплектации стенда */}
+                    <div>
+                      <label className="block text-[10px] font-bold text-slate-500 mb-1">
+                        Комплектация стенда & Технические требования
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="Оргстекло 4мм / Фомекс 5мм, карманы А4, дистанционные держатели, багет..."
+                        value={item.options || ""}
+                        onChange={(e) => updateItem(item.id, { options: e.target.value })}
+                        className="w-full px-3 py-1.5 bg-white border border-slate-300 rounded-lg text-xs focus:border-emerald-600 focus:outline-none"
+                      />
+                    </div>
+
+                    {/* Наглядная плашка расчета по примеру пользователя */}
+                    <div className="p-2.5 rounded-xl bg-gradient-to-r from-emerald-50 via-teal-50 to-slate-50 border border-emerald-200 text-xs flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                      <div className="flex items-center gap-2 text-slate-700 font-mono text-[11px] flex-wrap">
+                        <span className="font-bold text-emerald-900 bg-white px-2 py-0.5 rounded border border-emerald-200">
+                          📐 {item.width || 0} × {item.height || 0} м
+                        </span>
+                        <span>×</span>
+                        <span className="font-bold text-blue-900 bg-white px-2 py-0.5 rounded border border-blue-200">
+                          {item.quantity || 1} шт
+                        </span>
+                        <span>=</span>
+                        <span className="font-black text-emerald-800 bg-emerald-100 px-2 py-0.5 rounded border border-emerald-300">
+                          {item.area || 0} м² (общий квадрат)
+                        </span>
+                        <span>×</span>
+                        <span className="font-bold text-slate-800">
+                          {formatCurrency(item.unitPrice)}/м²
+                        </span>
+                      </div>
+                      <div className="text-right sm:text-right shrink-0">
+                        <span className="text-[10px] text-slate-500 uppercase font-bold mr-1">Общая сумма:</span>
+                        <span className="text-sm font-black font-mono text-emerald-700">
+                          {formatCurrency(item.totalPrice)}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Быстрые пресеты тарифов для оргстекла и фомекса */}
+                    <div className="flex flex-wrap items-center justify-between gap-2 pt-1 text-[11px]">
+                      <div className="flex flex-wrap items-center gap-1.5">
+                        <span className="text-slate-400 font-semibold mr-0.5">Тариф за м²:</span>
+                        {[
+                          { label: "200k (эконом)", price: 200000 },
+                          { label: "220k (Фомекс 3мм)", price: 220000 },
+                          { label: "240k (Фомекс 5мм)", price: 240000 },
+                          { label: "280k (Оргстекло эконом)", price: 280000 },
+                          { label: "350k (Оргстекло 4мм)", price: 350000 },
+                          { label: "450k (Оргстекло премиум)", price: 450000 },
+                          { label: "600k (Акрил 8-10мм)", price: 600000 },
+                        ].map((p) => (
+                          <button
+                            key={p.price}
+                            type="button"
+                            onClick={() => updateItem(item.id, { unitPrice: p.price })}
+                            className={cn(
+                              "px-2 py-0.5 rounded-lg border transition font-medium text-xs",
+                              item.unitPrice === p.price
+                                ? "bg-emerald-50 border-emerald-500 text-emerald-800 font-bold shadow-2xs"
+                                : "bg-white border-slate-200 text-slate-600 hover:bg-slate-50"
+                            )}
+                          >
+                            {p.label}
+                          </button>
+                        ))}
+                      </div>
+
+                      <div className="flex items-center gap-1.5 text-[10px] text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">
+                        <span>👷 Мастер сборки: <b>Абзал</b></span>
+                      </div>
+                    </div>
+                  </div>
+                ) : item.serviceType === "ORACAL" ? (
+                  <div className="grid grid-cols-2 sm:grid-cols-5 gap-2.5 text-xs">
                     <div>
                       <label className="block text-[10px] font-bold text-slate-500 mb-1">
                         Ширина (м)
@@ -1043,7 +1348,25 @@ export function OrderCalculator({ employees }: { employees: any[] }) {
 
                     <div>
                       <label className="block text-[10px] font-bold text-slate-500 mb-1">
-                        Площадь & Тариф / м²
+                        Кол-во (шт)
+                      </label>
+                      <input
+                        type="number"
+                        min="1"
+                        step="1"
+                        placeholder="1"
+                        value={item.quantity ?? 1}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          updateItem(item.id, { quantity: val === "" ? 1 : Math.max(1, parseInt(val, 10)) });
+                        }}
+                        className="w-full px-3 py-1.5 bg-white border border-slate-300 rounded-lg font-mono font-bold text-xs focus:border-blue-600 focus:outline-none text-center"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-[10px] font-bold text-slate-500 mb-1">
+                        Общий квадрат & Тариф
                       </label>
                       <div className="flex items-center gap-1.5">
                         <span className="px-2 py-1.5 bg-slate-200 rounded-lg font-mono font-black text-slate-800 text-xs shrink-0">

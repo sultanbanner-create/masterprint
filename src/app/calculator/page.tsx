@@ -73,7 +73,19 @@ export default function SmartCalculatorPage() {
   const [filmApplyRate, setFilmApplyRate] = useState(30000);
   const [filmCleanRate, setFilmCleanRate] = useState(0);
 
-  // Стенды
+  // Стенды (Оргстекло / Фомекс)
+  const [standMaterial, setStandMaterial] = useState<"acrylic" | "fomeks">("acrylic");
+  const [standThickness, setStandThickness] = useState<"3mm" | "4mm" | "5mm" | "8mm" | "10mm">("4mm");
+  const [standRatePerSqm, setStandRatePerSqm] = useState(240000); // сумма за 1 м2 стенда
+  const [standPocketsA4, setStandPocketsA4] = useState(4);
+  const [standPocketsA4Rate, setStandPocketsA4Rate] = useState(25000);
+  const [standPocketsA3, setStandPocketsA3] = useState(0);
+  const [standPocketsA3Rate, setStandPocketsA3Rate] = useState(40000);
+  const [standProfileEnabled, setStandProfileEnabled] = useState(false);
+  const [standProfileRate, setStandProfileRate] = useState(40000); // Багет Nielsen
+  const [standFittingsEnabled, setStandFittingsEnabled] = useState(false);
+  const [standFittingsCount, setStandFittingsCount] = useState(4);
+  const [standFittingsRate, setStandFittingsRate] = useState(15000);
   const [standBaseRate, setStandBaseRate] = useState(200000);
   const [standPocketsCount, setStandPocketsCount] = useState(4);
   const [standPocketRate, setStandPocketRate] = useState(25000);
@@ -143,12 +155,13 @@ export default function SmartCalculatorPage() {
     setIsCreatingOrder(true);
     try {
       const defaultTitle = 
-        activeCategory === "BANNER" ? `Баннер ${widthVal}×${heightVal}м` :
-        activeCategory === "LETTERS" ? `Буквы ${letterText}` :
-        activeCategory === "LIGHTBOX" ? `Короб из акрила (свет) ${widthVal}×${heightVal}м` :
-        activeCategory === "ORACAL" ? `Пленка Oracal ${widthVal}×${heightVal}м` :
-        activeCategory === "STANDS" ? `Стенд ${widthVal}×${heightVal}м` :
-        "Рекламное изделие";
+        activeCategory === "BANNER" ? `Баннер ${widthVal}×${heightVal}м (${quantity} шт)` :
+        activeCategory === "LETTERS" ? `Буквы ${letterText} (${quantity} компл.)` :
+        activeCategory === "LIGHTBOX" ? `Короб из акрила (свет) ${widthVal}×${heightVal}м (${quantity} шт)` :
+        activeCategory === "ORACAL" ? `Пленка Oracal ${widthVal}×${heightVal}м (${quantity} шт)` :
+        activeCategory === "STANDS" 
+          ? (standMaterial === "acrylic" ? `Стенд из оргстекла ${standThickness} ${widthVal}×${heightVal}м (${quantity} шт)` : `Стенд из Фомекса ${standThickness} ${widthVal}×${heightVal}м (${quantity} шт)`)
+          : "Рекламное изделие";
 
       const res = await fetch("/api/orders", {
         method: "POST",
@@ -258,6 +271,17 @@ export default function SmartCalculatorPage() {
       };
     } else if (activeCategory === "STANDS") {
       payload.parameters.stand = {
+        material: standMaterial,
+        ratePerSqm: standRatePerSqm,
+        thickness: standThickness,
+        pocketsA4Count: standPocketsA4,
+        pocketsA4Rate: standPocketsA4Rate,
+        pocketsA3Count: standPocketsA3,
+        pocketsA3Rate: standPocketsA3Rate,
+        profileType: standProfileEnabled ? "nielsen" : "none",
+        profileRate: standProfileEnabled ? standProfileRate : undefined,
+        fittingsCount: standFittingsEnabled ? standFittingsCount : undefined,
+        fittingsRate: standFittingsEnabled ? standFittingsRate : undefined,
         baseRate: standBaseRate,
         pocketsCount: standPocketsCount,
         pocketRate: standPocketRate,
@@ -347,6 +371,17 @@ export default function SmartCalculatorPage() {
     filmCutRate,
     filmApplyRate,
     filmCleanRate,
+    standThickness,
+    standRatePerSqm,
+    standPocketsA4,
+    standPocketsA4Rate,
+    standPocketsA3,
+    standPocketsA3Rate,
+    standProfileEnabled,
+    standProfileRate,
+    standFittingsEnabled,
+    standFittingsCount,
+    standFittingsRate,
     standBaseRate,
     standPocketsCount,
     standPocketRate,
@@ -482,12 +517,12 @@ export default function SmartCalculatorPage() {
           onClick={() => setActiveCategory("STANDS")}
           className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition ${
             activeCategory === "STANDS"
-              ? "bg-white text-blue-700 shadow-sm border border-slate-200"
+              ? "bg-white text-emerald-800 shadow-sm border border-emerald-300 ring-1 ring-emerald-400/30"
               : "text-slate-600 hover:text-slate-900"
           }`}
         >
-          <FileText className="w-4 h-4" />
-          Акриловые стенды
+          <FileText className="w-4 h-4 text-emerald-600" />
+          Стенды (Оргстекло / Фомекс)
         </button>
         <button
           onClick={() => setActiveCategory("LETTERS")}
@@ -535,69 +570,93 @@ export default function SmartCalculatorPage() {
 
             {/* Размеры и количество (W, H, q) */}
             {activeCategory !== "COST_PLUS" && activeCategory !== "LETTERS" && (
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">
-                    Ширина (W)
-                  </label>
-                  <div className="flex">
+              <>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">
+                      Ширина (W)
+                    </label>
+                    <div className="flex">
+                      <input
+                        type="number"
+                        step="any"
+                        value={widthVal}
+                        onChange={(e) => setWidthVal(e.target.value)}
+                        className="w-full px-3 py-2 border border-slate-300 rounded-l-xl text-sm font-semibold focus:outline-blue-600"
+                      />
+                      <select
+                        value={widthUnit}
+                        onChange={(e: any) => setWidthUnit(e.target.value)}
+                        className="px-2.5 bg-slate-100 border-y border-r border-slate-300 rounded-r-xl text-xs font-bold text-slate-600"
+                      >
+                        <option value="m">м</option>
+                        <option value="cm">см</option>
+                        <option value="mm">мм</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">
+                      Высота (H)
+                    </label>
+                    <div className="flex">
+                      <input
+                        type="number"
+                        step="any"
+                        value={heightVal}
+                        onChange={(e) => setHeightVal(e.target.value)}
+                        className="w-full px-3 py-2 border border-slate-300 rounded-l-xl text-sm font-semibold focus:outline-blue-600"
+                      />
+                      <select
+                        value={heightUnit}
+                        onChange={(e: any) => setHeightUnit(e.target.value)}
+                        className="px-2.5 bg-slate-100 border-y border-r border-slate-300 rounded-r-xl text-xs font-bold text-slate-600"
+                      >
+                        <option value="m">м</option>
+                        <option value="cm">см</option>
+                        <option value="mm">мм</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">
+                      Количество (q, шт)
+                    </label>
                     <input
                       type="number"
-                      step="any"
-                      value={widthVal}
-                      onChange={(e) => setWidthVal(e.target.value)}
-                      className="w-full px-3 py-2 border border-slate-300 rounded-l-xl text-sm font-semibold focus:outline-blue-600"
+                      min="1"
+                      step="1"
+                      value={quantity}
+                      onChange={(e) => setQuantity(Math.max(1, parseInt(e.target.value) || 1))}
+                      className="w-full px-3 py-2 border border-slate-300 rounded-xl text-sm font-semibold focus:outline-blue-600"
                     />
-                    <select
-                      value={widthUnit}
-                      onChange={(e: any) => setWidthUnit(e.target.value)}
-                      className="px-2.5 bg-slate-100 border-y border-r border-slate-300 rounded-r-xl text-xs font-bold text-slate-600"
-                    >
-                      <option value="m">м</option>
-                      <option value="cm">см</option>
-                      <option value="mm">мм</option>
-                    </select>
                   </div>
                 </div>
 
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">
-                    Высота (H)
-                  </label>
-                  <div className="flex">
-                    <input
-                      type="number"
-                      step="any"
-                      value={heightVal}
-                      onChange={(e) => setHeightVal(e.target.value)}
-                      className="w-full px-3 py-2 border border-slate-300 rounded-l-xl text-sm font-semibold focus:outline-blue-600"
-                    />
-                    <select
-                      value={heightUnit}
-                      onChange={(e: any) => setHeightUnit(e.target.value)}
-                      className="px-2.5 bg-slate-100 border-y border-r border-slate-300 rounded-r-xl text-xs font-bold text-slate-600"
-                    >
-                      <option value="m">м</option>
-                      <option value="cm">см</option>
-                      <option value="mm">мм</option>
-                    </select>
+                {/* Расчет площади и общего квадрата */}
+                <div className="mt-3 p-3 bg-slate-50 border border-slate-200 rounded-xl flex flex-wrap items-center justify-between gap-2 text-xs font-mono">
+                  <div className="flex items-center gap-2">
+                    <span className="text-slate-500">Размер 1 шт:</span>
+                    <span className="font-bold text-slate-800">
+                      {widthVal} × {heightVal} {widthUnit} ({(Math.max(0, (Number(widthVal) || 0) * (Number(heightVal) || 0))).toFixed(2)} м²)
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-slate-500">Кол-во:</span>
+                    <span className="font-bold text-blue-700 bg-blue-50 px-2 py-0.5 rounded border border-blue-200">
+                      {quantity} шт
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-slate-500">Общий квадрат:</span>
+                    <span className="font-black text-emerald-800 bg-emerald-100 px-2 py-0.5 rounded border border-emerald-300">
+                      {(Math.max(0, (Number(widthVal) || 0) * (Number(heightVal) || 0) * quantity)).toFixed(2)} м²
+                    </span>
                   </div>
                 </div>
-
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">
-                    Количество (q, шт)
-                  </label>
-                  <input
-                    type="number"
-                    min="1"
-                    step="1"
-                    value={quantity}
-                    onChange={(e) => setQuantity(Math.max(1, parseInt(e.target.value) || 1))}
-                    className="w-full px-3 py-2 border border-slate-300 rounded-xl text-sm font-semibold focus:outline-blue-600"
-                  />
-                </div>
-              </div>
+              </>
             )}
 
             {/* Специализированные опции баннеров */}
@@ -776,6 +835,362 @@ export default function SmartCalculatorPage() {
                   >
                     {filmCleanRate > 0 ? "+50 000 UZS включено" : "Добавить в расчет"}
                   </button>
+                </div>
+              </div>
+            )}
+
+            {/* Специализированные опции Стендов (Оргстекло / Фомекс) */}
+            {activeCategory === "STANDS" && (
+              <div className="space-y-4 pt-4 border-t border-slate-100">
+                {/* Выбор материала стенда: Оргстекло (акрил) или Фомекс (ПВХ) */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setStandMaterial("acrylic");
+                      setStandThickness("4mm");
+                      setStandRatePerSqm(350000);
+                    }}
+                    className={`p-3.5 rounded-2xl text-left border transition relative ${
+                      standMaterial === "acrylic"
+                        ? "bg-teal-50 border-teal-500 ring-2 ring-teal-500/20 text-teal-950 shadow-xs"
+                        : "bg-white text-slate-700 border-slate-200 hover:bg-slate-50"
+                    }`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="font-black text-sm flex items-center gap-1.5">
+                        <span>💎</span>
+                        <span>Стенд из оргстекла (акрил)</span>
+                      </span>
+                      <span className="text-[11px] font-mono font-bold text-teal-700 bg-teal-100 px-2 py-0.5 rounded">
+                        от 240k UZS/м²
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-slate-500 mt-1">
+                      Прозрачное / молочное оргстекло на дистанционных держателях, фаска и лазерная резка
+                    </p>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setStandMaterial("fomeks");
+                      setStandThickness("5mm");
+                      setStandRatePerSqm(240000);
+                    }}
+                    className={`p-3.5 rounded-2xl text-left border transition relative ${
+                      standMaterial === "fomeks"
+                        ? "bg-emerald-50 border-emerald-500 ring-2 ring-emerald-500/20 text-emerald-950 shadow-xs"
+                        : "bg-white text-slate-700 border-slate-200 hover:bg-slate-50"
+                    }`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="font-black text-sm flex items-center gap-1.5">
+                        <span>📋</span>
+                        <span>Стенд из Фомекса (ПВХ)</span>
+                      </span>
+                      <span className="text-[11px] font-mono font-bold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded">
+                        от 220k UZS/м²
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-slate-500 mt-1">
+                      Вспененный ПВХ 3-10 мм с полноцветной накаткой Oracal, карманами и багетом
+                    </p>
+                  </button>
+                </div>
+
+                {/* Инфо-блок ответственного мастера */}
+                <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-2xl flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xl">🛠️</span>
+                    <div>
+                      <div className="text-xs font-bold text-emerald-950">
+                        {standMaterial === "acrylic" ? "Стенд из оргстекла (акрил)" : "Стенд из Фомекса (вспененный ПВХ)"}
+                      </div>
+                      <div className="text-[11px] text-emerald-800">
+                        Мастер цеха сборки и монтажа: <span className="font-bold">Абзал</span>
+                      </div>
+                    </div>
+                  </div>
+                  <span className="px-2.5 py-1 bg-emerald-100 text-emerald-900 rounded-lg text-[10px] font-black uppercase">
+                    Цех сборки
+                  </span>
+                </div>
+
+                {/* Выбор толщины основы */}
+                <div className="space-y-1.5">
+                  <label className="block text-xs font-bold text-slate-800">
+                    Толщина материала основания ({standMaterial === "acrylic" ? "Оргстекло / акрил" : "ПВХ Фомекс"})
+                  </label>
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                    {(standMaterial === "acrylic"
+                      ? [
+                          { id: "3mm" as const, label: "Акрил 3 мм", desc: "Таблички, эконом", defaultRate: 280000 },
+                          { id: "4mm" as const, label: "Акрил 4 мм", desc: "Стандарт (прочный)", defaultRate: 350000 },
+                          { id: "5mm" as const, label: "Акрил 5 мм", desc: "Усиленный стенд", defaultRate: 450000 },
+                          { id: "8mm" as const, label: "Акрил 8-10 мм", desc: "Премиум лобби", defaultRate: 600000 },
+                        ]
+                      : [
+                          { id: "3mm" as const, label: "Фомекс 3 мм", desc: "Таблички, эконом", defaultRate: 220000 },
+                          { id: "5mm" as const, label: "Фомекс 5 мм", desc: "Стандарт (жесткий)", defaultRate: 240000 },
+                          { id: "8mm" as const, label: "Фомекс 8 мм", desc: "Усиленный стенд", defaultRate: 280000 },
+                          { id: "10mm" as const, label: "Фомекс 10 мм", desc: "Премиум прочность", defaultRate: 320000 },
+                        ]
+                    ).map((th) => (
+                      <button
+                        key={th.id}
+                        type="button"
+                        onClick={() => {
+                          setStandThickness(th.id);
+                          setStandRatePerSqm(th.defaultRate);
+                        }}
+                        className={`p-2.5 rounded-xl text-left border transition ${
+                          standThickness === th.id
+                            ? standMaterial === "acrylic"
+                              ? "bg-teal-600 text-white border-teal-600 shadow-sm"
+                              : "bg-emerald-600 text-white border-emerald-600 shadow-sm"
+                            : "bg-white text-slate-700 border-slate-200 hover:bg-slate-50"
+                        }`}
+                      >
+                        <div className="text-xs font-bold">{th.label}</div>
+                        <div className={`text-[10px] mt-0.5 ${standThickness === th.id ? "text-emerald-100" : "text-slate-500"}`}>
+                          {th.desc}
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Главный блок ручного ввода суммы за 1 м² */}
+                <div className="p-4 bg-gradient-to-br from-emerald-50 to-teal-50/50 rounded-2xl border-2 border-emerald-300 space-y-3">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
+                    <div>
+                      <label className="block text-xs font-black text-emerald-950 uppercase tracking-wide">
+                        Сумма за 1 м² ({standMaterial === "acrylic" ? "Оргстекло" : "Фомекс"} в UZS) *
+                      </label>
+                      <p className="text-[11px] text-emerald-800">
+                        {standMaterial === "acrylic"
+                          ? `Оргстекло (акрил) ${standThickness}, лазерный раскрой, полировка и фаска торцов`
+                          : `ПВХ Фомекс ${standThickness}, интерьерная печать на пленке, накатка и ламинация`}
+                      </p>
+                    </div>
+                    {calcResult?.normalized_inputs?.billableAreaM2 && (
+                      <span className="px-2.5 py-1 bg-emerald-200/80 text-emerald-900 rounded-lg text-xs font-black self-start sm:self-auto">
+                        Общий квадрат: {calcResult.normalized_inputs.billableAreaM2} м²
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="flex">
+                    <input
+                      type="number"
+                      step="10000"
+                      value={standRatePerSqm}
+                      onChange={(e) => setStandRatePerSqm(Math.max(0, Number(e.target.value) || 0))}
+                      placeholder="Например: 240000"
+                      className="w-full px-4 py-2.5 bg-white border-2 border-emerald-400 rounded-l-xl text-base font-black text-slate-900 focus:outline-none focus:border-emerald-600 shadow-xs"
+                    />
+                    <span className="px-4 bg-emerald-200/60 border-y-2 border-r-2 border-emerald-400 rounded-r-xl text-xs font-black flex items-center text-emerald-950">
+                      UZS / м²
+                    </span>
+                  </div>
+
+                  {/* Наглядная формула расчета */}
+                  <div className="p-2.5 bg-white/90 border border-emerald-200 rounded-xl flex items-center justify-between text-xs font-mono">
+                    <div className="text-slate-600">
+                      📐 {widthVal} × {heightVal} м × {quantity} шт ={" "}
+                      <b className="text-emerald-800">
+                        {(Math.max(0, (Number(widthVal) || 0) * (Number(heightVal) || 0) * quantity)).toFixed(2)} м² (общий квадрат)
+                      </b>
+                    </div>
+                    <div className="font-black text-emerald-700">
+                      = {formatUzCurrency(Math.round((Number(widthVal) || 0) * (Number(heightVal) || 0) * quantity * standRatePerSqm))}
+                    </div>
+                  </div>
+
+                  {/* Быстрые пресеты тарифов */}
+                  <div className="flex flex-wrap items-center gap-1.5 pt-1">
+                    <span className="text-[10px] text-emerald-800 font-bold uppercase">Быстрый тариф:</span>
+                    {(standMaterial === "acrylic"
+                      ? [
+                          { label: "240 000 сум (эконом)", rate: 240000 },
+                          { label: "280 000 сум (3мм)", rate: 280000 },
+                          { label: "350 000 сум (4мм)", rate: 350000 },
+                          { label: "450 000 сум (5мм)", rate: 450000 },
+                          { label: "600 000 сум (премиум)", rate: 600000 },
+                        ]
+                      : [
+                          { label: "200 000 сум", rate: 200000 },
+                          { label: "220 000 сум (3мм)", rate: 220000 },
+                          { label: "240 000 сум (5мм)", rate: 240000 },
+                          { label: "280 000 сум (8мм)", rate: 280000 },
+                          { label: "320 000 сум (10мм)", rate: 320000 },
+                        ]
+                    ).map((p) => (
+                      <button
+                        key={p.rate}
+                        type="button"
+                        onClick={() => setStandRatePerSqm(p.rate)}
+                        className={`px-2.5 py-1 rounded-lg text-xs font-bold border transition ${
+                          standRatePerSqm === p.rate
+                            ? "bg-emerald-600 text-white border-emerald-700 shadow-xs"
+                            : "bg-white text-slate-700 border-emerald-200 hover:bg-emerald-100/60"
+                        }`}
+                      >
+                        {p.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Настройка прозрачных карманов */}
+                <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200 space-y-3">
+                  <label className="block text-xs font-bold text-slate-800">
+                    Карманы для информации (прозрачный ПЭТ / оргстекло)
+                  </label>
+                  
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    {/* Карманы А4 */}
+                    <div className="p-3 bg-white rounded-xl border border-slate-200 space-y-2">
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="font-bold text-slate-800">📄 Карманы А4 (вертикальные)</span>
+                        <span className="font-mono text-emerald-700 font-bold">25 000 UZS / шт</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        {[0, 2, 4, 6, 8].map((cnt) => (
+                          <button
+                            key={cnt}
+                            type="button"
+                            onClick={() => setStandPocketsA4(cnt)}
+                            className={`flex-1 py-1.5 rounded-lg text-xs font-bold border transition ${
+                              standPocketsA4 === cnt
+                                ? "bg-emerald-600 text-white border-emerald-600"
+                                : "bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100"
+                            }`}
+                          >
+                            {cnt === 0 ? "0 шт" : `${cnt} шт`}
+                          </button>
+                        ))}
+                      </div>
+                      <div className="flex items-center justify-between text-[11px] text-slate-500 pt-1">
+                        <span>Свое кол-во:</span>
+                        <input
+                          type="number"
+                          min="0"
+                          value={standPocketsA4}
+                          onChange={(e) => setStandPocketsA4(Math.max(0, parseInt(e.target.value) || 0))}
+                          className="w-16 px-2 py-0.5 border border-slate-300 rounded font-mono font-bold text-right"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Карманы А3 */}
+                    <div className="p-3 bg-white rounded-xl border border-slate-200 space-y-2">
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="font-bold text-slate-800">📑 Карманы А3 (крупный формат)</span>
+                        <span className="font-mono text-emerald-700 font-bold">40 000 UZS / шт</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        {[0, 1, 2, 4].map((cnt) => (
+                          <button
+                            key={cnt}
+                            type="button"
+                            onClick={() => setStandPocketsA3(cnt)}
+                            className={`flex-1 py-1.5 rounded-lg text-xs font-bold border transition ${
+                              standPocketsA3 === cnt
+                                ? "bg-emerald-600 text-white border-emerald-600"
+                                : "bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100"
+                            }`}
+                          >
+                            {cnt === 0 ? "0 шт" : `${cnt} шт`}
+                          </button>
+                        ))}
+                      </div>
+                      <div className="flex items-center justify-between text-[11px] text-slate-500 pt-1">
+                        <span>Свое кол-во:</span>
+                        <input
+                          type="number"
+                          min="0"
+                          value={standPocketsA3}
+                          onChange={(e) => setStandPocketsA3(Math.max(0, parseInt(e.target.value) || 0))}
+                          className="w-16 px-2 py-0.5 border border-slate-300 rounded font-mono font-bold text-right"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Багетный профиль Nielsen */}
+                <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <label className="text-xs font-bold text-slate-900 flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={standProfileEnabled}
+                        onChange={(e) => setStandProfileEnabled(e.target.checked)}
+                        className="w-4 h-4 text-emerald-600 rounded"
+                      />
+                      Алюминиевый багетный профиль Nielsen по периметру
+                    </label>
+                    {standProfileEnabled && (
+                      <span className="text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-lg border border-emerald-200">
+                        40 000 UZS / пог. м
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-[11px] text-slate-500 pl-6">
+                    Придает жесткость и завершенный вид. Закрывает торцы Фомекса.
+                  </p>
+                </div>
+
+                {/* Дистанционные металлические держатели */}
+                <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <label className="text-xs font-bold text-slate-900 flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={standFittingsEnabled}
+                        onChange={(e) => setStandFittingsEnabled(e.target.checked)}
+                        className="w-4 h-4 text-emerald-600 rounded"
+                      />
+                      Дистанционные металлические держатели к стене (хром)
+                    </label>
+                    {standFittingsEnabled && (
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="number"
+                          min="1"
+                          value={standFittingsCount}
+                          onChange={(e) => setStandFittingsCount(Math.max(1, parseInt(e.target.value) || 1))}
+                          className="w-14 px-2 py-0.5 border border-slate-300 rounded text-xs font-bold text-right font-mono"
+                        />
+                        <span className="text-[11px] font-bold text-slate-600">шт × 15 000 UZS</span>
+                      </div>
+                    )}
+                  </div>
+                  <p className="text-[11px] text-slate-500 pl-6">
+                    Стальные хромированные держатели с отступом от стены на 15-20 мм.
+                  </p>
+                </div>
+
+                {/* Выездной монтаж на объекте */}
+                <div className="p-4 bg-blue-50/50 rounded-2xl border border-blue-100 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <label className="text-xs font-bold text-slate-900 flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={installEnabled}
+                        onChange={(e) => setInstallEnabled(e.target.checked)}
+                        className="w-4 h-4 text-blue-600 rounded"
+                      />
+                      Выездной монтаж стенда на объекте (мастер Абзал)
+                    </label>
+                    {installEnabled && (
+                      <span className="text-[11px] font-bold text-blue-700">
+                        {installScope === "site_visit" ? "150 000 UZS (выезд на объект)" : "за штуку"}
+                      </span>
+                    )}
+                  </div>
                 </div>
               </div>
             )}

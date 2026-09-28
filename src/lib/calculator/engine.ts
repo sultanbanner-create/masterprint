@@ -298,22 +298,99 @@ export function calculateAdvertisingItem(
     }
   }
 
-  // В. Стенды из акрила и оргстекла (C05)
+  // В. Стенды из Фомекса (ПВХ) и акрила (C05, C15)
   if (params.stand) {
     const s = params.stand;
-    if (s.baseRate) {
-      const br = parseDecimal(s.baseRate);
-      const brTotal = billableArea.times(br);
+    const baseRateVal = s.ratePerSqm !== undefined ? s.ratePerSqm : s.baseRate;
+    if (baseRateVal !== undefined && baseRateVal !== null && baseRateVal !== "") {
+      const br = parseDecimal(baseRateVal);
+      if (br.greaterThan(0)) {
+        const brTotal = billableArea.times(br);
+        const thicknessLabel = s.thickness ? ` (${s.thickness})` : "";
+        const isAcrylic = s.material === "acrylic" || s.material === "orgsteklo";
+        const matTitle = isAcrylic
+          ? "Стенд из оргстекла (акрил)"
+          : (s.thickness ? `Стенд из Фомекса${thicknessLabel} с интерьерной накаткой Oracal` : "Стенд из оргстекла / Фомекса");
+        const dimStr = `${wM.toString()}×${hM.toString()}м`;
+        const qStr = `${q} шт`;
+        const areaStr = `общий квадрат: ${billableArea.toString()} м²`;
+
+        components.push({
+          code: "STAND_BASE",
+          name: `${matTitle} ${dimStr} — ${qStr} (${areaStr})`,
+          unit: "м²",
+          quantity: billableArea.toString(),
+          unitPrice: br.toString(),
+          totalPrice: brTotal.toString(),
+          scope: "item",
+        });
+      }
+    }
+
+    // Карманы А4
+    if (s.pocketsA4Rate && s.pocketsA4Count) {
+      const pc = new Decimal(s.pocketsA4Count).times(qDec);
+      const pr = parseDecimal(s.pocketsA4Rate);
+      const prTotal = pc.times(pr);
       components.push({
-        code: "STAND_BASE",
-        name: "Основание стенда (акрил/оргстекло)",
-        unit: "м²",
-        quantity: billableArea.toString(),
-        unitPrice: br.toString(),
-        totalPrice: brTotal.toString(),
+        code: "STAND_POCKETS_A4",
+        name: `Карманы прозрачные А4 (${pc.toString()} шт)`,
+        unit: "шт",
+        quantity: pc.toString(),
+        unitPrice: pr.toString(),
+        totalPrice: prTotal.toString(),
         scope: "item",
       });
     }
+
+    // Карманы А3
+    if (s.pocketsA3Rate && s.pocketsA3Count) {
+      const pc = new Decimal(s.pocketsA3Count).times(qDec);
+      const pr = parseDecimal(s.pocketsA3Rate);
+      const prTotal = pc.times(pr);
+      components.push({
+        code: "STAND_POCKETS_A3",
+        name: `Карманы прозрачные А3 (${pc.toString()} шт)`,
+        unit: "шт",
+        quantity: pc.toString(),
+        unitPrice: pr.toString(),
+        totalPrice: prTotal.toString(),
+        scope: "item",
+      });
+    }
+
+    // Базовые карманы (обратная совместимость C05)
+    if (s.pocketRate && s.pocketsCount && !s.pocketsA4Count && !s.pocketsA3Count) {
+      const pc = new Decimal(s.pocketsCount).times(qDec);
+      const pr = parseDecimal(s.pocketRate);
+      const prTotal = pc.times(pr);
+      components.push({
+        code: "STAND_POCKETS",
+        name: `Карманы объемные/плоские (${pc.toString()} шт)`,
+        unit: "шт",
+        quantity: pc.toString(),
+        unitPrice: pr.toString(),
+        totalPrice: prTotal.toString(),
+        scope: "item",
+      });
+    }
+
+    // Багетный алюминиевый профиль Nielsen
+    if (s.profileType === "nielsen" || (s.profileRate && s.profileType !== "none")) {
+      const pr = parseDecimal(s.profileRate || 40000);
+      const profTotal = perimeterTotal.times(pr);
+      components.push({
+        code: "STAND_PROFILE_NIELSEN",
+        name: `Алюминиевый багетный профиль Nielsen (${perimeterTotal.toString()} пог. м)`,
+        unit: "пог. м",
+        quantity: perimeterTotal.toString(),
+        unitPrice: pr.toString(),
+        totalPrice: profTotal.toString(),
+        scope: "item",
+      });
+    }
+
+    // Резка (ЧПУ / фрезерная / плоттерная)
     if (s.cuttingRate && s.cuttingLength) {
       const cl = parseDecimal(s.cuttingLength).times(qDec);
       const cr = parseDecimal(s.cuttingRate);
@@ -328,27 +405,15 @@ export function calculateAdvertisingItem(
         scope: "item",
       });
     }
-    if (s.pocketRate && s.pocketsCount) {
-      const pc = new Decimal(s.pocketsCount).times(qDec);
-      const pr = parseDecimal(s.pocketRate);
-      const prTotal = pc.times(pr);
-      components.push({
-        code: "STAND_POCKETS",
-        name: `Карманы объемные/плоские (${pc.toString()} шт)`,
-        unit: "шт",
-        quantity: pc.toString(),
-        unitPrice: pr.toString(),
-        totalPrice: prTotal.toString(),
-        scope: "item",
-      });
-    }
+
+    // Дистанционные металлические держатели
     if (s.fittingsRate && s.fittingsCount) {
       const fc = new Decimal(s.fittingsCount).times(qDec);
       const fr = parseDecimal(s.fittingsRate);
       const frTotal = fc.times(fr);
       components.push({
         code: "STAND_FITTINGS",
-        name: "Дистанционные держатели",
+        name: `Дистанционные металлические держатели (${fc.toString()} шт)`,
         unit: "шт",
         quantity: fc.toString(),
         unitPrice: fr.toString(),

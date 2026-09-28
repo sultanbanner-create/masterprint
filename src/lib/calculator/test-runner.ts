@@ -112,6 +112,39 @@ export function runAcceptanceTests(): { summary: string; results: TestResult[] }
     assert("C05", "Стенд", "382000 UZS", e.message, false);
   }
 
+  // C05_FOMEKS: Стенд из Фомекса 1.2 × 0.8 м (5 мм), 240 000 UZS/м², 4 кармана А4 (по 25 000 UZS), багет Nielsen 4 пог. м (по 40 000 UZS)
+  try {
+    const res = calculateAdvertisingItem({
+      width: { value: 1.2, unit: "m" },
+      height: { value: 0.8, unit: "m" },
+      quantity: 1,
+      stand: {
+        ratePerSqm: 240000,
+        thickness: "5mm",
+        pocketsA4Count: 4,
+        pocketsA4Rate: 25000,
+        profileType: "nielsen",
+        profileRate: 40000,
+      },
+      roundingStep: 1,
+    });
+    // Фомекс: 0.96 * 240 000 = 230 400
+    // Карманы А4: 4 * 25 000 = 100 000
+    // Профиль Nielsen: 2 * (1.2 + 0.8) = 4 пог. м * 40 000 = 160 000
+    // Итого = 230 400 + 100 000 + 160 000 = 490 400 UZS
+    const fomeksComp = res.components.find((c) => c.code === "STAND_BASE");
+    const pocketComp = res.components.find((c) => c.code === "STAND_POCKETS_A4");
+    const profileComp = res.components.find((c) => c.code === "STAND_PROFILE_NIELSEN");
+    const passed = 
+      res.customerTotal === "490400" && 
+      fomeksComp?.totalPrice === "230400" && 
+      pocketComp?.totalPrice === "100000" && 
+      profileComp?.totalPrice === "160000";
+    assert("C05_FOMEKS", "Стенд из Фомекса 5мм (1.2×0.8м) + 4 кармана А4 + багет Nielsen", "Итог 490 400 UZS", `Итог ${res.customerTotal} UZS (Фомекс ${fomeksComp?.totalPrice}, карманы ${pocketComp?.totalPrice}, багет ${profileComp?.totalPrice})`, passed);
+  } catch (e: any) {
+    assert("C05_FOMEKS", "Стенд из Фомекса", "490400 UZS", e.message, false);
+  }
+
   // C06: 8 букв высотой 30 см; ставка 5000 за см; коэффициент 1.25 -> Итог 1 500 000 UZS
   try {
     const res = calculateAdvertisingItem({

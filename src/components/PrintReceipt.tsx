@@ -151,12 +151,27 @@ export function PrintReceipt({ order, isOpen, onClose }: PrintReceiptProps) {
                       )}
                     </td>
                     <td className="p-2 border border-slate-300 text-center font-mono">
-                      {item.area ? `${item.area} м²` : ""}
-                      {item.letterCount ? `${item.letterCount} букв × ${item.letterHeight} см` : ""}
-                      {!item.area && !item.letterCount ? `${item.quantity} шт.` : ""}
+                      {item.width && item.height ? (
+                        <div>
+                          <div className="font-bold text-slate-800">{item.width} × {item.height} м — {item.quantity || 1} шт</div>
+                          <div className="text-[10px] text-teal-700 font-semibold">
+                            общ. {(Math.round((item.width * item.height * (item.quantity || 1)) * 100) / 100).toFixed(2)} м²
+                          </div>
+                        </div>
+                      ) : item.area ? (
+                        <div>
+                          {item.quantity > 1 && <div className="font-bold">{item.quantity} шт</div>}
+                          <div>{item.area} м²</div>
+                        </div>
+                      ) : item.letterCount ? (
+                        `${item.letterCount} букв × ${item.letterHeight} см`
+                      ) : (
+                        `${item.quantity || 1} шт.`
+                      )}
                     </td>
                     <td className="p-2 border border-slate-300 text-right font-mono">
-                      {formatCurrency(item.unitPrice)}
+                      <div>{formatCurrency(item.unitPrice)}</div>
+                      <div className="text-[9px] text-slate-400">за {item.width && item.height || item.area ? "м²" : "шт"}</div>
                     </td>
                     <td className="p-2 border border-slate-300 text-right font-mono font-bold">
                       {formatCurrency(item.totalPrice)}

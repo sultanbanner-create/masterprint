@@ -31,8 +31,7 @@ import {
   Zap,
   Hammer,
   Square,
-  CheckSquare,
-  Sparkles
+  CheckSquare
 } from "lucide-react";
 import { formatCurrency, formatDate, formatDateTime, getDeadlineInfo, STATUS_CONFIG } from "@/lib/utils";
 import { PrintReceipt } from "@/components/PrintReceipt";
@@ -389,41 +388,6 @@ export default function OrderDetailPage({ params }: { params: { id: string } }) 
             </button>
           </div>
 
-          {/* Быстрый переход в роскошный акт Nukus Gulleri */}
-          {(order.orderNumber?.startsWith("NG-") ||
-            order.client?.name?.includes("Улугбек") ||
-            order.client?.company?.includes("Нукус гуллери") ||
-            order.items?.some((i: any) => i.serviceType === "BOXES_NUKUS" || i.title?.toLowerCase().includes("коробок"))) && (
-            <div className="flex items-center gap-1">
-              <a
-                href={`/track/ng/${order.id}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="px-3 py-2 rounded-xl bg-black hover:bg-zinc-800 text-[#F6D365] border border-[#D4AF37]/60 text-xs font-bold transition flex items-center gap-1.5 shadow-xs"
-                title="Открыть роскошный акт-счет Nukus Gulleri (для Улугбека)"
-              >
-                <Sparkles className="w-4 h-4 text-[#D4AF37]" />
-                <span>Акт NG</span>
-              </a>
-              <button
-                onClick={() => {
-                  const origin = typeof window !== "undefined" ? window.location.origin : "https://masterprint-sultanbanner-9247s-projects.vercel.app";
-                  const totalQty = order.items?.reduce((s: number, it: any) => s + (it.quantity || 0), 0) || 0;
-                  const isAccepted = !!order.completedAt || order.completedBy?.includes("Улугбек");
-                  const msg = isAccepted
-                    ? `🌸 Здравствуйте, Улугбек!\nНаправляем вам электронную копию подтвержденной накладной (счет-фактуры) «Нукус гуллери» № ${order.orderNumber} на сумму ${formatCurrency(order.totalAmount)} (${totalQty} шт.).\nСсылка: ${origin}/track/ng/${order.id}`
-                    : `🌸 Здравствуйте, Улугбек!\nЦех Master Print отгрузил партию коробок «Нукус гуллери» № ${order.orderNumber} (${totalQty} шт.) на сумму ${formatCurrency(order.totalAmount)}.\nПожалуйста, подтвердите приемку: ${origin}/track/ng/${order.id}`;
-                  navigator.clipboard.writeText(msg);
-                  window.open("https://t.me/+998934856006", "_blank");
-                }}
-                className="p-2 rounded-xl bg-[#229ED9]/10 hover:bg-[#229ED9] hover:text-white text-[#229ED9] border border-[#229ED9]/30 text-xs font-bold transition"
-                title="Отправить Улугбеку в Telegram (+998 93 485 60 06)"
-              >
-                <MessageSquare className="w-4 h-4" />
-              </button>
-            </div>
-          )}
-
           <button
             onClick={() => setIsProposalOpen(true)}
             className="px-3 py-2 rounded-xl bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 text-xs font-bold transition flex items-center gap-1.5 shadow-xs"
@@ -740,18 +704,38 @@ export default function OrderDetailPage({ params }: { params: { id: string } }) 
                           Текст букв: &laquo;{item.letterText}&raquo;
                         </div>
                       )}
-                      <div className="flex flex-wrap items-center gap-3 text-[11px] text-slate-500 mt-1 font-mono">
-                        {item.area ? <span>Площадь: {item.area} м²</span> : null}
-                        {item.letterCount ? (
-                          <span>Символов: {item.letterCount} шт × {item.letterHeight} см</span>
+                      <div className="flex flex-wrap items-center gap-2 text-[11px] text-slate-600 mt-1.5 font-mono">
+                        {item.width && item.height ? (
+                          <span className="bg-white px-2 py-0.5 rounded border border-slate-200">
+                            Размер: <b>{item.width} × {item.height} м</b> (1 шт: {(Math.round(item.width * item.height * 100) / 100).toFixed(2)} м²)
+                          </span>
                         ) : null}
-                        <span>Тариф: {formatCurrency(item.unitPrice)}</span>
+                        <span className="bg-blue-50 text-blue-900 border border-blue-200 px-2 py-0.5 rounded font-bold">
+                          Кол-во: {item.quantity || 1} шт
+                        </span>
+                        {item.width && item.height ? (
+                          <span className="bg-emerald-100 text-emerald-950 border border-emerald-300 px-2 py-0.5 rounded font-black">
+                            Общий квадрат: {(Math.round((item.width * item.height * (item.quantity || 1)) * 100) / 100).toFixed(2)} м²
+                          </span>
+                        ) : item.area ? (
+                          <span className="bg-emerald-100 text-emerald-950 border border-emerald-300 px-2 py-0.5 rounded font-black">
+                            Общий квадрат: {item.area} м²
+                          </span>
+                        ) : null}
+                        {item.letterCount ? (
+                          <span className="bg-amber-50 text-amber-900 border border-amber-200 px-2 py-0.5 rounded">
+                            Символов: {item.letterCount} шт × {item.letterHeight} см
+                          </span>
+                        ) : null}
+                        <span className="text-slate-500">
+                          Сумма за {item.width && item.height || item.area ? "кв" : "ед"}: <b>{formatCurrency(item.unitPrice)}</b>
+                        </span>
                       </div>
                     </div>
                   </div>
 
-                  <div className="text-right">
-                    <span className="text-[10px] text-slate-400 uppercase block font-semibold">Итого:</span>
+                  <div className="text-right shrink-0">
+                    <span className="text-[10px] text-slate-400 uppercase block font-semibold">Общая сумма:</span>
                     <span className="text-base font-bold font-mono text-slate-900">
                       {formatCurrency(item.totalPrice)}
                     </span>
