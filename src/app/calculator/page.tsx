@@ -651,11 +651,43 @@ export default function SmartCalculatorPage() {
                   </div>
                   <div className="flex items-center gap-2">
                     <span className="text-slate-500">Общий квадрат:</span>
-                    <span className="font-black text-emerald-800 bg-emerald-100 px-2 py-0.5 rounded border border-emerald-300">
+                    <span className="font-black text-emerald-800 bg-emerald-100 px-2.5 py-0.5 rounded border border-emerald-300">
                       {(Math.max(0, (Number(widthVal) || 0) * (Number(heightVal) || 0) * quantity)).toFixed(2)} м²
                     </span>
                   </div>
                 </div>
+
+                {/* Быстрые пресеты размеров для стендов */}
+                {activeCategory === "STANDS" && (
+                  <div className="flex flex-wrap items-center gap-1.5 pt-1">
+                    <span className="text-[10px] text-slate-400 font-bold uppercase">Быстрые размеры стендов:</span>
+                    {[
+                      { label: "0.6 × 0.9 м (5 шт) • Пример", w: "0.6", h: "0.9", q: 5 },
+                      { label: "1.0 × 0.8 м (1 шт)", w: "1.0", h: "0.8", q: 1 },
+                      { label: "1.2 × 0.8 м (2 шт)", w: "1.2", h: "0.8", q: 2 },
+                      { label: "0.5 × 0.7 м (3 шт)", w: "0.5", h: "0.7", q: 3 },
+                    ].map((p) => (
+                      <button
+                        key={p.label}
+                        type="button"
+                        onClick={() => {
+                          setWidthVal(p.w);
+                          setHeightVal(p.h);
+                          setWidthUnit("m");
+                          setHeightUnit("m");
+                          setQuantity(p.q);
+                        }}
+                        className={`px-2 py-1 rounded-lg text-xs font-bold border transition ${
+                          widthVal === p.w && heightVal === p.h && quantity === p.q
+                            ? "bg-emerald-600 text-white border-emerald-600 shadow-2xs"
+                            : "bg-white text-slate-700 border-slate-200 hover:bg-slate-100"
+                        }`}
+                      >
+                        {p.label}
+                      </button>
+                    ))}
+                  </div>
+                )}
               </>
             )}
 
@@ -995,16 +1027,62 @@ export default function SmartCalculatorPage() {
                     </span>
                   </div>
 
-                  {/* Наглядная формула расчета */}
-                  <div className="p-2.5 bg-white/90 border border-emerald-200 rounded-xl flex items-center justify-between text-xs font-mono">
-                    <div className="text-slate-600">
-                      📐 {widthVal} × {heightVal} м × {quantity} шт ={" "}
-                      <b className="text-emerald-800">
-                        {(Math.max(0, (Number(widthVal) || 0) * (Number(heightVal) || 0) * quantity)).toFixed(2)} м² (общий квадрат)
-                      </b>
+                  {/* Наглядная карточка 4 шагов расчета: 1.Размер и кол-во -> 2.Общий квадрат -> 3.Сумма за кв -> 4.Общая сумма */}
+                  <div className="p-3.5 bg-white border-2 border-emerald-300 rounded-2xl shadow-xs space-y-2.5">
+                    <div className="text-[11px] font-bold text-emerald-950 uppercase tracking-wide flex items-center justify-between">
+                      <span className="flex items-center gap-1.5">
+                        <span>📊</span>
+                        <span>Пошаговый расчет изделия ({standMaterial === "acrylic" ? "Оргстекло" : "Фомекс"}):</span>
+                      </span>
+                      <span className="font-mono text-emerald-800 text-[10px] bg-emerald-100/70 px-2 py-0.5 rounded font-bold">
+                        W × H × Кол-во × Тариф
+                      </span>
                     </div>
-                    <div className="font-black text-emerald-700">
-                      = {formatUzCurrency(Math.round((Number(widthVal) || 0) * (Number(heightVal) || 0) * quantity * standRatePerSqm))}
+
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
+                      {/* Шаг 1: Размеры и количество штук */}
+                      <div className="p-2.5 bg-slate-50 rounded-xl border border-slate-200">
+                        <span className="text-[10px] text-slate-500 block font-bold uppercase">1. Размер & Кол-во:</span>
+                        <div className="font-black text-slate-900 font-mono text-xs sm:text-sm mt-0.5">
+                          {widthVal} × {heightVal} м • <span className="text-blue-700">{quantity} шт</span>
+                        </div>
+                        <div className="text-[10px] text-slate-500 mt-1">
+                          1 шт = {((Number(widthVal) || 0) * (Number(heightVal) || 0)).toFixed(2)} м²
+                        </div>
+                      </div>
+
+                      {/* Шаг 2: Общий квадрат */}
+                      <div className="p-2.5 bg-emerald-50 rounded-xl border border-emerald-300">
+                        <span className="text-[10px] text-emerald-800 block font-bold uppercase">2. Общий квадрат:</span>
+                        <div className="font-black text-emerald-950 font-mono text-sm sm:text-base mt-0.5">
+                          {(Math.max(0, (Number(widthVal) || 0) * (Number(heightVal) || 0) * quantity)).toFixed(2)} м²
+                        </div>
+                        <div className="text-[10px] text-emerald-700 font-medium mt-1">
+                          {((Number(widthVal) || 0) * (Number(heightVal) || 0)).toFixed(2)} м² × {quantity} шт
+                        </div>
+                      </div>
+
+                      {/* Шаг 3: Сумма за кв. м */}
+                      <div className="p-2.5 bg-slate-50 rounded-xl border border-slate-200">
+                        <span className="text-[10px] text-slate-500 block font-bold uppercase">3. Сумма за кв:</span>
+                        <div className="font-black text-slate-900 font-mono text-xs sm:text-sm mt-0.5">
+                          {formatUzCurrency(standRatePerSqm)}
+                        </div>
+                        <div className="text-[10px] text-slate-500 mt-1">
+                          за 1 м² основания
+                        </div>
+                      </div>
+
+                      {/* Шаг 4: Общая сумма */}
+                      <div className="p-2.5 bg-emerald-600 text-white rounded-xl shadow-xs">
+                        <span className="text-[10px] text-emerald-100 block font-bold uppercase">4. Общая сумма:</span>
+                        <div className="font-black font-mono text-xs sm:text-sm mt-0.5">
+                          {formatUzCurrency(Math.round((Number(widthVal) || 0) * (Number(heightVal) || 0) * quantity * standRatePerSqm))}
+                        </div>
+                        <div className="text-[10px] text-emerald-200 mt-1">
+                          {((Number(widthVal) || 0) * (Number(heightVal) || 0) * quantity).toFixed(2)} м² × {formatUzCurrency(standRatePerSqm)}
+                        </div>
+                      </div>
                     </div>
                   </div>
 
@@ -1056,7 +1134,7 @@ export default function SmartCalculatorPage() {
                         <span className="font-bold text-slate-800">📄 Карманы А4 (вертикальные)</span>
                         <span className="font-mono text-emerald-700 font-bold">25 000 UZS / шт</span>
                       </div>
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-1.5">
                         {[0, 2, 4, 6, 8].map((cnt) => (
                           <button
                             key={cnt}
@@ -1064,23 +1142,39 @@ export default function SmartCalculatorPage() {
                             onClick={() => setStandPocketsA4(cnt)}
                             className={`flex-1 py-1.5 rounded-lg text-xs font-bold border transition ${
                               standPocketsA4 === cnt
-                                ? "bg-emerald-600 text-white border-emerald-600"
+                                ? "bg-emerald-600 text-white border-emerald-600 shadow-2xs"
                                 : "bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100"
                             }`}
                           >
-                            {cnt === 0 ? "0 шт" : `${cnt} шт`}
+                            {cnt === 0 ? "0" : `${cnt} шт`}
                           </button>
                         ))}
                       </div>
                       <div className="flex items-center justify-between text-[11px] text-slate-500 pt-1">
-                        <span>Свое кол-во:</span>
-                        <input
-                          type="number"
-                          min="0"
-                          value={standPocketsA4}
-                          onChange={(e) => setStandPocketsA4(Math.max(0, parseInt(e.target.value) || 0))}
-                          className="w-16 px-2 py-0.5 border border-slate-300 rounded font-mono font-bold text-right"
-                        />
+                        <span>Количество (кнопки):</span>
+                        <div className="flex items-center">
+                          <button
+                            type="button"
+                            onClick={() => setStandPocketsA4(Math.max(0, standPocketsA4 - 1))}
+                            className="w-6 h-6 rounded-l-md border border-slate-300 bg-slate-100 hover:bg-slate-200 text-slate-700 font-black text-xs flex items-center justify-center transition"
+                          >
+                            -
+                          </button>
+                          <input
+                            type="number"
+                            min="0"
+                            value={standPocketsA4}
+                            onChange={(e) => setStandPocketsA4(Math.max(0, parseInt(e.target.value) || 0))}
+                            className="w-12 h-6 border-y border-slate-300 text-center font-mono font-bold text-xs"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setStandPocketsA4(standPocketsA4 + 1)}
+                            className="w-6 h-6 rounded-r-md border border-slate-300 bg-slate-100 hover:bg-slate-200 text-slate-700 font-black text-xs flex items-center justify-center transition"
+                          >
+                            +
+                          </button>
+                        </div>
                       </div>
                     </div>
 
@@ -1090,7 +1184,7 @@ export default function SmartCalculatorPage() {
                         <span className="font-bold text-slate-800">📑 Карманы А3 (крупный формат)</span>
                         <span className="font-mono text-emerald-700 font-bold">40 000 UZS / шт</span>
                       </div>
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-1.5">
                         {[0, 1, 2, 4].map((cnt) => (
                           <button
                             key={cnt}
@@ -1098,23 +1192,39 @@ export default function SmartCalculatorPage() {
                             onClick={() => setStandPocketsA3(cnt)}
                             className={`flex-1 py-1.5 rounded-lg text-xs font-bold border transition ${
                               standPocketsA3 === cnt
-                                ? "bg-emerald-600 text-white border-emerald-600"
+                                ? "bg-emerald-600 text-white border-emerald-600 shadow-2xs"
                                 : "bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100"
                             }`}
                           >
-                            {cnt === 0 ? "0 шт" : `${cnt} шт`}
+                            {cnt === 0 ? "0" : `${cnt} шт`}
                           </button>
                         ))}
                       </div>
                       <div className="flex items-center justify-between text-[11px] text-slate-500 pt-1">
-                        <span>Свое кол-во:</span>
-                        <input
-                          type="number"
-                          min="0"
-                          value={standPocketsA3}
-                          onChange={(e) => setStandPocketsA3(Math.max(0, parseInt(e.target.value) || 0))}
-                          className="w-16 px-2 py-0.5 border border-slate-300 rounded font-mono font-bold text-right"
-                        />
+                        <span>Количество (кнопки):</span>
+                        <div className="flex items-center">
+                          <button
+                            type="button"
+                            onClick={() => setStandPocketsA3(Math.max(0, standPocketsA3 - 1))}
+                            className="w-6 h-6 rounded-l-md border border-slate-300 bg-slate-100 hover:bg-slate-200 text-slate-700 font-black text-xs flex items-center justify-center transition"
+                          >
+                            -
+                          </button>
+                          <input
+                            type="number"
+                            min="0"
+                            value={standPocketsA3}
+                            onChange={(e) => setStandPocketsA3(Math.max(0, parseInt(e.target.value) || 0))}
+                            className="w-12 h-6 border-y border-slate-300 text-center font-mono font-bold text-xs"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setStandPocketsA3(standPocketsA3 + 1)}
+                            className="w-6 h-6 rounded-r-md border border-slate-300 bg-slate-100 hover:bg-slate-200 text-slate-700 font-black text-xs flex items-center justify-center transition"
+                          >
+                            +
+                          </button>
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -1144,30 +1254,75 @@ export default function SmartCalculatorPage() {
                 </div>
 
                 {/* Дистанционные металлические держатели */}
-                <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200 space-y-2">
-                  <div className="flex items-center justify-between">
+                <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200 space-y-2.5">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
                     <label className="text-xs font-bold text-slate-900 flex items-center gap-2 cursor-pointer">
                       <input
                         type="checkbox"
                         checked={standFittingsEnabled}
-                        onChange={(e) => setStandFittingsEnabled(e.target.checked)}
+                        onChange={(e) => {
+                          const next = e.target.checked;
+                          setStandFittingsEnabled(next);
+                          if (next && standFittingsCount === 0) setStandFittingsCount(4);
+                        }}
                         className="w-4 h-4 text-emerald-600 rounded"
                       />
                       Дистанционные металлические держатели к стене (хром)
                     </label>
-                    {standFittingsEnabled && (
-                      <div className="flex items-center gap-2">
-                        <input
-                          type="number"
-                          min="1"
-                          value={standFittingsCount}
-                          onChange={(e) => setStandFittingsCount(Math.max(1, parseInt(e.target.value) || 1))}
-                          className="w-14 px-2 py-0.5 border border-slate-300 rounded text-xs font-bold text-right font-mono"
-                        />
-                        <span className="text-[11px] font-bold text-slate-600">шт × 15 000 UZS</span>
-                      </div>
-                    )}
+                    <span className="text-[11px] font-mono font-bold text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
+                      15 000 UZS / шт
+                    </span>
                   </div>
+
+                  {standFittingsEnabled && (
+                    <div className="space-y-2 pl-6">
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="text-slate-600 font-semibold">Количество держателей:</span>
+                        <div className="flex items-center">
+                          <button
+                            type="button"
+                            onClick={() => setStandFittingsCount(Math.max(1, standFittingsCount - 1))}
+                            className="w-6 h-6 rounded-l-md border border-slate-300 bg-slate-100 hover:bg-slate-200 text-slate-700 font-black text-xs flex items-center justify-center transition"
+                          >
+                            -
+                          </button>
+                          <input
+                            type="number"
+                            min="1"
+                            value={standFittingsCount}
+                            onChange={(e) => setStandFittingsCount(Math.max(1, parseInt(e.target.value) || 1))}
+                            className="w-12 h-6 border-y border-slate-300 text-center font-mono font-bold text-xs"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setStandFittingsCount(standFittingsCount + 1)}
+                            className="w-6 h-6 rounded-r-md border border-slate-300 bg-slate-100 hover:bg-slate-200 text-slate-700 font-black text-xs flex items-center justify-center transition"
+                          >
+                            +
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Быстрые кнопки количества держателей */}
+                      <div className="flex items-center gap-1.5">
+                        {[4, 6, 8, 12].map((cnt) => (
+                          <button
+                            key={cnt}
+                            type="button"
+                            onClick={() => setStandFittingsCount(cnt)}
+                            className={`flex-1 py-1 rounded-lg text-xs font-bold border transition ${
+                              standFittingsCount === cnt
+                                ? "bg-emerald-600 text-white border-emerald-600 shadow-2xs"
+                                : "bg-white text-slate-700 border-slate-200 hover:bg-slate-100"
+                            }`}
+                          >
+                            {cnt} шт
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
                   <p className="text-[11px] text-slate-500 pl-6">
                     Стальные хромированные держатели с отступом от стены на 15-20 мм.
                   </p>

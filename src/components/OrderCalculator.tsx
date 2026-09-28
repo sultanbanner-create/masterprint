@@ -20,7 +20,8 @@ import {
   FileImage,
   Percent,
   CheckCircle2,
-  X
+  X,
+  Layers
 } from "lucide-react";
 import { formatCurrency, countLetters, cn } from "@/lib/utils";
 
@@ -39,6 +40,12 @@ export interface ItemRow {
   hasFrame?: boolean;
   unitPrice: number;
   totalPrice: number;
+  standMaterial?: "acrylic" | "fomeks";
+  standPocketsA4?: number;
+  standPocketsA3?: number;
+  standFittingsCount?: number;
+  standProfileEnabled?: boolean;
+  standInstallEnabled?: boolean;
 }
 
 export function OrderCalculator({ employees }: { employees: any[] }) {
@@ -111,7 +118,7 @@ export function OrderCalculator({ employees }: { employees: any[] }) {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  const addItem = (type: ItemRow["serviceType"]) => {
+  const addItem = (type: ItemRow["serviceType"], extra?: Partial<ItemRow>) => {
     const newId = `item-${Date.now()}`;
     let newItem: ItemRow;
 
@@ -169,17 +176,27 @@ export function OrderCalculator({ employees }: { employees: any[] }) {
         totalPrice: 0,
       };
     } else if (type === "STAND") {
+      const isAcrylic = !extra?.standMaterial || extra.standMaterial === "acrylic";
       newItem = {
         id: newId,
         serviceType: "STAND",
-        title: "Стенд из оргстекла (акрил)",
+        title: isAcrylic ? "Стенд из оргстекла (акрил)" : "Стенд из Фомекса (ПВХ пластик)",
         width: 0.6,
         height: 0.9,
         area: 2.7,
         quantity: 5,
         unitPrice: 240000,
-        options: "Оргстекло (акрил) 4мм, дистанционные держатели, полировка торцов",
+        options: isAcrylic 
+          ? "Оргстекло (акрил) 4мм, полировка торцов" 
+          : "Фомекс (ПВХ) 5мм, интерьерная накатка Oracal",
+        standMaterial: isAcrylic ? "acrylic" : "fomeks",
+        standPocketsA4: 0,
+        standPocketsA3: 0,
+        standFittingsCount: 0,
+        standProfileEnabled: false,
+        standInstallEnabled: false,
         totalPrice: 648000,
+        ...extra,
       };
       if (employees.length > 0) {
         const abzal = employees.find((e) => e.name === "Абзал");
@@ -237,7 +254,38 @@ export function OrderCalculator({ employees }: { employees: any[] }) {
           const totalArea = Math.round(singleArea * qty * 100) / 100;
           updated.area = totalArea;
           const price = typeof updated.unitPrice === "number" && !isNaN(updated.unitPrice) ? updated.unitPrice : 0;
-          updated.totalPrice = Math.round(totalArea * price);
+          let total = Math.round(totalArea * price);
+
+          if (updated.serviceType === "STAND") {
+            const pA4 = (updated.standPocketsA4 || 0) * 25000 * qty;
+            const pA3 = (updated.standPocketsA3 || 0) * 40000 * qty;
+            const fittings = (updated.standFittingsCount || 0) * 15000 * qty;
+            const perimeterOne = Math.round(2 * (w + h) * 100) / 100;
+            const profile = updated.standProfileEnabled ? Math.round(perimeterOne * 40000 * qty) : 0;
+            const install = updated.standInstallEnabled ? 150000 : 0;
+            total += (pA4 + pA3 + fittings + profile + install);
+
+            if (
+              patch.standPocketsA4 !== undefined || 
+              patch.standPocketsA3 !== undefined || 
+              patch.standFittingsCount !== undefined || 
+              patch.standProfileEnabled !== undefined || 
+              patch.standInstallEnabled !== undefined ||
+              patch.standMaterial !== undefined
+            ) {
+              const parts: string[] = [];
+              const isAcrylic = updated.standMaterial === "acrylic" || (updated.title || "").toLowerCase().includes("орг") || (updated.title || "").toLowerCase().includes("акрил");
+              parts.push(isAcrylic ? "Оргстекло (акрил)" : "Фомекс (ПВХ)");
+              if (updated.standPocketsA4 && updated.standPocketsA4 > 0) parts.push(`Карманы А4: ${updated.standPocketsA4} шт`);
+              if (updated.standPocketsA3 && updated.standPocketsA3 > 0) parts.push(`Карманы А3: ${updated.standPocketsA3} шт`);
+              if (updated.standFittingsCount && updated.standFittingsCount > 0) parts.push(`Держатели: ${updated.standFittingsCount} шт`);
+              if (updated.standProfileEnabled) parts.push("Багет Nielsen");
+              if (updated.standInstallEnabled) parts.push("Монтаж");
+              updated.options = parts.join(" • ");
+            }
+          }
+
+          updated.totalPrice = total;
         }
 
         if (updated.serviceType === "LETTERS") {
@@ -398,8 +446,9 @@ export function OrderCalculator({ employees }: { employees: any[] }) {
     { type: "LETTERS" as const, label: "Буквы LED", icon: "💡", master: "Абзал", desc: "от 6 500 сум/см" },
     { type: "LIGHTBOX" as const, label: "Короб из акрила (свет)", icon: "📦", master: "Абзал", desc: "сумма за м² вручную" },
     { type: "ORACAL" as const, label: "Оракал", icon: "🎨", master: "Пленка", desc: "50 000 сум/м²" },
+    { type: "STAND" as const, extra: { title: "Стенд из оргстекла (акрил)", standMaterial: "acrylic" as const, unitPrice: 240000 }, label: "💎 Стенд Оргстекло", icon: "💎", master: "Абзал", desc: "оргстекло / акрил" },
+    { type: "STAND" as const, extra: { title: "Стенд из Фомекса (ПВХ пластик)", standMaterial: "fomeks" as const, unitPrice: 240000, options: "Фомекс (ПВХ) 5мм, интерьерная накатка Oracal" }, label: "📋 Стенд Фомекс (ПВХ)", icon: "📋", master: "Абзал", desc: "вспененный ПВХ" },
     { type: "AUTO_BRANDING" as const, label: "Авто", icon: "🚐", master: "Damas/Labo", desc: "650 000 сум" },
-    { type: "STAND" as const, label: "Стенды / Оргстекло", icon: "📋", master: "Абзал", desc: "оргстекло / фомекс" },
     { type: "INSTALL" as const, label: "Монтаж", icon: "🛠️", master: "Выезд", desc: "150 000 сум" },
     { type: "CUSTOM" as const, label: "Своя услуга", icon: "✨", master: "Вручную", desc: "Свободная цена" },
   ];
@@ -578,11 +627,11 @@ export function OrderCalculator({ employees }: { employees: any[] }) {
             <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider px-1 shrink-0">
               Добавить:
             </span>
-            {categoryChips.map((chip) => (
+            {categoryChips.map((chip, chipIdx) => (
               <button
-                key={chip.type}
+                key={`${chip.type}-${chipIdx}`}
                 type="button"
-                onClick={() => addItem(chip.type)}
+                onClick={() => addItem(chip.type, (chip as any).extra)}
                 className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-200 hover:border-blue-400 hover:bg-blue-50/70 transition text-xs font-bold text-slate-700 shrink-0 group active:scale-95 shadow-2xs"
               >
                 <span className="text-sm">{chip.icon}</span>
@@ -1235,6 +1284,260 @@ export function OrderCalculator({ employees }: { employees: any[] }) {
                       </div>
                     </div>
 
+                    {/* УСЛУГИ И КОМПЛЕКТУЮЩИЕ СТЕНДА С КНОПКАМИ КОЛИЧЕСТВА */}
+                    <div className="bg-gradient-to-r from-emerald-50/70 via-teal-50/50 to-slate-50 p-3 rounded-2xl border border-emerald-200 space-y-3">
+                      <div className="flex flex-wrap items-center justify-between gap-1 text-xs">
+                        <span className="font-black text-emerald-950 flex items-center gap-1.5 uppercase tracking-wide">
+                          <Layers className="w-3.5 h-3.5 text-emerald-700" />
+                          <span>Услуги и комплектующие стенда ({item.standMaterial === "acrylic" ? "Оргстекло" : "ПВХ Фомекс"}):</span>
+                        </span>
+                        <span className="text-[10px] text-emerald-800 bg-emerald-100/70 px-2 py-0.5 rounded-full font-bold">
+                          Кнопки количества (шт)
+                        </span>
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                        {/* 1. КАРМАНЫ А4 ПРОЗРАЧНЫЕ */}
+                        <div className="bg-white p-2.5 rounded-xl border border-slate-200/90 shadow-2xs space-y-2">
+                          <div className="flex items-center justify-between text-xs">
+                            <span className="font-bold text-slate-800 flex items-center gap-1">
+                              <span>📄</span>
+                              <span>Карманы А4</span>
+                            </span>
+                            <span className="font-mono text-[10px] font-bold text-emerald-700 bg-emerald-50 px-1.5 py-0.2 rounded">
+                              25 000 сум/шт
+                            </span>
+                          </div>
+
+                          {/* Кнопка кол-во с - / + steppers */}
+                          <div className="flex items-center justify-between gap-1.5">
+                            <span className="text-[10px] text-slate-500 font-bold uppercase">Кол-во:</span>
+                            <div className="flex items-center">
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  const curr = item.standPocketsA4 || 0;
+                                  if (curr > 0) updateItem(item.id, { standPocketsA4: curr - 1 });
+                                }}
+                                className="w-6 h-6 rounded-l-lg border border-slate-300 bg-slate-100 hover:bg-slate-200 text-slate-700 font-black text-xs flex items-center justify-center transition active:scale-95"
+                              >
+                                -
+                              </button>
+                              <input
+                                type="number"
+                                min="0"
+                                value={item.standPocketsA4 || 0}
+                                onChange={(e) => updateItem(item.id, { standPocketsA4: Math.max(0, parseInt(e.target.value) || 0) })}
+                                className="w-12 h-6 text-center border-y border-slate-300 font-mono font-bold text-xs bg-white text-slate-900 focus:outline-none"
+                              />
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  const curr = item.standPocketsA4 || 0;
+                                  updateItem(item.id, { standPocketsA4: curr + 1 });
+                                }}
+                                className="w-6 h-6 rounded-r-lg border border-slate-300 bg-slate-100 hover:bg-slate-200 text-slate-700 font-black text-xs flex items-center justify-center transition active:scale-95"
+                              >
+                                +
+                              </button>
+                            </div>
+                          </div>
+
+                          {/* Быстрые кнопки количества [0] [2] [4] [6] [8] */}
+                          <div className="flex items-center gap-1 pt-0.5">
+                            {[0, 2, 4, 6, 8].map((cnt) => (
+                              <button
+                                key={cnt}
+                                type="button"
+                                onClick={() => updateItem(item.id, { standPocketsA4: cnt })}
+                                className={cn(
+                                  "flex-1 py-1 rounded text-[10px] font-bold border transition",
+                                  (item.standPocketsA4 || 0) === cnt
+                                    ? "bg-emerald-600 text-white border-emerald-600 shadow-2xs"
+                                    : "bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100"
+                                )}
+                              >
+                                {cnt === 0 ? "0" : `${cnt}шт`}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+
+                        {/* 2. КАРМАНЫ А3 ПРОЗРАЧНЫЕ */}
+                        <div className="bg-white p-2.5 rounded-xl border border-slate-200/90 shadow-2xs space-y-2">
+                          <div className="flex items-center justify-between text-xs">
+                            <span className="font-bold text-slate-800 flex items-center gap-1">
+                              <span>📑</span>
+                              <span>Карманы А3</span>
+                            </span>
+                            <span className="font-mono text-[10px] font-bold text-emerald-700 bg-emerald-50 px-1.5 py-0.2 rounded">
+                              40 000 сум/шт
+                            </span>
+                          </div>
+
+                          {/* Кнопка кол-во с - / + steppers */}
+                          <div className="flex items-center justify-between gap-1.5">
+                            <span className="text-[10px] text-slate-500 font-bold uppercase">Кол-во:</span>
+                            <div className="flex items-center">
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  const curr = item.standPocketsA3 || 0;
+                                  if (curr > 0) updateItem(item.id, { standPocketsA3: curr - 1 });
+                                }}
+                                className="w-6 h-6 rounded-l-lg border border-slate-300 bg-slate-100 hover:bg-slate-200 text-slate-700 font-black text-xs flex items-center justify-center transition active:scale-95"
+                              >
+                                -
+                              </button>
+                              <input
+                                type="number"
+                                min="0"
+                                value={item.standPocketsA3 || 0}
+                                onChange={(e) => updateItem(item.id, { standPocketsA3: Math.max(0, parseInt(e.target.value) || 0) })}
+                                className="w-12 h-6 text-center border-y border-slate-300 font-mono font-bold text-xs bg-white text-slate-900 focus:outline-none"
+                              />
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  const curr = item.standPocketsA3 || 0;
+                                  updateItem(item.id, { standPocketsA3: curr + 1 });
+                                }}
+                                className="w-6 h-6 rounded-r-lg border border-slate-300 bg-slate-100 hover:bg-slate-200 text-slate-700 font-black text-xs flex items-center justify-center transition active:scale-95"
+                              >
+                                +
+                              </button>
+                            </div>
+                          </div>
+
+                          {/* Быстрые кнопки количества [0] [1] [2] [4] */}
+                          <div className="flex items-center gap-1 pt-0.5">
+                            {[0, 1, 2, 4].map((cnt) => (
+                              <button
+                                key={cnt}
+                                type="button"
+                                onClick={() => updateItem(item.id, { standPocketsA3: cnt })}
+                                className={cn(
+                                  "flex-1 py-1 rounded text-[10px] font-bold border transition",
+                                  (item.standPocketsA3 || 0) === cnt
+                                    ? "bg-emerald-600 text-white border-emerald-600 shadow-2xs"
+                                    : "bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100"
+                                )}
+                              >
+                                {cnt === 0 ? "0" : `${cnt}шт`}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+
+                        {/* 3. ДИСТАНЦИОННЫЕ ДЕРЖАТЕЛИ (ХРОМ) */}
+                        <div className="bg-white p-2.5 rounded-xl border border-slate-200/90 shadow-2xs space-y-2">
+                          <div className="flex items-center justify-between text-xs">
+                            <span className="font-bold text-slate-800 flex items-center gap-1">
+                              <span>🔩</span>
+                              <span>Держатели (хром)</span>
+                            </span>
+                            <span className="font-mono text-[10px] font-bold text-emerald-700 bg-emerald-50 px-1.5 py-0.2 rounded">
+                              15 000 сум/шт
+                            </span>
+                          </div>
+
+                          {/* Кнопка кол-во с - / + steppers */}
+                          <div className="flex items-center justify-between gap-1.5">
+                            <span className="text-[10px] text-slate-500 font-bold uppercase">Кол-во:</span>
+                            <div className="flex items-center">
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  const curr = item.standFittingsCount || 0;
+                                  if (curr > 0) updateItem(item.id, { standFittingsCount: curr - 1 });
+                                }}
+                                className="w-6 h-6 rounded-l-lg border border-slate-300 bg-slate-100 hover:bg-slate-200 text-slate-700 font-black text-xs flex items-center justify-center transition active:scale-95"
+                              >
+                                -
+                              </button>
+                              <input
+                                type="number"
+                                min="0"
+                                value={item.standFittingsCount || 0}
+                                onChange={(e) => updateItem(item.id, { standFittingsCount: Math.max(0, parseInt(e.target.value) || 0) })}
+                                className="w-12 h-6 text-center border-y border-slate-300 font-mono font-bold text-xs bg-white text-slate-900 focus:outline-none"
+                              />
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  const curr = item.standFittingsCount || 0;
+                                  updateItem(item.id, { standFittingsCount: curr + 1 });
+                                }}
+                                className="w-6 h-6 rounded-r-lg border border-slate-300 bg-slate-100 hover:bg-slate-200 text-slate-700 font-black text-xs flex items-center justify-center transition active:scale-95"
+                              >
+                                +
+                              </button>
+                            </div>
+                          </div>
+
+                          {/* Быстрые кнопки количества [0] [4] [6] [8] */}
+                          <div className="flex items-center gap-1 pt-0.5">
+                            {[0, 4, 6, 8].map((cnt) => (
+                              <button
+                                key={cnt}
+                                type="button"
+                                onClick={() => updateItem(item.id, { standFittingsCount: cnt })}
+                                className={cn(
+                                  "flex-1 py-1 rounded text-[10px] font-bold border transition",
+                                  (item.standFittingsCount || 0) === cnt
+                                    ? "bg-emerald-600 text-white border-emerald-600 shadow-2xs"
+                                    : "bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100"
+                                )}
+                              >
+                                {cnt === 0 ? "0" : `${cnt}шт`}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Дополнительные опции: Багетный профиль и Монтаж */}
+                      <div className="flex flex-wrap items-center gap-2 pt-1 border-t border-emerald-200/60">
+                        <button
+                          type="button"
+                          onClick={() => updateItem(item.id, { standProfileEnabled: !item.standProfileEnabled })}
+                          className={cn(
+                            "px-2.5 py-1 rounded-lg text-xs font-bold border transition flex items-center gap-1.5 active:scale-95",
+                            item.standProfileEnabled
+                              ? "bg-emerald-600 text-white border-emerald-700 shadow-2xs"
+                              : "bg-white text-slate-700 border-slate-200 hover:bg-slate-50"
+                          )}
+                        >
+                          <span>🖼️ Багетный профиль Nielsen</span>
+                          <span className={cn(
+                            "text-[10px] px-1 py-0.2 rounded font-mono font-bold",
+                            item.standProfileEnabled ? "bg-emerald-800 text-white" : "bg-slate-100 text-slate-600"
+                          )}>
+                            40k / пог. м
+                          </span>
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => updateItem(item.id, { standInstallEnabled: !item.standInstallEnabled })}
+                          className={cn(
+                            "px-2.5 py-1 rounded-lg text-xs font-bold border transition flex items-center gap-1.5 active:scale-95",
+                            item.standInstallEnabled
+                              ? "bg-blue-600 text-white border-blue-700 shadow-2xs"
+                              : "bg-white text-slate-700 border-slate-200 hover:bg-slate-50"
+                          )}
+                        >
+                          <span>🛠️ Монтаж на объекте</span>
+                          <span className={cn(
+                            "text-[10px] px-1 py-0.2 rounded font-mono font-bold",
+                            item.standInstallEnabled ? "bg-blue-800 text-white" : "bg-slate-100 text-slate-600"
+                          )}>
+                            +150 000 UZS
+                          </span>
+                        </button>
+                      </div>
+                    </div>
+
                     {/* Поле комплектации стенда */}
                     <div>
                       <label className="block text-[10px] font-bold text-slate-500 mb-1">
@@ -1267,6 +1570,11 @@ export function OrderCalculator({ employees }: { employees: any[] }) {
                         <span className="font-bold text-slate-800">
                           {formatCurrency(item.unitPrice)}/м²
                         </span>
+                        {item.totalPrice > Math.round((item.area || 0) * (item.unitPrice || 0)) && (
+                          <span className="text-teal-900 bg-teal-100 px-2 py-0.5 rounded border border-teal-300 font-bold">
+                            + услуги ({formatCurrency(item.totalPrice - Math.round((item.area || 0) * (item.unitPrice || 0)))})
+                          </span>
+                        )}
                       </div>
                       <div className="text-right sm:text-right shrink-0">
                         <span className="text-[10px] text-slate-500 uppercase font-bold mr-1">Общая сумма:</span>

@@ -64,12 +64,12 @@ export default function TelegramMiniApp() {
   const [newTitle, setNewTitle] = useState("");
   const [newClientName, setNewClientName] = useState("");
   const [newClientPhone, setNewClientPhone] = useState("");
-  const [newServiceType, setNewServiceType] = useState<"LIGHTBOX" | "BANNER" | "LETTERS" | "ORACAL" | "STAND" | "INSTALL">("LIGHTBOX");
-  const [newWidth, setNewWidth] = useState("2");
-  const [newHeight, setNewHeight] = useState("1");
-  const [newQuantity, setNewQuantity] = useState(1);
-  const [newRatePerUnit, setNewRatePerUnit] = useState(850000); // Ручная цена за м2 или за букву
-  const [newOptions, setNewOptions] = useState("Светорассеивающий акрил молочный, LED модули 12V IP67");
+  const [newServiceType, setNewServiceType] = useState<"LIGHTBOX" | "BANNER" | "LETTERS" | "ORACAL" | "STAND" | "STAND_ACRYLIC" | "INSTALL">("STAND_ACRYLIC");
+  const [newWidth, setNewWidth] = useState("0.6");
+  const [newHeight, setNewHeight] = useState("0.9");
+  const [newQuantity, setNewQuantity] = useState(5);
+  const [newRatePerUnit, setNewRatePerUnit] = useState(240000); // Ручная цена за м2 или за букву
+  const [newOptions, setNewOptions] = useState("Оргстекло (акрил), полировка торцов, дистанционные держатели");
   const [newAdvance, setNewAdvance] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitSuccess, setSubmitSuccess] = useState<string | null>(null);
@@ -286,7 +286,8 @@ export default function TelegramMiniApp() {
       newServiceType === "LIGHTBOX" ? `Короб из акрила (свет) ${newWidth}x${newHeight}м` :
       newServiceType === "BANNER" ? `Баннер ${newWidth}x${newHeight}м (${newQuantity} шт)` :
       newServiceType === "LETTERS" ? `Буквы световые LED (${newQuantity} шт)` :
-      newServiceType === "STAND" ? `Стенд ${newWidth}x${newHeight}м — ${newQuantity} шт (общий: ${newCalculatedArea.toFixed(2)} м²)` :
+      newServiceType === "STAND_ACRYLIC" ? `Стенд из оргстекла ${newWidth}x${newHeight}м — ${newQuantity} шт (общий квадрат: ${newCalculatedArea.toFixed(2)} м²)` :
+      newServiceType === "STAND" ? `Стенд из Фомекса ${newWidth}x${newHeight}м — ${newQuantity} шт (общий квадрат: ${newCalculatedArea.toFixed(2)} м²)` :
       newServiceType === "ORACAL" ? `Пленка Oracal ${newWidth}x${newHeight}м` :
       `Монтажные работы`;
 
@@ -306,7 +307,7 @@ export default function TelegramMiniApp() {
           paymentMethod: "CASH",
           items: [
             {
-              serviceType: newServiceType,
+              serviceType: newServiceType === "STAND_ACRYLIC" ? "STAND" : newServiceType,
               title: newTitle.trim() || defaultTitle,
               width: parseFloat(newWidth) || 0,
               height: parseFloat(newHeight) || 0,
@@ -648,8 +649,9 @@ export default function TelegramMiniApp() {
               </label>
               <div className="grid grid-cols-2 gap-2 text-xs">
                 {[
-                  { id: "LIGHTBOX", label: "📦 Короб из акрила (свет)", rate: 850000, master: "Абзал" },
+                  { id: "STAND_ACRYLIC", label: "💎 Стенд из оргстекла", rate: 240000, master: "Абзал" },
                   { id: "STAND", label: "📋 Стенд из Фомекса", rate: 240000, master: "Абзал" },
+                  { id: "LIGHTBOX", label: "📦 Короб из акрила (свет)", rate: 850000, master: "Абзал" },
                   { id: "BANNER", label: "🖨️ Баннер 3.2м", rate: 35000, master: "Альберт" },
                   { id: "LETTERS", label: "💡 Буквы LED", rate: 6000, master: "Абзал" },
                   { id: "ORACAL", label: "🎨 Пленка Oracal", rate: 50000, master: "Альберт" },
@@ -676,43 +678,97 @@ export default function TelegramMiniApp() {
             </div>
 
             {/* Размеры */}
-            <div className="grid grid-cols-3 gap-2 text-xs">
-              <div>
-                <label className="block text-[11px] font-bold text-slate-400 mb-1">
-                  Ширина (м)
-                </label>
-                <input
-                  type="number"
-                  step="0.05"
-                  value={newWidth}
-                  onChange={(e) => setNewWidth(e.target.value)}
-                  className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-xl font-mono text-white text-xs font-bold"
-                />
+            <div className="space-y-2">
+              <div className="grid grid-cols-3 gap-2 text-xs">
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-400 mb-1">
+                    Ширина (м)
+                  </label>
+                  <input
+                    type="number"
+                    step="0.05"
+                    value={newWidth}
+                    onChange={(e) => setNewWidth(e.target.value)}
+                    className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-xl font-mono text-white text-xs font-bold"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-400 mb-1">
+                    Высота (м)
+                  </label>
+                  <input
+                    type="number"
+                    step="0.05"
+                    value={newHeight}
+                    onChange={(e) => setNewHeight(e.target.value)}
+                    className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-xl font-mono text-white text-xs font-bold"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-400 mb-1">
+                    Кол-во (шт)
+                  </label>
+                  <div className="flex items-center">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        triggerHaptic("light");
+                        setNewQuantity(Math.max(1, newQuantity - 1));
+                      }}
+                      className="w-7 h-[34px] rounded-l-xl bg-slate-800 border-y border-l border-slate-700 text-white font-bold text-xs flex items-center justify-center active:scale-95"
+                    >
+                      -
+                    </button>
+                    <input
+                      type="number"
+                      min="1"
+                      value={newQuantity}
+                      onChange={(e) => setNewQuantity(Math.max(1, parseInt(e.target.value) || 1))}
+                      className="w-full h-[34px] text-center bg-slate-800 border-y border-slate-700 font-mono text-white text-xs font-bold focus:outline-none"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => {
+                        triggerHaptic("light");
+                        setNewQuantity(newQuantity + 1);
+                      }}
+                      className="w-7 h-[34px] rounded-r-xl bg-slate-800 border-y border-r border-slate-700 text-white font-bold text-xs flex items-center justify-center active:scale-95"
+                    >
+                      +
+                    </button>
+                  </div>
+                </div>
               </div>
-              <div>
-                <label className="block text-[11px] font-bold text-slate-400 mb-1">
-                  Высота (м)
-                </label>
-                <input
-                  type="number"
-                  step="0.05"
-                  value={newHeight}
-                  onChange={(e) => setNewHeight(e.target.value)}
-                  className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-xl font-mono text-white text-xs font-bold"
-                />
-              </div>
-              <div>
-                <label className="block text-[11px] font-bold text-slate-400 mb-1">
-                  Кол-во (шт)
-                </label>
-                <input
-                  type="number"
-                  min="1"
-                  value={newQuantity}
-                  onChange={(e) => setNewQuantity(Math.max(1, parseInt(e.target.value) || 1))}
-                  className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-xl font-mono text-white text-xs font-bold"
-                />
-              </div>
+
+              {/* Быстрые размеры для стендов */}
+              {(newServiceType === "STAND" || newServiceType === "STAND_ACRYLIC") && (
+                <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
+                  {[
+                    { label: "0.6 × 0.9 м (5 шт) • Пример", w: "0.6", h: "0.9", q: 5 },
+                    { label: "1.0 × 0.8 м (1 шт)", w: "1.0", h: "0.8", q: 1 },
+                    { label: "1.2 × 0.8 м (2 шт)", w: "1.2", h: "0.8", q: 2 },
+                    { label: "0.5 × 0.7 м (3 шт)", w: "0.5", h: "0.7", q: 3 },
+                  ].map((p) => (
+                    <button
+                      key={p.label}
+                      type="button"
+                      onClick={() => {
+                        triggerHaptic("light");
+                        setNewWidth(p.w);
+                        setNewHeight(p.h);
+                        setNewQuantity(p.q);
+                      }}
+                      className={`px-2 py-1 rounded-lg text-[10px] font-bold border transition ${
+                        newWidth === p.w && newHeight === p.h && newQuantity === p.q
+                          ? "bg-emerald-600 text-white border-emerald-500 shadow-2xs"
+                          : "bg-slate-800 text-slate-300 border-slate-700 hover:bg-slate-700"
+                      }`}
+                    >
+                      {p.label}
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
 
             {/* СУММА ЗА КВАДРАТНЫЙ МЕТР (ВРУЧНУЮ) */}
@@ -722,7 +778,7 @@ export default function TelegramMiniApp() {
                   Сумма за 1 м² (вручную в UZS) *
                 </label>
                 <span className="text-amber-400 font-mono font-bold">
-                  {newCalculatedArea.toFixed(2)} м²
+                  Общий: {newCalculatedArea.toFixed(2)} м²
                 </span>
               </div>
               <input
@@ -734,9 +790,16 @@ export default function TelegramMiniApp() {
                 className="w-full px-3 py-2 bg-slate-900 border-2 border-amber-500 rounded-xl font-mono text-amber-300 text-sm font-black focus:outline-none"
               />
 
-              {/* Пресеты для короба и других услуг */}
+              {/* Пресеты тарифов */}
               <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
-                {[750000, 850000, 950000, 1200000].map((rate) => (
+                {(newServiceType === "STAND" || newServiceType === "STAND_ACRYLIC"
+                  ? [220000, 240000, 280000, 350000, 450000]
+                  : newServiceType === "BANNER"
+                  ? [30000, 35000, 45000, 60000]
+                  : newServiceType === "LETTERS"
+                  ? [4500, 6000, 8000, 12000]
+                  : [750000, 850000, 950000, 1200000]
+                ).map((rate) => (
                   <button
                     key={rate}
                     type="button"
@@ -753,6 +816,32 @@ export default function TelegramMiniApp() {
                     {(rate / 1000).toFixed(0)}k сум
                   </button>
                 ))}
+              </div>
+            </div>
+
+            {/* Наглядная карточка 4 шагов расчета */}
+            <div className="p-3 bg-slate-900/90 rounded-2xl border border-slate-800 space-y-2">
+              <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400 flex items-center justify-between">
+                <span>Пошаговый расчет изделия:</span>
+                <span className="text-emerald-400 font-mono">1 шт: {newSingleArea.toFixed(2)} м²</span>
+              </div>
+              <div className="grid grid-cols-2 gap-2 text-xs">
+                <div className="p-2 bg-slate-800/80 rounded-xl border border-slate-700">
+                  <span className="text-[9px] text-slate-400 block font-bold uppercase">1. Размер & Кол-во:</span>
+                  <span className="font-mono text-white font-bold">{newWidth} × {newHeight} м • <span className="text-amber-300">{newQuantity} шт</span></span>
+                </div>
+                <div className="p-2 bg-slate-800/80 rounded-xl border border-slate-700">
+                  <span className="text-[9px] text-slate-400 block font-bold uppercase">2. Общий квадрат:</span>
+                  <span className="font-mono text-cyan-300 font-bold">{newCalculatedArea.toFixed(2)} м²</span>
+                </div>
+                <div className="p-2 bg-slate-800/80 rounded-xl border border-slate-700">
+                  <span className="text-[9px] text-slate-400 block font-bold uppercase">3. Сумма за кв:</span>
+                  <span className="font-mono text-white font-bold">{newRatePerUnit.toLocaleString()} UZS</span>
+                </div>
+                <div className="p-2 bg-emerald-950/80 rounded-xl border border-emerald-500/40">
+                  <span className="text-[9px] text-emerald-400 block font-bold uppercase">4. Общая сумма:</span>
+                  <span className="font-mono text-emerald-300 font-black">{newCalculatedTotal.toLocaleString()} UZS</span>
+                </div>
               </div>
             </div>
 
@@ -878,13 +967,35 @@ export default function TelegramMiniApp() {
                 <label className="block text-[11px] font-bold text-slate-400 mb-1">
                   Кол-во (шт)
                 </label>
-                <input
-                  type="number"
-                  min="1"
-                  value={calcQty}
-                  onChange={(e) => setCalcQty(Math.max(1, parseInt(e.target.value) || 1))}
-                  className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-xl font-mono text-amber-300 text-xs font-bold"
-                />
+                <div className="flex items-center">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      triggerHaptic("light");
+                      setCalcQty(Math.max(1, calcQty - 1));
+                    }}
+                    className="w-7 h-[34px] rounded-l-xl bg-slate-800 border-y border-l border-slate-700 text-white font-bold text-xs flex items-center justify-center active:scale-95"
+                  >
+                    -
+                  </button>
+                  <input
+                    type="number"
+                    min="1"
+                    value={calcQty}
+                    onChange={(e) => setCalcQty(Math.max(1, parseInt(e.target.value) || 1))}
+                    className="w-full h-[34px] text-center bg-slate-800 border-y border-slate-700 font-mono text-amber-300 text-xs font-bold focus:outline-none"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      triggerHaptic("light");
+                      setCalcQty(calcQty + 1);
+                    }}
+                    className="w-7 h-[34px] rounded-r-xl bg-slate-800 border-y border-r border-slate-700 text-white font-bold text-xs flex items-center justify-center active:scale-95"
+                  >
+                    +
+                  </button>
+                </div>
               </div>
               <div>
                 <label className="block text-[11px] font-bold text-slate-400 mb-1">
