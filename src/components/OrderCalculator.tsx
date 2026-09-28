@@ -860,8 +860,8 @@ export function OrderCalculator({ employees }: { employees: any[] }) {
                       </div>
 
                       <div>
-                        <label className="block text-[10px] font-bold text-slate-500 mb-1">
-                          Кол-во (шт)
+                        <label className="block text-[10px] font-bold text-blue-700 mb-1">
+                          Кол-во (шт) *
                         </label>
                         <input
                           type="number"
@@ -873,7 +873,7 @@ export function OrderCalculator({ employees }: { employees: any[] }) {
                             const val = e.target.value;
                             updateItem(item.id, { quantity: val === "" ? 1 : Math.max(1, parseInt(val, 10)) });
                           }}
-                          className="w-full px-3 py-1.5 bg-white border border-slate-300 rounded-lg font-mono font-bold text-xs focus:border-blue-600 focus:outline-none text-center"
+                          className="w-full px-3 py-1.5 bg-white border-2 border-blue-500 rounded-lg font-mono font-black text-xs text-blue-950 focus:outline-none text-center shadow-xs"
                         />
                       </div>
 
@@ -914,7 +914,7 @@ export function OrderCalculator({ employees }: { employees: any[] }) {
                   </div>
                 ) : item.serviceType === "LETTERS" ? (
                   <div className="space-y-2">
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 text-xs">
+                    <div className="grid grid-cols-2 sm:grid-cols-5 gap-2.5 text-xs">
                       <div className="col-span-2">
                         <label className="block text-[10px] font-bold text-slate-500 mb-1">
                           Текст вывески ({item.letterCount || 0} симв.)
@@ -941,6 +941,24 @@ export function OrderCalculator({ employees }: { employees: any[] }) {
                             updateItem(item.id, { letterHeight: val === "" ? undefined : Number(val) });
                           }}
                           className="w-full px-3 py-1.5 bg-white border border-slate-300 rounded-lg font-mono font-bold text-xs focus:border-blue-600 focus:outline-none"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-[10px] font-bold text-blue-700 mb-1">
+                          Кол-во (шт) *
+                        </label>
+                        <input
+                          type="number"
+                          min="1"
+                          step="1"
+                          placeholder="1"
+                          value={item.quantity ?? 1}
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            updateItem(item.id, { quantity: val === "" ? 1 : Math.max(1, parseInt(val, 10)) });
+                          }}
+                          className="w-full px-3 py-1.5 bg-white border-2 border-blue-500 rounded-lg font-mono font-black text-xs text-blue-950 focus:outline-none text-center shadow-xs"
                         />
                       </div>
 
@@ -989,7 +1007,7 @@ export function OrderCalculator({ employees }: { employees: any[] }) {
                   </div>
                 ) : item.serviceType === "LIGHTBOX" ? (
                   <div className="space-y-2">
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 text-xs">
+                    <div className="grid grid-cols-2 sm:grid-cols-5 gap-2.5 text-xs">
                       <div>
                         <label className="block text-[10px] font-bold text-slate-500 mb-1">
                           Ширина (м)
@@ -1025,8 +1043,26 @@ export function OrderCalculator({ employees }: { employees: any[] }) {
                       </div>
 
                       <div>
+                        <label className="block text-[10px] font-bold text-blue-700 mb-1">
+                          Кол-во (шт) *
+                        </label>
+                        <input
+                          type="number"
+                          min="1"
+                          step="1"
+                          placeholder="1"
+                          value={item.quantity ?? 1}
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            updateItem(item.id, { quantity: val === "" ? 1 : Math.max(1, parseInt(val, 10)) });
+                          }}
+                          className="w-full px-3 py-1.5 bg-white border-2 border-blue-500 rounded-lg font-mono font-black text-xs text-blue-950 focus:outline-none text-center shadow-xs"
+                        />
+                      </div>
+
+                      <div>
                         <label className="block text-[10px] font-bold text-blue-700 mb-1 flex items-center justify-between">
-                          <span>Сумма за 1 м² (вручную) *</span>
+                          <span>Общий кв. & Тариф</span>
                           <span className="text-[9px] text-slate-400 font-normal">UZS/м²</span>
                         </label>
                         <div className="flex items-center gap-1.5">
@@ -1216,14 +1252,14 @@ export function OrderCalculator({ employees }: { employees: any[] }) {
                         <label className="block text-[10px] font-bold text-emerald-800 mb-1">
                           Кол-во (шт) *
                         </label>
-                        <div className="flex items-center">
+                        <div className="flex items-center gap-1">
                           <button
                             type="button"
                             onClick={() => {
                               const curr = item.quantity || 1;
                               if (curr > 1) updateItem(item.id, { quantity: curr - 1 });
                             }}
-                            className="w-7 h-[30px] rounded-l-lg border border-slate-300 bg-slate-100 hover:bg-slate-200 text-slate-700 font-black text-xs flex items-center justify-center shrink-0 transition"
+                            className="w-7 h-[30px] rounded-lg border border-slate-300 bg-slate-100 hover:bg-slate-200 text-slate-700 font-black text-xs flex items-center justify-center shrink-0 transition active:scale-95"
                           >
                             -
                           </button>
@@ -1237,7 +1273,7 @@ export function OrderCalculator({ employees }: { employees: any[] }) {
                               const val = e.target.value;
                               updateItem(item.id, { quantity: val === "" ? 1 : Math.max(1, parseInt(val, 10)) });
                             }}
-                            className="w-full px-1 py-1.5 text-center bg-white border-y border-slate-300 font-mono font-black text-xs text-slate-900 focus:outline-none"
+                            className="w-full px-2 py-1.5 text-center bg-white border-2 border-emerald-500 rounded-lg font-mono font-black text-xs text-slate-900 focus:outline-none shadow-xs"
                           />
                           <button
                             type="button"
@@ -1245,7 +1281,7 @@ export function OrderCalculator({ employees }: { employees: any[] }) {
                               const curr = item.quantity || 1;
                               updateItem(item.id, { quantity: curr + 1 });
                             }}
-                            className="w-7 h-[30px] rounded-r-lg border border-slate-300 bg-slate-100 hover:bg-slate-200 text-slate-700 font-black text-xs flex items-center justify-center shrink-0 transition"
+                            className="w-7 h-[30px] rounded-lg border border-slate-300 bg-slate-100 hover:bg-slate-200 text-slate-700 font-black text-xs flex items-center justify-center shrink-0 transition active:scale-95"
                           >
                             +
                           </button>
@@ -1655,8 +1691,8 @@ export function OrderCalculator({ employees }: { employees: any[] }) {
                     </div>
 
                     <div>
-                      <label className="block text-[10px] font-bold text-slate-500 mb-1">
-                        Кол-во (шт)
+                      <label className="block text-[10px] font-bold text-blue-700 mb-1">
+                        Кол-во (шт) *
                       </label>
                       <input
                         type="number"
@@ -1668,7 +1704,7 @@ export function OrderCalculator({ employees }: { employees: any[] }) {
                           const val = e.target.value;
                           updateItem(item.id, { quantity: val === "" ? 1 : Math.max(1, parseInt(val, 10)) });
                         }}
-                        className="w-full px-3 py-1.5 bg-white border border-slate-300 rounded-lg font-mono font-bold text-xs focus:border-blue-600 focus:outline-none text-center"
+                        className="w-full px-3 py-1.5 bg-white border-2 border-blue-500 rounded-lg font-mono font-black text-xs text-blue-950 focus:outline-none text-center shadow-xs"
                       />
                     </div>
 
