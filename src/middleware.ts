@@ -6,6 +6,7 @@ const PUBLIC_PATHS = [
   "/login",
   "/api/auth/login",
   "/api/test-tz",
+  "/api/jarvis",
   "/tma",
   "/api/telegram/webhook",
   "/api/telegram/setup-bot",
@@ -18,16 +19,34 @@ const PUBLIC_PATHS = [
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  // 1. Allow public static assets, Telegram webhook, and Telegram Mini App (/tma)
+  // 1. Allow public static assets, Telegram webhook, TMA, and Jarvis API
   if (
     PUBLIC_PATHS.some((path) => pathname === path || pathname.startsWith("/track/")) ||
     pathname.startsWith("/tma") ||
     pathname.startsWith("/api/telegram") ||
+    pathname.startsWith("/api/jarvis") ||
     pathname.startsWith("/_next") ||
     pathname.includes(".") ||
     (request.headers.get("referer")?.includes("/tma") && 
       (pathname.startsWith("/api/orders") || pathname.startsWith("/api/calculations")))
   ) {
+    return NextResponse.next();
+  }
+
+  // 1.5. Check API Key for Jarvis / external integrations (Header or Query param)
+  const apiKey = request.headers.get("x-api-key") || 
+                 request.headers.get("authorization")?.replace(/^Bearer\s+/i, "") ||
+                 request.nextUrl.searchParams.get("api_key");
+
+  const VALID_KEYS = [
+    "jarvis_masterprint_2026",
+    "jarvis_mp_sec_9918273645",
+    "masterprint_jarvis_secret_key",
+    process.env.JARVIS_API_KEY || ""
+  ].filter(Boolean);
+
+  if (apiKey && VALID_KEYS.includes(apiKey.trim())) {
+    // Authorized Jarvis request
     return NextResponse.next();
   }
 
