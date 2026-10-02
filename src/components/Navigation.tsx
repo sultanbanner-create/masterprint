@@ -23,7 +23,8 @@ import {
   Search,
   QrCode,
   Calculator,
-  Sliders
+  Sliders,
+  Receipt
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { GlobalSearchModal } from "@/components/GlobalSearchModal";
@@ -100,6 +101,12 @@ export function Navigation() {
       label: "Склад",
       icon: Warehouse,
       active: pathname.startsWith("/warehouse"),
+    },
+    {
+      href: "/expenses",
+      label: "Расходы",
+      icon: Receipt,
+      active: pathname.startsWith("/expenses"),
     },
     {
       href: "/payroll",

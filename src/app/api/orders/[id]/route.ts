@@ -20,6 +20,7 @@ export async function GET(
         payments: { orderBy: { createdAt: "desc" } },
         comments: { orderBy: { createdAt: "asc" } },
         movements: { include: { material: true } },
+        expenses: { orderBy: { createdAt: "desc" } },
       },
     });
 

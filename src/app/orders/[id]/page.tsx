@@ -32,7 +32,9 @@ import {
   Hammer,
   Square,
   CheckSquare,
-  Edit3
+  Edit3,
+  Receipt,
+  Camera
 } from "lucide-react";
 import { formatCurrency, formatDate, formatDateTime, getDeadlineInfo, STATUS_CONFIG } from "@/lib/utils";
 import { PrintReceipt } from "@/components/PrintReceipt";
@@ -68,6 +70,17 @@ export default function OrderDetailPage({ params }: { params: { id: string } }) 
   const [newCommentText, setNewCommentText] = useState("");
   const [commentPhoto, setNewCommentPhoto] = useState<string | null>(null);
   const [submittingComment, setSubmittingComment] = useState(false);
+
+  // Производственные расходы по наряду
+  const [isExpenseModalOpen, setIsExpenseModalOpen] = useState(false);
+  const [expenseTitle, setExpenseTitle] = useState("");
+  const [expenseAmount, setExpenseAmount] = useState("");
+  const [expenseCategory, setExpenseCategory] = useState("CONSUMABLES");
+  const [expenseSpender, setExpenseSpender] = useState("Абзал");
+  const [expenseNotes, setExpenseNotes] = useState("");
+  const [expenseReceipt, setExpenseReceipt] = useState<string | null>(null);
+  const [submittingExpense, setSubmittingExpense] = useState(false);
+  const [previewReceiptUrl, setPreviewReceiptUrl] = useState<string | null>(null);
 
   // Сжатие фото перед отправкой с камеры смартфона (чтобы 12МБ фото не перегружали сеть и базу)
   const compressImage = (file: File, maxWidth = 1280, quality = 0.75): Promise<string> => {
@@ -246,6 +259,59 @@ export default function OrderDetailPage({ params }: { params: { id: string } }) 
     }
   };
 
+  const handleAddExpense = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!expenseTitle.trim() || !expenseAmount || Number(expenseAmount) <= 0) return;
+    setSubmittingExpense(true);
+    try {
+      const res = await fetch("/api/expenses", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          orderId: order.id,
+          title: expenseTitle.trim(),
+          amount: Number(expenseAmount),
+          category: expenseCategory,
+          spentByName: expenseSpender,
+          receiptUrl: expenseReceipt,
+          notes: expenseNotes.trim() || null,
+        }),
+      });
+
+      if (res.ok) {
+        setIsExpenseModalOpen(false);
+        setExpenseTitle("");
+        setExpenseAmount("");
+        setExpenseNotes("");
+        setExpenseReceipt(null);
+        await loadData();
+      } else {
+        const err = await res.json();
+        alert(err.error || "Не удалось сохранить расход");
+      }
+    } catch (e) {
+      console.error(e);
+      alert("Ошибка при сохранении расхода");
+    } finally {
+      setSubmittingExpense(false);
+    }
+  };
+
+  const handleDeleteExpense = async (id: string) => {
+    if (!confirm("Удалить этот производственный расход?")) return;
+    try {
+      const res = await fetch(`/api/expenses/${id}`, { method: "DELETE" });
+      if (res.ok) {
+        await loadData();
+      } else {
+        alert("Не удалось удалить расход");
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Ошибка при удалении");
+    }
+  };
+
   const handleDeductStock = async () => {
     if (!confirm("Списать баннерную ткань, люверсы, диоды и оракал со склада по этому заказу?")) return;
     setIsDeductingStock(true);
@@ -288,6 +354,10 @@ export default function OrderDetailPage({ params }: { params: { id: string } }) 
     bg: "bg-slate-100",
     border: "border-slate-300",
   };
+
+  const totalExpenses = order.expenses?.reduce((sum: number, e: any) => sum + e.amount, 0) || 0;
+  const netMargin = (order.paidAmount || 0) - totalExpenses;
+  const projectedMargin = (order.totalAmount || 0) - totalExpenses;
 
   return (
     <div className="space-y-6">
@@ -782,6 +852,99 @@ export default function OrderDetailPage({ params }: { params: { id: string } }) 
                 </div>
               </div>
             )}
+
+            {/* Производственные расходы по наряду (краска, шурупы, диоды, металл и т.д.) */}
+            <div className="pt-4 border-t border-slate-200 space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-bold text-slate-700 uppercase flex items-center gap-1.5">
+                  <Receipt className="w-3.5 h-3.5 text-rose-600" />
+                  Производственные расходы по наряду ({order.expenses?.length || 0}):
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setIsExpenseModalOpen(true)}
+                  className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 text-xs font-bold transition shadow-2xs"
+                >
+                  <Plus className="w-3 h-3" />
+                  <span>Внести расход</span>
+                </button>
+              </div>
+
+              {order.expenses && order.expenses.length > 0 ? (
+                <div className="space-y-2">
+                  {order.expenses.map((exp: any) => (
+                    <div
+                      key={exp.id}
+                      className="p-3 rounded-xl bg-rose-50/50 border border-rose-200/80 flex items-center justify-between gap-3 text-xs"
+                    >
+                      <div className="flex items-center gap-3">
+                        <span className="p-2 rounded-lg bg-white border border-rose-200 text-rose-600 shrink-0 font-bold">
+                          {exp.category === "MATERIALS" ? "📦" : exp.category === "TRANSPORT" ? "🚚" : "🛠️"}
+                        </span>
+                        <div>
+                          <div className="font-bold text-slate-900 flex items-center gap-2">
+                            <span>{exp.title}</span>
+                            <span className="text-[10px] text-slate-500 font-normal">
+                              ({exp.spentByName})
+                            </span>
+                          </div>
+                          {exp.notes && (
+                            <div className="text-[11px] text-slate-500 italic">{exp.notes}</div>
+                          )}
+                          <div className="text-[10px] text-slate-400 font-mono">
+                            {formatDateTime(exp.createdAt)}
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-3 shrink-0">
+                        {exp.receiptUrl && (
+                          <button
+                            type="button"
+                            onClick={() => setPreviewReceiptUrl(exp.receiptUrl)}
+                            className="p-1 rounded bg-white border border-slate-200 hover:border-blue-400 transition"
+                            title="Посмотреть чек"
+                          >
+                            <img src={exp.receiptUrl} alt="Чек" className="w-8 h-8 object-cover rounded" />
+                          </button>
+                        )}
+                        <span className="font-mono font-black text-rose-700 text-sm">
+                          -{formatCurrency(exp.amount)}
+                        </span>
+                        {currentUser?.role === "DIRECTOR" && (
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteExpense(exp.id)}
+                            className="p-1 text-slate-400 hover:text-red-600 transition"
+                            title="Удалить расход"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+
+                  <div className="p-2.5 rounded-xl bg-slate-100 flex items-center justify-between text-xs font-bold text-slate-700">
+                    <span>Итого списано на заказ:</span>
+                    <span className="font-mono text-rose-600 text-sm">
+                      -{formatCurrency(totalExpenses)}
+                    </span>
+                  </div>
+                </div>
+              ) : (
+                <div className="p-4 rounded-xl bg-slate-50 border border-dashed border-slate-200 text-center text-xs text-slate-500">
+                  По этому заказу пока нет производственных расходов (краска, шурупы, диоды и т.д.).
+                  <button
+                    type="button"
+                    onClick={() => setIsExpenseModalOpen(true)}
+                    className="block mx-auto mt-1.5 text-rose-600 font-bold hover:underline"
+                  >
+                    + Добавить первый расход
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
 
           {/* Чек-лист контроля качества цеха (ОТК перед сдачей) */}
@@ -1050,20 +1213,51 @@ export default function OrderDetailPage({ params }: { params: { id: string } }) 
                     {formatCurrency(order.debtAmount)}
                   </span>
                 </div>
+
+                <div className="flex items-center justify-between p-3 rounded-xl bg-rose-50 border border-rose-200">
+                  <div>
+                    <span className="text-rose-800 font-semibold block">Производственные расходы:</span>
+                    <span className="text-[10px] text-rose-600">{order.expenses?.length || 0} списаний</span>
+                  </div>
+                  <span className="text-base font-black font-mono text-rose-700">
+                    -{formatCurrency(totalExpenses)}
+                  </span>
+                </div>
+
+                <div className={`flex items-center justify-between p-3 rounded-xl border ${projectedMargin >= 0 ? "bg-teal-50 border-teal-200" : "bg-red-50 border-red-200"}`}>
+                  <div>
+                    <span className="font-bold text-slate-900 block">Чистая маржа наряда:</span>
+                    <span className="text-[10px] text-slate-500">Заказ минус расходы</span>
+                  </div>
+                  <span className={`text-base font-black font-mono ${projectedMargin >= 0 ? "text-teal-700" : "text-red-600"}`}>
+                    {formatCurrency(projectedMargin)}
+                  </span>
+                </div>
               </div>
 
-              {order.debtAmount > 0 && (
+              <div className="space-y-2">
+                {order.debtAmount > 0 && (
+                  <button
+                    onClick={() => {
+                      setPaymentAmount(String(order.debtAmount));
+                      setIsPaymentModalOpen(true);
+                    }}
+                    className="w-full py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs transition flex items-center justify-center gap-1.5 shadow-xs"
+                  >
+                    <Plus className="w-4 h-4" />
+                    Внести оплату ({formatCurrency(order.debtAmount)})
+                  </button>
+                )}
+
                 <button
-                  onClick={() => {
-                    setPaymentAmount(String(order.debtAmount));
-                    setIsPaymentModalOpen(true);
-                  }}
-                  className="w-full py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs transition flex items-center justify-center gap-1.5 shadow-xs"
+                  type="button"
+                  onClick={() => setIsExpenseModalOpen(true)}
+                  className="w-full py-2.5 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 font-bold text-xs transition flex items-center justify-center gap-1.5 shadow-2xs"
                 >
-                  <Plus className="w-4 h-4" />
-                  Внести оплату ({formatCurrency(order.debtAmount)})
+                  <Receipt className="w-4 h-4" />
+                  Списать расход на наряд
                 </button>
-              )}
+              </div>
 
               {/* Журнал платежей */}
               <div className="pt-3 border-t border-slate-100">
@@ -1224,6 +1418,204 @@ export default function OrderDetailPage({ params }: { params: { id: string } }) 
             loadData();
           }}
         />
+      )}
+
+      {/* Модальное окно добавления производственного расхода по наряду */}
+      {isExpenseModalOpen && (
+        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl shadow-xl max-w-md w-full p-6 space-y-4 border border-slate-200">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+              <div className="flex items-center gap-2">
+                <span className="p-2 bg-rose-50 text-rose-600 rounded-xl">
+                  <Receipt className="w-5 h-5" />
+                </span>
+                <div>
+                  <h3 className="font-bold text-sm text-slate-900">
+                    Списать расход на наряд {order.orderNumber}
+                  </h3>
+                  <p className="text-[11px] text-slate-500">{order.title}</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsExpenseModalOpen(false)}
+                className="text-slate-400 hover:text-slate-600 text-sm font-bold p-1"
+              >
+                ✕
+              </button>
+            </div>
+
+            <form onSubmit={handleAddExpense} className="space-y-4 text-xs">
+              <div>
+                <label className="block font-bold text-slate-700 mb-1">Категория расхода</label>
+                <div className="grid grid-cols-2 gap-1.5">
+                  {[
+                    { id: "CONSUMABLES", label: "🛠️ Расходники (краска/шурупы)" },
+                    { id: "MATERIALS", label: "📦 Материалы (акрил/диоды)" },
+                    { id: "TRANSPORT", label: "🚚 Транспорт / Доставка" },
+                    { id: "OTHER", label: "🧾 Прочее" },
+                  ].map((cat) => (
+                    <button
+                      key={cat.id}
+                      type="button"
+                      onClick={() => setExpenseCategory(cat.id)}
+                      className={`p-2 rounded-xl border text-left font-bold text-[11px] transition ${
+                        expenseCategory === cat.id
+                          ? "bg-rose-50 border-rose-300 text-rose-900"
+                          : "bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100"
+                      }`}
+                    >
+                      {cat.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <label className="block font-bold text-slate-700 mb-1">
+                  Наименование расхода *
+                </label>
+                <input
+                  type="text"
+                  required
+                  placeholder="Например: Шурупы 3.5х25, Краска матовая, Диоды 50 шт"
+                  value={expenseTitle}
+                  onChange={(e) => setExpenseTitle(e.target.value)}
+                  className="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl focus:bg-white focus:border-rose-500 focus:outline-none"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block font-bold text-slate-700 mb-1">
+                    Сумма (UZS) *
+                  </label>
+                  <input
+                    type="number"
+                    required
+                    min="1"
+                    placeholder="45 000"
+                    value={expenseAmount}
+                    onChange={(e) => setExpenseAmount(e.target.value)}
+                    className="w-full px-3 py-2 font-mono font-bold text-sm bg-slate-50 border border-slate-300 rounded-xl focus:bg-white focus:border-rose-500 focus:outline-none text-rose-700"
+                  />
+                </div>
+
+                <div>
+                  <label className="block font-bold text-slate-700 mb-1">
+                    Кто списал
+                  </label>
+                  <select
+                    value={expenseSpender}
+                    onChange={(e) => setExpenseSpender(e.target.value)}
+                    className="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl focus:bg-white focus:border-rose-500 focus:outline-none font-medium"
+                  >
+                    <option value="Абзал">Абзал (Сборка & Монтаж)</option>
+                    <option value="Альберт">Альберт (Печать)</option>
+                    <option value="Жалгас">Жалгас (Менеджер & Дизайн)</option>
+                    <option value="Тимур">Тимур (Директор)</option>
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label className="block font-bold text-slate-700 mb-1">
+                  Фото чека / квитанции (опционально)
+                </label>
+                <div className="flex items-center gap-3">
+                  <label className="cursor-pointer inline-flex items-center gap-2 px-3 py-2 rounded-xl border border-slate-300 bg-slate-50 hover:bg-slate-100 font-bold text-slate-700 transition">
+                    <Camera className="w-4 h-4 text-rose-600" />
+                    <span>Сфотографировать / Чек</span>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={async (e) => {
+                        const file = e.target.files?.[0];
+                        if (file) {
+                          try {
+                            const b64 = await compressImage(file);
+                            setExpenseReceipt(b64);
+                          } catch (err) {
+                            console.error(err);
+                          }
+                        }
+                      }}
+                    />
+                  </label>
+                  {expenseReceipt && (
+                    <div className="flex items-center gap-2">
+                      <img
+                        src={expenseReceipt}
+                        alt="Чек"
+                        className="w-10 h-10 object-cover rounded-lg border border-slate-200"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setExpenseReceipt(null)}
+                        className="text-red-500 hover:underline text-[11px]"
+                      >
+                        Удалить
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div>
+                <label className="block font-bold text-slate-700 mb-1">
+                  Примечание
+                </label>
+                <input
+                  type="text"
+                  placeholder="Где куплено, магазин или комментарий..."
+                  value={expenseNotes}
+                  onChange={(e) => setExpenseNotes(e.target.value)}
+                  className="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl focus:bg-white focus:border-rose-500 focus:outline-none"
+                />
+              </div>
+
+              <div className="pt-2 flex items-center justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => setIsExpenseModalOpen(false)}
+                  className="px-4 py-2 rounded-xl border border-slate-300 text-slate-600 font-bold hover:bg-slate-50 transition"
+                >
+                  Отмена
+                </button>
+                <button
+                  type="submit"
+                  disabled={submittingExpense}
+                  className="px-5 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-bold transition shadow-xs disabled:opacity-50"
+                >
+                  {submittingExpense ? "Сохранение..." : "Списать расход"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Просмотр чека */}
+      {previewReceiptUrl && (
+        <div
+          className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4"
+          onClick={() => setPreviewReceiptUrl(null)}
+        >
+          <div className="relative max-w-2xl max-h-[85vh] bg-white rounded-2xl overflow-hidden p-2 shadow-2xl">
+            <button
+              onClick={() => setPreviewReceiptUrl(null)}
+              className="absolute top-4 right-4 p-2 bg-black/60 text-white rounded-full hover:bg-black/80 transition"
+            >
+              ✕
+            </button>
+            <img
+              src={previewReceiptUrl}
+              alt="Чек"
+              className="max-h-[80vh] w-auto object-contain rounded-xl mx-auto"
+            />
+          </div>
+        </div>
       )}
     </div>
   );

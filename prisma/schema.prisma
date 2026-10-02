@@ -59,6 +59,7 @@ model Order {
   comments       OrderComment[]
   movements      StockMovement[]
   payouts        SalaryPayout[]
+  expenses       Expense[]
   createdAt      DateTime        @default(now())
   updatedAt      DateTime        @updatedAt
 
@@ -202,4 +203,22 @@ model EquipmentLog {
   cost        Float     @default(0)
   notes       String?
   createdAt   DateTime  @default(now())
+}
+
+model Expense {
+  id          String    @id @default(cuid())
+  orderId     Int?
+  order       Order?    @relation(fields: [orderId], references: [id], onDelete: SetNull)
+  title       String    // Описание расхода (краска, шурупы, диоды, акрил, фомекс, профиль и т.д.)
+  amount      Float     // Сумма в сумах (UZS)
+  category    String    @default("CONSUMABLES") // MATERIALS (акрил, фомекс, диоды), CONSUMABLES (краска, шурупы, клей), TRANSPORT (доставка, бензин), OTHER (прочее)
+  spentByName String    @default("Цех") // Кто списал/потратил (Абзал, Альберт, Жалгас, Тимур)
+  receiptUrl  String?   // Фото чека / накладной / квитанции
+  notes       String?   // Дополнительный комментарий
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([orderId])
+  @@index([category])
+  @@index([createdAt])
 }

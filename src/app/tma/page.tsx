@@ -1099,6 +1099,25 @@ export default function TelegramMiniApp() {
               </div>
             </div>
 
+            {/* Быстрый переход в расходы */}
+            <div className="p-4 bg-slate-900 rounded-3xl border border-slate-800 space-y-2">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2.5">
+                  <span className="p-2 bg-rose-500/20 text-rose-400 rounded-xl text-base">💸</span>
+                  <div>
+                    <h3 className="text-xs font-black text-white">Производственные расходы</h3>
+                    <p className="text-[10px] text-slate-400">Краска, шурупы, диоды, акрил, доставка</p>
+                  </div>
+                </div>
+                <Link
+                  href="/expenses"
+                  className="px-3.5 py-1.5 bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs rounded-xl transition"
+                >
+                  Открыть
+                </Link>
+              </div>
+            </div>
+
             {/* Команда мастеров */}
             <div className="p-4 bg-slate-900 rounded-3xl border border-slate-800 space-y-3">
               <h3 className="text-xs font-black text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
