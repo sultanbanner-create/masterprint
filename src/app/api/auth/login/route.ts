@@ -52,7 +52,7 @@ export async function POST(req: Request) {
 
     if (!employee) {
       return NextResponse.json(
-        { error: `Сотрудник "${rawLogin}" не найден. Доступные логины: timur, zhalgas, abzal, albert` },
+        { error: "Неверный логин или пароль" },
         { status: 401 }
       );
     }

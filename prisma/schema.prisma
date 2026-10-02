@@ -61,6 +61,11 @@ model Order {
   payouts        SalaryPayout[]
   createdAt      DateTime        @default(now())
   updatedAt      DateTime        @updatedAt
+
+  @@index([clientId])
+  @@index([assignedToId])
+  @@index([status])
+  @@index([createdAt])
 }
 
 model OrderItem {
@@ -79,6 +84,8 @@ model OrderItem {
   options      String? // Опции (люверсы, проклейка, LED модули, каркас)
   unitPrice    Float   @default(0)
   totalPrice   Float   @default(0)
+
+  @@index([orderId])
 }
 
 model Payment {
@@ -93,6 +100,10 @@ model Payment {
   acceptedBy  String?   // Тимур (Руководитель)
   acceptedAt  DateTime?
   createdAt   DateTime  @default(now())
+
+  @@index([orderId])
+  @@index([status])
+  @@index([createdAt])
 }
 
 model OrderComment {
@@ -105,6 +116,8 @@ model OrderComment {
   text       String
   photoUrl   String?   // Фотоотчет с монтажа или производства
   createdAt  DateTime  @default(now())
+
+  @@index([orderId])
 }
 
 model StockMaterial {
@@ -117,6 +130,8 @@ model StockMaterial {
   costPerUnit  Float           @default(0)
   movements    StockMovement[]
   updatedAt    DateTime        @updatedAt
+
+  @@index([category])
 }
 
 model StockMovement {
@@ -129,6 +144,10 @@ model StockMovement {
   quantity    Float
   description String?
   createdAt   DateTime      @default(now())
+
+  @@index([materialId])
+  @@index([orderId])
+  @@index([type])
 }
 
 model SalaryPayout {
@@ -141,6 +160,9 @@ model SalaryPayout {
   type        String    @default("PIECE_RATE") // PIECE_RATE, ADVANCE, BONUS, SALARY
   description String?
   createdAt   DateTime  @default(now())
+
+  @@index([employeeId])
+  @@index([orderId])
 }
 
 model TelegramSetting {
