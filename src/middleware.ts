@@ -67,8 +67,21 @@ export function middleware(request: NextRequest) {
     const [base64Data] = sessionCookie.split(".");
     if (!base64Data) throw new Error("Invalid token format");
     
-    // Base64Url decode in standard JS
-    const jsonStr = atob(base64Data.replace(/-/g, "+").replace(/_/g, "/"));
+    // Base64Url decode in standard JS with padding and UTF-8 safety
+    let b64 = base64Data.replace(/-/g, "+").replace(/_/g, "/");
+    while (b64.length % 4) b64 += "=";
+    
+    let jsonStr: string;
+    try {
+      jsonStr = decodeURIComponent(
+        atob(b64)
+          .split("")
+          .map((c) => "%" + ("00" + c.charCodeAt(0).toString(16)).slice(-2))
+          .join("")
+      );
+    } catch {
+      jsonStr = atob(b64);
+    }
     const user = JSON.parse(jsonStr);
 
     if (user.exp && user.exp < Date.now()) {
