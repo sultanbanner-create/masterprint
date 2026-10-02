@@ -31,13 +31,15 @@ import {
   Zap,
   Hammer,
   Square,
-  CheckSquare
+  CheckSquare,
+  Edit3
 } from "lucide-react";
 import { formatCurrency, formatDate, formatDateTime, getDeadlineInfo, STATUS_CONFIG } from "@/lib/utils";
 import { PrintReceipt } from "@/components/PrintReceipt";
 import { CommercialProposal } from "@/components/CommercialProposal";
 import { AcceptanceAct } from "@/components/AcceptanceAct";
 import { ClientWhatsAppModal } from "@/components/ClientWhatsAppModal";
+import { EditOrderModal } from "@/components/EditOrderModal";
 
 export default function OrderDetailPage({ params }: { params: { id: string } }) {
   const router = useRouter();
@@ -49,6 +51,7 @@ export default function OrderDetailPage({ params }: { params: { id: string } }) 
   const [isProposalOpen, setIsProposalOpen] = useState(false);
   const [isActOpen, setIsActOpen] = useState(false);
   const [isWhatsAppOpen, setIsWhatsAppOpen] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
   // Списание материалов со склада
   const [isDeductingStock, setIsDeductingStock] = useState(false);
@@ -313,6 +316,19 @@ export default function OrderDetailPage({ params }: { params: { id: string } }) 
         </div>
 
         <div className="flex items-center gap-2.5 flex-wrap">
+          {/* Редактирование наряда (ТОЛЬКО ДЛЯ АДМИНИСТРАТОРА/ТИМУРА) */}
+          {currentUser?.role === "DIRECTOR" && (
+            <button
+              type="button"
+              onClick={() => setIsEditModalOpen(true)}
+              className="px-3.5 py-2 rounded-xl bg-purple-600 hover:bg-purple-700 text-white text-xs font-black transition flex items-center gap-1.5 shadow-sm shadow-purple-600/30 active:scale-95"
+              title="Полное редактирование наряда, позиций, клиента и цен (Доступно только Директору)"
+            >
+              <Edit3 className="w-4 h-4 text-purple-200" />
+              <span>Редактировать наряд</span>
+            </button>
+          )}
+
           {/* Смена мастера */}
           <div className="flex items-center gap-1.5 bg-slate-50 px-2.5 py-1.5 rounded-xl border border-slate-200">
             <span className="text-[11px] font-bold text-slate-400 uppercase">Мастер:</span>
@@ -1193,6 +1209,20 @@ export default function OrderDetailPage({ params }: { params: { id: string } }) 
           onClose={() => setIsWhatsAppOpen(false)}
           client={order.client}
           order={order}
+        />
+      )}
+
+      {/* Модальное окно полного редактирования заказа (Только для Директора / Админа) */}
+      {currentUser?.role === "DIRECTOR" && (
+        <EditOrderModal
+          order={order}
+          employees={employees}
+          isOpen={isEditModalOpen}
+          onClose={() => setIsEditModalOpen(false)}
+          onOrderUpdated={(updated) => {
+            setOrder(updated);
+            loadData();
+          }}
         />
       )}
     </div>
