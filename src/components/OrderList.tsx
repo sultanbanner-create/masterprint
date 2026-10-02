@@ -58,14 +58,20 @@ export function OrderList({ initialOrders, employees, currentUser }: OrderListPr
   };
 
   useEffect(() => {
-    // 1. Свежие данные из базы при монтировании
-    reloadOrders();
+    // Фоновый опрос каждые 12 сек только если вкладка активна
+    const timer = setInterval(() => {
+      if (typeof document !== "undefined" && !document.hidden) {
+        reloadOrders();
+      }
+    }, 12000);
 
-    // 2. Фоновый опрос каждые 4 сек (новые наряды появляются у мастеров автоматически)
-    const timer = setInterval(reloadOrders, 4000);
+    // Мгновенное обновление при возврате на вкладку или разблокировке смартфона
+    const onFocus = () => {
+      if (typeof document !== "undefined" && !document.hidden) {
+        reloadOrders();
+      }
+    };
 
-    // 3. Мгновенное обновление при возврате на вкладку или разблокировке смартфона
-    const onFocus = () => reloadOrders();
     window.addEventListener("focus", onFocus);
     window.addEventListener("visibilitychange", onFocus);
 

@@ -36,7 +36,10 @@ export async function GET(req: Request) {
       orderBy: { createdAt: "desc" },
     });
 
-    return NextResponse.json(orders);
+    const includePreview = searchParams.get("includePreview") === "true";
+    const result = includePreview ? orders : orders.map(({ previewUrl, ...o }) => o);
+
+    return NextResponse.json(result);
   } catch (error) {
     console.error("Error fetching orders:", error);
     return NextResponse.json({ error: "Failed to fetch orders" }, { status: 500 });

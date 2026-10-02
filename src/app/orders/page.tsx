@@ -27,6 +27,8 @@ export default async function OrdersPage() {
     prisma.employee.findMany(),
   ]);
 
+  const sanitizedOrders = orders.map(({ previewUrl, ...o }) => o);
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-slate-200">
@@ -62,7 +64,7 @@ export default async function OrdersPage() {
       </div>
 
       <OrderList
-        initialOrders={orders}
+        initialOrders={sanitizedOrders}
         employees={employees}
         currentUser={currentUser}
       />

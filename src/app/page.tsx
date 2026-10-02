@@ -53,6 +53,9 @@ export default async function DashboardPage() {
     }),
   ]);
 
+  // Очищаем тяжелые base64 изображения из списка для ускорения загрузки HTML страницы
+  const sanitizedOrders = orders.map(({ previewUrl, ...o }) => o);
+
   // Расчет персональной выработки сотрудника (с учетом специфики цеха)
   const isAlbert = currentUser?.role === "WORKSHOP_PRINTING" || currentUser?.name === "Альберт";
   const isAbzal = currentUser?.role === "WORKSHOP_ASSEMBLY" || currentUser?.name === "Абзал";
@@ -268,7 +271,7 @@ export default async function DashboardPage() {
         </div>
 
         {/* Автоматически обновляемый список нарядов в цехе (с табами и галочкой выполнения) */}
-        <DashboardActiveOrders initialOrders={orders} currentUser={currentUser} />
+        <DashboardActiveOrders initialOrders={sanitizedOrders} currentUser={currentUser} />
       </div>
     );
   }
@@ -458,10 +461,10 @@ export default async function DashboardPage() {
       </div>
 
       {/* Живой реестр активных нарядов цеха в реальном времени с галочками */}
-      <DashboardActiveOrders initialOrders={orders} currentUser={currentUser} />
+      <DashboardActiveOrders initialOrders={sanitizedOrders} currentUser={currentUser} />
 
       {/* Планировщик смен мастеров */}
-      <DailyShiftPlanner employees={employees} orders={orders} />
+      <DailyShiftPlanner employees={employees} orders={sanitizedOrders} />
     </div>
   );
 }
