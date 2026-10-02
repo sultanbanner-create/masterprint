@@ -28,7 +28,7 @@ export function middleware(request: NextRequest) {
     pathname.startsWith("/_next") ||
     pathname.includes(".") ||
     (request.headers.get("referer")?.includes("/tma") && 
-      (pathname.startsWith("/api/orders") || pathname.startsWith("/api/calculations")))
+      (pathname.startsWith("/api/orders") || pathname.startsWith("/api/calculations") || pathname.startsWith("/api/expenses")))
   ) {
     return NextResponse.next();
   }

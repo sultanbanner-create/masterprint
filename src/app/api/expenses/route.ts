@@ -8,7 +8,7 @@ export const dynamic = "force-dynamic";
 // Helper для проверки сессии (опционально, если пользователь залогинен в вебе)
 async function getCurrentUser() {
   const cookieStore = await cookies();
-  const token = cookieStore.get("auth_token")?.value;
+  const token = cookieStore.get("mp_auth_session")?.value || cookieStore.get("auth_token")?.value;
   if (!token) return null;
   return verifyToken(token);
 }
