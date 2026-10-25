@@ -1,4 +1,4 @@
-﻿export interface NukusBoxModel {
+export interface NukusBoxModel {
   id: string;
   name: string;
   dimensions: string;
@@ -10,9 +10,25 @@
 
 export const NUKUS_BOX_CATALOG: NukusBoxModel[] = [
   {
+    id: "small_oval",
+    name: "Маленькие овальные",
+    dimensions: "Малый формат",
+    price: 50000,
+    colors: ["Черный", "Белый"],
+    description: "Компактная овальная коробка для букетов и композиций",
+  },
+  {
+    id: "hearts",
+    name: "Сердечки",
+    dimensions: "Стандарт",
+    price: 60000,
+    colors: ["Черный", "Белый"],
+    description: "Фигурная подарочная коробка в форме сердца",
+  },
+  {
     id: "cylinder_20_20",
     name: "Цилиндр",
-    dimensions: "20?20 см",
+    dimensions: "20×20 см",
     price: 60000,
     colors: ["Черный", "Белый"],
     description: "Классическая круглая коробка цилиндр",
@@ -20,7 +36,7 @@ export const NUKUS_BOX_CATALOG: NukusBoxModel[] = [
   {
     id: "oval_20_30",
     name: "Овальные",
-    dimensions: "20?30 см",
+    dimensions: "20×30 см",
     price: 60000,
     colors: ["Черный", "Белый"],
     description: "Элегантная овальная коробка для цветов и подарков",
@@ -44,7 +60,7 @@ export const NUKUS_BOX_CATALOG: NukusBoxModel[] = [
   {
     id: "big_round_46_45",
     name: "Большие круглые",
-    dimensions: "46?45 см",
+    dimensions: "46×45 см",
     price: 190000,
     colors: ["Черный", "Белый"],
     description: "Большая глубокая круглая коробка под композиции",
@@ -52,7 +68,7 @@ export const NUKUS_BOX_CATALOG: NukusBoxModel[] = [
   {
     id: "tandyr_60_60",
     name: "Тандыр",
-    dimensions: "60?60 см",
+    dimensions: "60×60 см",
     price: 400000,
     colors: ["Черный", "Белый"],
     description: "Крупногабаритная коробка супер-формата «Тандыр»",

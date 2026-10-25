@@ -60,10 +60,10 @@ export async function GET() {
       order.items.forEach((item) => {
         totalBoxesCount += item.quantity;
 
-        // Поиск модели по заголовку или названию
-        const found = NUKUS_BOX_CATALOG.find((m) =>
-          item.title.toLowerCase().includes(m.name.toLowerCase())
-        );
+        // Поиск модели по заголовку или названию (сначала более длинные названия, чтобы «Маленькие овальные» не путались с «Овальные»)
+        const found = [...NUKUS_BOX_CATALOG]
+          .sort((a, b) => b.name.length - a.name.length)
+          .find((m) => item.title.toLowerCase().includes(m.name.toLowerCase()));
 
         const key = found ? found.id : "cylinder_20_20";
         if (modelStats[key]) {

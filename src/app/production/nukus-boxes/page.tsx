@@ -542,7 +542,7 @@ export default function NukusBoxesProductionPage() {
               Отгружено коробок
             </span>
             <span className="text-[10px] px-2 py-0.5 rounded-full bg-blue-100 text-blue-800 font-black">
-              7 моделей
+              {NUKUS_BOX_CATALOG.length} моделей
             </span>
           </div>
           <div className="text-2xl font-black text-blue-950 font-mono mt-3">
