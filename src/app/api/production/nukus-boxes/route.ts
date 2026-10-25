@@ -92,6 +92,23 @@ export async function GET() {
       0
     );
 
+    const orderIds = orders.map((o) => o.id);
+    const ulugbekPayments = await prisma.payment.findMany({
+      where: {
+        OR: [
+          ...(orderIds.length > 0 ? [{ orderId: { in: orderIds } }] : []),
+          { notes: { contains: "Нукус гуллери" } },
+          { notes: { contains: "[NUKUS_BOXES]" } },
+        ],
+      },
+      include: {
+        order: {
+          select: { id: true, orderNumber: true, title: true },
+        },
+      },
+      orderBy: { createdAt: "desc" },
+    });
+
     return NextResponse.json({
       success: true,
       client: {
@@ -104,6 +121,7 @@ export async function GET() {
         totalPaid: totalPaidAmount,
         ordersCount: totalOrdersCount,
       },
+      payments: ulugbekPayments,
       stats: {
         totalBoxesCount,
         totalDebtAmount,
@@ -292,6 +310,63 @@ export async function POST(req: Request) {
     console.error("Error creating Nukus boxes order:", error);
     return NextResponse.json(
       { error: error.message || "Ошибка при сохранении партии коробок" },
+      { status: 500 }
+    );
+  }
+}
+
+// PATCH: Ручной возврат партии коробок в статус «Не оплачено» (восстановление долга) для Админа
+export async function PATCH(req: Request) {
+  try {
+    const cookieStore = cookies();
+    const token = cookieStore.get("mp_auth_session")?.value;
+    const currentUser = token ? verifyToken(token) : null;
+
+    if (!currentUser || currentUser.role !== "DIRECTOR") {
+      return NextResponse.json(
+        { error: "Только Администратор / Директор может изменять статус оплаты партии" },
+        { status: 403 }
+      );
+    }
+
+    const body = await req.json();
+    const { orderId, action } = body as { orderId: number; action: "RESET_DEBT" };
+
+    const order = await prisma.order.findUnique({ where: { id: Number(orderId) } });
+    if (!order) {
+      return NextResponse.json({ error: "Партия не найдена" }, { status: 404 });
+    }
+
+    if (action === "RESET_DEBT") {
+      const updated = await prisma.order.update({
+        where: { id: order.id },
+        data: {
+          paidAmount: 0,
+          debtAmount: order.totalAmount,
+          status: order.status === "COMPLETED" ? "READY" : order.status,
+        },
+      });
+
+      await prisma.orderComment.create({
+        data: {
+          orderId: order.id,
+          authorName: `${currentUser.name || "Тимур"} (Админ)`,
+          text: `↩️ Статус оплаты партии сброшен Администратором. Долг восстановлен: ${order.totalAmount.toLocaleString("ru-RU")} сум.`,
+        },
+      }).catch(() => {});
+
+      return NextResponse.json({
+        success: true,
+        order: updated,
+        message: `↩️ Партия ${order.orderNumber} возвращена в неоплаченные! Долг ${order.totalAmount.toLocaleString("ru-RU")} сум восстановлен.`,
+      });
+    }
+
+    return NextResponse.json({ error: "Неизвестное действие" }, { status: 400 });
+  } catch (error: any) {
+    console.error("Error updating Nukus box batch:", error);
+    return NextResponse.json(
+      { error: error.message || "Ошибка при обновлении партии" },
       { status: 500 }
     );
   }

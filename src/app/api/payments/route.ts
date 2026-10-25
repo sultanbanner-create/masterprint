@@ -9,7 +9,6 @@ export async function POST(req: Request) {
     const token = cookieStore.get("mp_auth_session")?.value;
     const authUser = token ? verifyToken(token) : null;
 
-    const isDirector = authUser?.role === "DIRECTOR";
     const currentUserName = authUser?.name || "Жалгас";
 
     const body = await req.json();
@@ -25,13 +24,10 @@ export async function POST(req: Request) {
     const order = await prisma.order.findUnique({ where: { id: numOrderId } });
     if (!order) return NextResponse.json({ error: "Заказ не найден" }, { status: 404 });
 
-    const status = isDirector ? "CONFIRMED" : "PENDING_CONFIRMATION";
-    const acceptedBy = isDirector ? currentUserName : null;
-    const acceptedAt = isDirector ? new Date() : null;
-
-    const paymentNotes = notes || (isDirector 
-      ? "Оплата принята в кассу" 
-      : `Получено менеджером (${receivedBy}) — ожидает подтверждения в кассу`);
+    // Все платежи сначала создаются со статусом PENDING_CONFIRMATION (Ожидает подтверждения Админа),
+    // чтобы избежать случайного списания долга по ошибке!
+    const status = "PENDING_CONFIRMATION";
+    const paymentNotes = notes || `Оплата от клиента (${receivedBy}) — ожидает подтверждения Админа`;
 
     const payment = await prisma.payment.create({
       data: {
@@ -41,33 +37,16 @@ export async function POST(req: Request) {
         status,
         notes: paymentNotes,
         receivedBy,
-        acceptedBy,
-        acceptedAt,
+        acceptedBy: null,
+        acceptedAt: null,
       },
     });
 
-    // Если подтверждено директором — сразу списываем долг
-    if (status === "CONFIRMED") {
-      const newPaid = order.paidAmount + numAmount;
-      const newDebt = Math.max(0, order.totalAmount - newPaid);
-
-      await prisma.order.update({
-        where: { id: numOrderId },
-        data: {
-          paidAmount: newPaid,
-          debtAmount: newDebt,
-        },
-      });
-
-      return NextResponse.json({ success: true, payment, newPaid, newDebt, status });
-    }
-
-    // Если получил Жалгас — платеж ожидает подтверждения директором
     return NextResponse.json({ 
       success: true, 
       payment, 
       status: "PENDING_CONFIRMATION",
-      message: "Оплата зарегистрирована менеджером и ожидает подтверждения директором в кассу" 
+      message: "⏳ Оплата зафиксирована и ожидает подтверждения Администратором (Тимуром) для списания долга и зачисления в кассу." 
     });
   } catch (error) {
     console.error("Payment error:", error);

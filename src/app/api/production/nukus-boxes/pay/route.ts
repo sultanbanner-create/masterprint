@@ -10,10 +10,10 @@ export async function POST(req: Request) {
     const token = cookieStore.get("mp_auth_session")?.value;
     const currentUser = token ? verifyToken(token) : null;
 
-    // Вносить оплату и списывать долг может только директор или менеджер
+    // Вносить оплату может руководитель или менеджер, но списание долга происходит ТОЛЬКО после подтверждения Админом
     if (currentUser && currentUser.role !== "DIRECTOR" && currentUser.role !== "SALES_DESIGNER") {
       return NextResponse.json(
-        { error: "Только руководитель или менеджер может принимать оплату и гасить долг" },
+        { error: "Только руководитель или менеджер может регистрировать оплату" },
         { status: 403 }
       );
     }
@@ -50,60 +50,34 @@ export async function POST(req: Request) {
       );
     }
 
-    let remainingPayment = amount;
-    const affectedOrders: number[] = [];
+    const currentTotalDebt = debtorOrders.reduce((sum, o) => sum + o.debtAmount, 0);
 
-    for (const order of debtorOrders) {
-      if (remainingPayment <= 0) break;
+    // Создаем запись платежа со статусом PENDING_CONFIRMATION (Ожидает подтверждения Админа)
+    // Долг НЕ списывается сразу, чтобы избежать случайных ошибок!
+    const cleanNote = notes?.trim()
+      ? `[NUKUS_BOXES] ${notes.trim()}`
+      : `[NUKUS_BOXES] Оплата за коробки от клиента Улугбек («Нукус гуллери»)`;
 
-      const toPay = Math.min(order.debtAmount, remainingPayment);
-      const newPaid = order.paidAmount + toPay;
-      const newDebt = Math.max(0, order.debtAmount - toPay);
-      const newStatus = newDebt === 0 && order.status === "READY" ? "COMPLETED" : order.status;
-
-      await prisma.order.update({
-        where: { id: order.id },
-        data: {
-          paidAmount: newPaid,
-          debtAmount: newDebt,
-          status: newStatus,
-        },
-      });
-
-      affectedOrders.push(order.id);
-      remainingPayment -= toPay;
-    }
-
-    // Создаем запись платежа в кассу
     const payment = await prisma.payment.create({
       data: {
-        orderId: affectedOrders[0] || debtorOrders[0].id,
-        amount,
+        orderId: debtorOrders[0].id,
+        amount: Number(amount),
         method: method.toUpperCase(),
-        status: "CONFIRMED",
+        status: "PENDING_CONFIRMATION",
         receivedBy: currentUser?.name || "Тимур",
-        acceptedBy: "Тимур (Руководитель)",
-        acceptedAt: new Date(),
-        notes:
-          notes ||
-          `Погашение задолженности за коробки от клиента Улугбек («Нукус гуллери»). Погашено заказов: ${affectedOrders.length}`,
+        acceptedBy: null,
+        acceptedAt: null,
+        notes: cleanNote,
       },
     });
 
-    // Рассчитываем актуальный остаток долга
-    const remainingOrders = await prisma.order.findMany({
-      where: { clientId: ulugbek.id },
-      select: { debtAmount: true },
-    });
-    const updatedTotalDebt = remainingOrders.reduce((sum, o) => sum + o.debtAmount, 0);
-
     return NextResponse.json({
       success: true,
-      message: `Оплата ${amount.toLocaleString()} сум успешно принята в кассу! Новый долг Улугбека: ${updatedTotalDebt.toLocaleString()} сум.`,
+      status: "PENDING_CONFIRMATION",
+      message: `⏳ Оплата ${Number(amount).toLocaleString("ru-RU")} сум зафиксирована! Пожалуйста, проверьте сумму и нажмите «Подтвердить оплату» в блоке подтверждения Админа, чтобы списать долг.`,
       paymentId: payment.id,
-      amount,
-      updatedTotalDebt,
-      affectedOrdersCount: affectedOrders.length,
+      amount: Number(amount),
+      updatedTotalDebt: currentTotalDebt,
     });
   } catch (error: any) {
     console.error("Error processing Ulugbek payment:", error);

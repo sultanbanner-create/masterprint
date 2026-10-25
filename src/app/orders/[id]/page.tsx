@@ -233,6 +233,45 @@ export default function OrderDetailPage({ params }: { params: { id: string } }) 
     }
   };
 
+  const handleConfirmOrderPayment = async (paymentId: string, amount: number) => {
+    if (!confirm(`Подтвердить оплату на сумму ${formatCurrency(amount)} и списать эту сумму с долга заказа?`)) {
+      return;
+    }
+    try {
+      const res = await fetch(`/api/finance/payments/${paymentId}/confirm`, {
+        method: "POST",
+      });
+      if (res.ok) {
+        await loadData();
+      } else {
+        const err = await res.json();
+        alert(err.error || "Ошибка подтверждения");
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const handleRevertOrderPayment = async (paymentId: string, amount: number, isConfirmed: boolean) => {
+    const msg = isConfirmed
+      ? `Отменить проведенную оплату на сумму ${formatCurrency(amount)}? Сумма будет возвращена обратно в долг заказа!`
+      : `Отклонить и удалить неподтвержденный платеж на сумму ${formatCurrency(amount)}?`;
+    if (!confirm(msg)) return;
+    try {
+      const res = await fetch(`/api/finance/payments/${paymentId}/confirm`, {
+        method: "DELETE",
+      });
+      if (res.ok) {
+        await loadData();
+      } else {
+        const err = await res.json();
+        alert(err.error || "Ошибка отмены");
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
   const handleAddComment = async () => {
     if (!newCommentText.trim() && !commentPhoto) return;
     setSubmittingComment(true);
@@ -1239,13 +1278,13 @@ export default function OrderDetailPage({ params }: { params: { id: string } }) 
                 {order.debtAmount > 0 && (
                   <button
                     onClick={() => {
-                      setPaymentAmount(String(order.debtAmount));
+                      setPaymentAmount("");
                       setIsPaymentModalOpen(true);
                     }}
                     className="w-full py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs transition flex items-center justify-center gap-1.5 shadow-xs"
                   >
                     <Plus className="w-4 h-4" />
-                    Внести оплату ({formatCurrency(order.debtAmount)})
+                    Внести оплату (долг: {formatCurrency(order.debtAmount)})
                   </button>
                 )}
 
@@ -1266,25 +1305,76 @@ export default function OrderDetailPage({ params }: { params: { id: string } }) 
                 </span>
 
                 <div className="space-y-2">
-                  {order.payments?.map((p: any) => (
-                    <div
-                      key={p.id}
-                      className="text-xs p-2.5 rounded-lg bg-slate-50 border border-slate-200 flex items-center justify-between"
-                    >
-                      <div>
-                        <div className="font-bold font-mono text-emerald-700">
-                          +{formatCurrency(p.amount)}
+                  {order.payments?.map((p: any) => {
+                    const isPending = p.status === "PENDING_CONFIRMATION";
+                    return (
+                      <div
+                        key={p.id}
+                        className={`text-xs p-2.5 rounded-xl border space-y-2 ${
+                          isPending
+                            ? "bg-amber-50 border-amber-300"
+                            : "bg-slate-50 border-slate-200"
+                        }`}
+                      >
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <div className="flex items-center gap-1.5">
+                              <span className="font-bold font-mono text-emerald-700">
+                                +{formatCurrency(p.amount)}
+                              </span>
+                              {isPending ? (
+                                <span className="px-1.5 py-0.5 rounded bg-amber-200 text-amber-950 text-[9px] font-black">
+                                  ⏳ Ожидает Админа
+                                </span>
+                              ) : (
+                                <span className="px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-800 text-[9px] font-bold">
+                                  ✓ Подтверждено
+                                </span>
+                              )}
+                            </div>
+                            <div className="text-[10px] text-slate-500 mt-0.5">
+                              {p.method === "CASH" ? "Наличные" : p.method === "CARD" ? "Click / Карта" : "Безнал"}
+                              {p.notes ? ` • ${p.notes}` : ""}
+                            </div>
+                          </div>
+                          <span className="text-[10px] text-slate-400 font-mono">
+                            {formatDate(p.createdAt)}
+                          </span>
                         </div>
-                        <div className="text-[10px] text-slate-400">
-                          {p.method === "CASH" ? "Наличные" : p.method === "CARD" ? "Click / Карта" : "Безнал"}
-                          {p.notes ? ` • ${p.notes}` : ""}
-                        </div>
+
+                        {currentUser?.role === "DIRECTOR" && (
+                          <div className="flex items-center gap-1.5 pt-1 border-t border-slate-200/70">
+                            {isPending ? (
+                              <>
+                                <button
+                                  type="button"
+                                  onClick={() => handleConfirmOrderPayment(p.id, p.amount)}
+                                  className="flex-1 py-1.5 px-2 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[11px] transition"
+                                >
+                                  ✅ Подтвердить оплату
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => handleRevertOrderPayment(p.id, p.amount, false)}
+                                  className="py-1.5 px-2 rounded-lg bg-red-50 hover:bg-red-100 text-red-700 border border-red-200 font-bold text-[11px] transition"
+                                >
+                                  ✕ Отклонить
+                                </button>
+                              </>
+                            ) : (
+                              <button
+                                type="button"
+                                onClick={() => handleRevertOrderPayment(p.id, p.amount, true)}
+                                className="w-full py-1 px-2 rounded-lg bg-red-50 hover:bg-red-100 text-red-700 border border-red-200 font-bold text-[10px] transition"
+                              >
+                                ↩️ Отменить оплату (вернуть сумму в долг)
+                              </button>
+                            )}
+                          </div>
+                        )}
                       </div>
-                      <span className="text-[10px] text-slate-400 font-mono">
-                        {formatDate(p.createdAt)}
-                      </span>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
             </div>
@@ -1297,21 +1387,31 @@ export default function OrderDetailPage({ params }: { params: { id: string } }) 
         <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl shadow-xl max-w-sm w-full p-6 space-y-4 border border-slate-200">
             <h3 className="font-bold text-base text-slate-900">
-              Принять оплату по наряду {order.orderNumber}
+              Внести оплату по наряду {order.orderNumber}
             </h3>
 
             <form onSubmit={handleAddPayment} className="space-y-4">
               <div>
                 <label className="block text-xs font-semibold text-slate-600 mb-1">
-                  Сумма платежа
+                  Сумма платежа (UZS)
                 </label>
                 <input
                   type="number"
                   required
+                  placeholder="Введите сумму..."
                   value={paymentAmount}
                   onChange={(e) => setPaymentAmount(e.target.value)}
                   className="w-full px-3 py-2 text-base font-mono font-bold bg-slate-50 border border-slate-300 rounded-xl focus:bg-white focus:border-teal-600 focus:outline-none"
                 />
+                {order.debtAmount > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => setPaymentAmount(String(order.debtAmount))}
+                    className="mt-1.5 px-2.5 py-1 rounded-lg bg-amber-100 hover:bg-amber-200 text-amber-900 text-[11px] font-bold transition"
+                  >
+                    Весь остаток долга: {formatCurrency(order.debtAmount)}
+                  </button>
+                )}
               </div>
 
               <div>
@@ -1349,11 +1449,9 @@ export default function OrderDetailPage({ params }: { params: { id: string } }) 
                 />
               </div>
 
-              {currentUser?.role === "SALES_DESIGNER" && (
-                <div className="p-3 rounded-xl bg-blue-50 border border-blue-200 text-blue-800 text-[11px] leading-relaxed">
-                  ℹ️ Платеж от клиента получит статус <b>«Ожидает подтверждения»</b> и поступит на утверждение директору (Тимуру) для официального зачисления в кассу.
-                </div>
-              )}
+              <div className="p-3 rounded-xl bg-amber-50 border border-amber-200 text-amber-900 text-[11px] leading-relaxed">
+                🛡️ <b>Защита от ошибок:</b> платеж получит статус <b>«Ожидает подтверждения Админа»</b>. Долг спишется только после нажатия кнопки <b>«✅ Подтвердить оплату»</b>.
+              </div>
 
               <div className="flex items-center justify-end gap-2 pt-2">
                 <button
@@ -1367,7 +1465,7 @@ export default function OrderDetailPage({ params }: { params: { id: string } }) 
                   type="submit"
                   className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow"
                 >
-                  {currentUser?.role === "SALES_DESIGNER" ? "Зафиксировать оплату" : "Внести в кассу"}
+                  Создать оплату (на подтверждение)
                 </button>
               </div>
             </form>

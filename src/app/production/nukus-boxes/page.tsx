@@ -46,6 +46,8 @@ export default function NukusBoxesProductionPage() {
   const [payMethod, setPayMethod] = useState<"CASH" | "CARD" | "TRANSFER">("CASH");
   const [payNotes, setPayNotes] = useState("");
   const [isPaying, setIsPaying] = useState(false);
+  const [processingPaymentId, setProcessingPaymentId] = useState<string | null>(null);
+  const [processingBatchId, setProcessingBatchId] = useState<number | null>(null);
 
   // Инициализация пустых количеств для каталога
   const resetQuantities = () => {
@@ -194,7 +196,7 @@ export default function NukusBoxesProductionPage() {
 
       setFeedback({
         type: "success",
-        text: `✅ ${data.message}`,
+        text: data.message || "Оплата создана и ожидает подтверждения Админа",
       });
 
       setIsPayModalOpen(false);
@@ -208,8 +210,94 @@ export default function NukusBoxesProductionPage() {
     }
   };
 
+  // Подтверждение оплаты Админом (списание долга)
+  const handleConfirmPayment = async (paymentId: string, amount: number) => {
+    if (!confirm(`Подтвердить прием оплаты на сумму ${formatCurrency(amount)} и списать эту сумму с долга Улугбека?`)) {
+      return;
+    }
+    try {
+      setProcessingPaymentId(paymentId);
+      const res = await fetch(`/api/finance/payments/${paymentId}/confirm`, {
+        method: "POST",
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Ошибка подтверждения оплаты");
+
+      setFeedback({
+        type: "success",
+        text: data.message || `✅ Оплата ${formatCurrency(amount)} подтверждена и списана с долга!`,
+      });
+      await loadData();
+    } catch (e: any) {
+      alert(e.message);
+    } finally {
+      setProcessingPaymentId(null);
+    }
+  };
+
+  // Отклонение ожидающей оплаты ИЛИ Отмена уже подтвержденной оплаты (возврат долга)
+  const handleRevertPayment = async (paymentId: string, amount: number, isConfirmed: boolean) => {
+    const promptMsg = isConfirmed
+      ? `Отменить проведенную оплату на сумму ${formatCurrency(amount)}? Сумма будет возвращена обратно в долг Улугбека!`
+      : `Отклонить и удалить неподтвержденную запись оплаты на сумму ${formatCurrency(amount)}?`;
+
+    if (!confirm(promptMsg)) return;
+
+    try {
+      setProcessingPaymentId(paymentId);
+      const res = await fetch(`/api/finance/payments/${paymentId}/confirm`, {
+        method: "DELETE",
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Ошибка при отмене оплаты");
+
+      setFeedback({
+        type: "success",
+        text: data.message || "Оплата отменена, баланс обновлен.",
+      });
+      await loadData();
+    } catch (e: any) {
+      alert(e.message);
+    } finally {
+      setProcessingPaymentId(null);
+    }
+  };
+
+  // Возврат конкретной партии в статус «Не оплачено»
+  const handleResetBatchDebt = async (orderId: number, orderNumber: string, totalAmount: number) => {
+    if (!confirm(`Вернуть партию ${orderNumber} на сумму ${formatCurrency(totalAmount)} обратно в неоплаченные (в долг Улугбека)?`)) {
+      return;
+    }
+    try {
+      setProcessingBatchId(orderId);
+      const res = await fetch("/api/production/nukus-boxes", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ orderId, action: "RESET_DEBT" }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Ошибка при возврате долга партии");
+
+      setFeedback({
+        type: "success",
+        text: data.message,
+      });
+      await loadData();
+    } catch (e: any) {
+      alert(e.message);
+    } finally {
+      setProcessingBatchId(null);
+    }
+  };
+
   const isDirector = currentUser?.role === "DIRECTOR";
   const isAbzal = currentUser?.role === "WORKSHOP_ASSEMBLY" || currentUser?.name === "Абзал";
+  const pendingUlugbekPayments = (productionData?.payments || []).filter(
+    (p: any) => p.status === "PENDING_CONFIRMATION"
+  );
+  const confirmedUlugbekPayments = (productionData?.payments || []).filter(
+    (p: any) => p.status === "CONFIRMED"
+  );
 
   return (
     <div className="space-y-6 max-w-7xl mx-auto pb-24">
@@ -234,16 +322,16 @@ export default function NukusBoxesProductionPage() {
 
         {/* Быстрые действия в шапке */}
         <div className="flex items-center gap-2">
-          {isDirector && productionData?.client?.totalDebt > 0 && (
+          {(isDirector || currentUser?.role === "SALES_DESIGNER") && (productionData?.client?.totalDebt || 0) > 0 && (
             <button
               onClick={() => {
-                setPayAmount(productionData.client.totalDebt);
+                setPayAmount("");
                 setIsPayModalOpen(true);
               }}
               className="px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-md shadow-emerald-600/20 transition flex items-center gap-2"
             >
               <Banknote className="w-4 h-4" />
-              Принять оплату от Улугбека
+              Внести оплату от Улугбека
             </button>
           )}
 
@@ -279,6 +367,92 @@ export default function NukusBoxesProductionPage() {
           >
             Закрыть
           </button>
+        </div>
+      )}
+
+      {/* БЛОК ПОДТВЕРЖДЕНИЯ ОПЛАТ АДМИНОМ (Двухэтапная защита от ошибок) */}
+      {pendingUlugbekPayments.length > 0 && (
+        <div className="bg-amber-50 border-2 border-amber-300 rounded-3xl p-5 shadow-sm space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-amber-200">
+            <div className="flex items-center gap-2.5">
+              <span className="w-3 h-3 rounded-full bg-amber-500 animate-ping" />
+              <div>
+                <h3 className="text-base font-black text-amber-950 flex items-center gap-2">
+                  <Clock className="w-5 h-5 text-amber-600" />
+                  Оплаты от Улугбека, ожидающие подтверждения Админа ({pendingUlugbekPayments.length})
+                </h3>
+                <p className="text-xs text-amber-800 mt-0.5">
+                  Проверьте сумму перед подтверждением. Долг Улугбека спишется ТОЛЬКО после нажатия «Подтвердить оплату».
+                </p>
+              </div>
+            </div>
+            <span className="px-3 py-1 rounded-xl bg-amber-200/80 text-amber-950 text-xs font-black self-start sm:self-auto">
+              Защита от случайной оплаты
+            </span>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+            {pendingUlugbekPayments.map((p: any) => (
+              <div
+                key={p.id}
+                className="bg-white rounded-2xl p-4 border border-amber-300 shadow-xs flex flex-col justify-between gap-3"
+              >
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="px-2 py-0.5 rounded-lg bg-amber-100 text-amber-900 text-[11px] font-bold">
+                      ⏳ Ожидает подтверждения
+                    </span>
+                    <span className="text-xs text-slate-400 font-mono">
+                      {formatDateTime(p.createdAt)}
+                    </span>
+                  </div>
+
+                  <div className="flex items-baseline justify-between pt-1">
+                    <span className="text-xs text-slate-600 font-semibold">
+                      {p.method === "CASH" ? "💵 Наличные" : p.method === "CARD" ? "💳 Click / Карта" : "🏦 Безнал"}
+                      {p.receivedBy ? ` • Внес: ${p.receivedBy}` : ""}
+                    </span>
+                    <span className="text-xl font-black font-mono text-emerald-700">
+                      {formatCurrency(p.amount)}
+                    </span>
+                  </div>
+
+                  {p.notes && (
+                    <p className="text-xs text-slate-500 bg-slate-50 p-2 rounded-lg border border-slate-100">
+                      {p.notes.replace("[NUKUS_BOXES]", "").trim()}
+                    </p>
+                  )}
+                </div>
+
+                {isDirector ? (
+                  <div className="grid grid-cols-2 gap-2 pt-2 border-t border-slate-100">
+                    <button
+                      type="button"
+                      disabled={processingPaymentId === p.id}
+                      onClick={() => handleConfirmPayment(p.id, p.amount)}
+                      className="py-2.5 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white font-black text-xs shadow-sm transition flex items-center justify-center gap-1.5"
+                    >
+                      <CheckCircle2 className="w-4 h-4" />
+                      <span>{processingPaymentId === p.id ? "Подождите..." : "Подтвердить оплату"}</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      disabled={processingPaymentId === p.id}
+                      onClick={() => handleRevertPayment(p.id, p.amount, false)}
+                      className="py-2.5 px-3 rounded-xl bg-red-50 hover:bg-red-100 text-red-700 border border-red-200 disabled:opacity-50 font-bold text-xs transition flex items-center justify-center gap-1"
+                    >
+                      <span>✕ Отклонить (ошибка)</span>
+                    </button>
+                  </div>
+                ) : (
+                  <div className="py-2 px-3 rounded-xl bg-slate-100 text-slate-600 text-xs font-semibold text-center">
+                    Ожидает подтверждения Администратором (Тимуром)
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
         </div>
       )}
 
@@ -656,13 +830,27 @@ export default function NukusBoxesProductionPage() {
                   )}
                 </div>
 
-                <Link
-                  href={`/orders/${batch.id}`}
-                  className="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-blue-600 hover:text-white text-slate-700 text-xs font-bold transition flex items-center gap-1"
-                >
-                  Карточка
-                  <ChevronRight className="w-3.5 h-3.5" />
-                </Link>
+                <div className="flex items-center gap-2">
+                  {isDirector && batch.paidAmount > 0 && (
+                    <button
+                      type="button"
+                      disabled={processingBatchId === batch.id}
+                      onClick={() => handleResetBatchDebt(batch.id, batch.orderNumber, batch.totalAmount)}
+                      className="px-2.5 py-1.5 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-200 text-[11px] font-bold transition"
+                      title="Если оплата была указана по ошибке — вернуть партию в неоплаченные"
+                    >
+                      {processingBatchId === batch.id ? "..." : "↩️ Вернуть в долг"}
+                    </button>
+                  )}
+
+                  <Link
+                    href={`/orders/${batch.id}`}
+                    className="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-blue-600 hover:text-white text-slate-700 text-xs font-bold transition flex items-center gap-1"
+                  >
+                    Карточка
+                    <ChevronRight className="w-3.5 h-3.5" />
+                  </Link>
+                </div>
               </div>
             </div>
           ))}
@@ -675,14 +863,80 @@ export default function NukusBoxesProductionPage() {
         </div>
       </div>
 
-      {/* Модальное окно: Прием оплаты от Улугбека (Для директора) */}
+      {/* ИСТОРИЯ ОПЛАТ УЛУГБЕКА (С возможностью отменить ошибочную оплату и вернуть долг) */}
+      <div className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
+        <div className="p-5 border-b border-slate-100 flex items-center justify-between">
+          <div>
+            <h2 className="text-base font-black text-slate-900 flex items-center gap-2">
+              <Banknote className="w-4 h-4 text-emerald-600" />
+              История оплат от Улугбека («Нукус гуллери»)
+            </h2>
+            <p className="text-xs text-slate-500 mt-0.5">
+              Если вы по ошибке подтвердили оплату, нажмите «↩️ Отменить оплату (вернуть долг)»
+            </p>
+          </div>
+          <span className="text-xs font-mono font-bold text-slate-500">
+            {confirmedUlugbekPayments.length} оплат
+          </span>
+        </div>
+
+        <div className="divide-y divide-slate-100">
+          {confirmedUlugbekPayments.map((p: any) => (
+            <div
+              key={p.id}
+              className="p-4 sm:p-5 hover:bg-slate-50 transition flex flex-col sm:flex-row sm:items-center justify-between gap-3"
+            >
+              <div className="space-y-1">
+                <div className="flex items-center gap-2">
+                  <span className="font-mono font-black text-base text-emerald-700">
+                    +{formatCurrency(p.amount)}
+                  </span>
+                  <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">
+                    Подтвердил: {p.acceptedBy || "Тимур"}
+                  </span>
+                  <span className="text-xs text-slate-500 font-semibold">
+                    • {p.method === "CASH" ? "Наличные" : p.method === "CARD" ? "Click / Карта" : "Безнал"}
+                  </span>
+                </div>
+                {p.notes && (
+                  <p className="text-xs text-slate-500">
+                    {p.notes.replace("[NUKUS_BOXES]", "").replace(/\s*\[ALLOC:[^\]]*\]/g, "").trim()}
+                  </p>
+                )}
+                <div className="text-[11px] text-slate-400 font-mono">
+                  Дата: {formatDateTime(p.createdAt)}
+                </div>
+              </div>
+
+              {isDirector && (
+                <button
+                  type="button"
+                  disabled={processingPaymentId === p.id}
+                  onClick={() => handleRevertPayment(p.id, p.amount, true)}
+                  className="px-3.5 py-2 rounded-xl bg-red-50 hover:bg-red-100 text-red-700 border border-red-200 text-xs font-bold transition self-start sm:self-auto shrink-0"
+                >
+                  {processingPaymentId === p.id ? "Отмена..." : "↩️ Отменить оплату (вернуть долг)"}
+                </button>
+              )}
+            </div>
+          ))}
+
+          {confirmedUlugbekPayments.length === 0 && (
+            <div className="p-8 text-center text-slate-400 text-xs">
+              Подтвержденных оплат от Улугбека пока нет.
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Модальное окно: Прием оплаты от Улугбека */}
       {isPayModalOpen && (
         <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
           <div className="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl space-y-5 border border-slate-200">
             <div className="flex items-center justify-between pb-3 border-b border-slate-100">
               <div>
-                <h3 className="text-lg font-black text-slate-900">Принять оплату от Улугбека</h3>
-                <p className="text-xs text-slate-500">Погашение задолженности клиента «Нукус гуллери»</p>
+                <h3 className="text-lg font-black text-slate-900">Внести оплату от Улугбека</h3>
+                <p className="text-xs text-slate-500">Двухэтапная оплата с подтверждением Админа</p>
               </div>
               <button
                 onClick={() => setIsPayModalOpen(false)}
@@ -702,7 +956,7 @@ export default function NukusBoxesProductionPage() {
 
               <div>
                 <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
-                  Сумма оплаты (UZS)
+                  Введите полученную сумму (UZS)
                 </label>
                 <input
                   type="number"
@@ -711,9 +965,32 @@ export default function NukusBoxesProductionPage() {
                   max={productionData?.client?.totalDebt || 100000000}
                   value={payAmount}
                   onChange={(e) => setPayAmount(e.target.value ? Number(e.target.value) : "")}
-                  placeholder="Например: 500 000"
+                  placeholder="Введите точную сумму..."
                   className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-base font-black font-mono focus:outline-none focus:border-emerald-500"
                 />
+
+                {/* Быстрые кнопки выбора суммы */}
+                <div className="flex flex-wrap gap-1.5 mt-2">
+                  {[500000, 1000000, 2000000].map((preset) => (
+                    <button
+                      key={preset}
+                      type="button"
+                      onClick={() => setPayAmount(preset)}
+                      className="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-mono font-bold text-[11px] transition"
+                    >
+                      {(preset / 1000).toLocaleString("ru-RU")} тыс
+                    </button>
+                  ))}
+                  {(productionData?.client?.totalDebt || 0) > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => setPayAmount(productionData.client.totalDebt)}
+                      className="px-2.5 py-1 rounded-lg bg-amber-100 hover:bg-amber-200 text-amber-900 font-bold text-[11px] transition"
+                    >
+                      Весь долг ({formatCurrency(productionData.client.totalDebt)})
+                    </button>
+                  )}
+                </div>
               </div>
 
               <div>
@@ -773,6 +1050,10 @@ export default function NukusBoxesProductionPage() {
                 />
               </div>
 
+              <div className="p-3 rounded-xl bg-amber-50 border border-amber-200 text-[11px] text-amber-900 leading-relaxed">
+                🛡️ <strong>Защита от ошибок:</strong> после нажатия кнопки оплата попадет в блок «Ожидает подтверждения Админа». Долг спишется только после того, как Админ проверит сумму и нажмет «Подтвердить оплату».
+              </div>
+
               <div className="pt-2 flex items-center justify-end gap-2">
                 <button
                   type="button"
@@ -786,7 +1067,7 @@ export default function NukusBoxesProductionPage() {
                   disabled={isPaying || !payAmount}
                   className="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 disabled:opacity-40 text-white font-bold text-xs transition shadow-md shadow-emerald-600/20"
                 >
-                  {isPaying ? "Проведение..." : "Зачислить в кассу и погасить"}
+                  {isPaying ? "Создание..." : "Создать оплату (на подтверждение)"}
                 </button>
               </div>
             </form>

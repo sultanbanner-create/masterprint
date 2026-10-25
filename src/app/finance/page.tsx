@@ -5,6 +5,7 @@ import { verifyToken } from "@/lib/auth";
 import { formatCurrency, formatDate, formatDateTime } from "@/lib/utils";
 import { Wallet, CreditCard, Banknote, Building, AlertCircle, ShieldCheck, Package, ArrowRight } from "lucide-react";
 import { PendingPaymentsList } from "@/components/PendingPaymentsList";
+import { RevertPaymentButton } from "@/components/RevertPaymentButton";
 
 export const revalidate = 0;
 
@@ -304,17 +305,24 @@ export default async function FinancePage() {
                   <div className="text-[11px] text-slate-500 mt-0.5">
                     {p.method === "CASH" ? "Наличные" : p.method === "CARD" ? "Click / Карта" : "Безнал"}
                     {p.receivedBy ? ` • Получил: ${p.receivedBy}` : ""}
-                    {p.notes ? ` • ${p.notes}` : ""}
+                    {p.notes ? ` • ${p.notes.replace("[NUKUS_BOXES]", "").replace(/\s*\[ALLOC:[^\]]*\]/g, "").trim()}` : ""}
                   </div>
                 </div>
 
-                <div className="text-right">
+                <div className="text-right flex flex-col items-end">
                   <span className="font-mono font-black text-emerald-700 text-sm block">
                     +{formatCurrency(p.amount)}
                   </span>
-                  <span className="text-[10px] text-slate-400 font-mono">
+                  <span className="text-[10px] text-slate-400 font-mono block">
                     {formatDateTime(p.createdAt)}
                   </span>
+                  {isDirector && (
+                    <RevertPaymentButton
+                      paymentId={p.id}
+                      amount={p.amount}
+                      isConfirmed={p.status === "CONFIRMED"}
+                    />
+                  )}
                 </div>
               </div>
             ))}

@@ -91,7 +91,8 @@ export async function POST(req: Request) {
 
     const total = Number(totalAmount || 0);
     const advance = Number(advanceAmount || 0);
-    const debt = Math.max(0, total - advance);
+    // До подтверждения оплаты Админом долг равен полной сумме заказа
+    const debt = total;
 
     // Автоматическая маршрутизация ответственного мастера цеха
     let finalAssignedToId = assignedToId;
@@ -140,7 +141,7 @@ export async function POST(req: Request) {
         notes: notes || null,
         previewUrl: previewUrl || null,
         totalAmount: total,
-        paidAmount: advance,
+        paidAmount: 0,
         debtAmount: debt,
         items: {
           create: (items || []).map((it: any) => ({
@@ -165,7 +166,8 @@ export async function POST(req: Request) {
                   {
                     amount: advance,
                     method: paymentMethod,
-                    notes: "Аванс при оформлении наряда",
+                    status: "PENDING_CONFIRMATION",
+                    notes: "Аванс при оформлении наряда (ожидает подтверждения Админа)",
                     receivedBy: "Жалгас",
                   },
                 ],
