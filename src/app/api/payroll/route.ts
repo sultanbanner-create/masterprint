@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
+import { cookies } from "next/headers";
 import { prisma } from "@/lib/db";
+import { verifyToken } from "@/lib/auth";
 
 // Тарифы сдельной оплаты мастеров наружной рекламы
 const PIECE_RATES = {
@@ -13,6 +15,14 @@ const PIECE_RATES = {
 
 export async function GET() {
   try {
+    const cookieStore = cookies();
+    const token = cookieStore.get("mp_auth_session")?.value;
+    const currentUser = token ? verifyToken(token) : null;
+
+    if (!currentUser || currentUser.role !== "DIRECTOR") {
+      return NextResponse.json({ error: "Доступ к зарплатной ведомости разрешен только руководителю" }, { status: 403 });
+    }
+
     const employees = await prisma.employee.findMany({
       include: {
         payouts: { orderBy: { createdAt: "desc" } },
@@ -30,31 +40,42 @@ export async function GET() {
       const earningsDetails: any[] = [];
 
       emp.orders.forEach((order) => {
+        // Для мастеров цеха сдельная оплата начисляется за выполненные наряды (READY, COMPLETED или с отметкой completedBy)
+        const isCompletedWork =
+          order.status === "READY" ||
+          order.status === "COMPLETED" ||
+          Boolean(order.completedBy);
+
+        if ((emp.role === "WORKSHOP_PRINTING" || emp.role === "WORKSHOP_ASSEMBLY" || emp.name === "Альберт" || emp.name === "Абзал") && !isCompletedWork) {
+          return;
+        }
+
         let orderEarnings = 0;
 
         order.items.forEach((item) => {
           let itemLabor = 0;
+          const qty = Math.max(1, item.quantity || 1);
 
-          if (emp.name === "Альберт") {
-            // Альберт — печатник: за кв.м баннера и оракала
+          if (emp.name === "Альберт" || emp.role === "WORKSHOP_PRINTING") {
+            // Печатник: за кв.м баннера и оракала с учетом тиража
             if (item.serviceType === "BANNER" && item.area) {
-              itemLabor += item.area * PIECE_RATES.BANNER_PER_M2;
+              itemLabor += item.area * qty * PIECE_RATES.BANNER_PER_M2;
             } else if (item.serviceType === "ORACAL" && item.area) {
-              itemLabor += item.area * PIECE_RATES.ORACAL_PER_M2;
+              itemLabor += item.area * qty * PIECE_RATES.ORACAL_PER_M2;
             }
-          } else if (emp.name === "Абзал") {
-            // Абзал — сборщик и монтажник: за буквы и монтаж
+          } else if (emp.name === "Абзал" || emp.role === "WORKSHOP_ASSEMBLY") {
+            // Сборщик и монтажник: за буквы и монтаж с учетом тиража
             if (item.serviceType === "LETTERS" && item.letterCount && item.letterHeight) {
-              itemLabor += item.letterCount * item.letterHeight * PIECE_RATES.LETTER_PER_CM;
+              itemLabor += item.letterCount * item.letterHeight * qty * PIECE_RATES.LETTER_PER_CM;
             } else if (item.serviceType === "LIGHTBOX") {
               itemLabor += item.totalPrice * 0.20; // 20% от лайтбокса
             } else if (item.serviceType === "INSTALL") {
               itemLabor += item.totalPrice * PIECE_RATES.INSTALL_SHARE;
             }
-          } else if (emp.name === "Жалгас") {
-            // Жалгас — продажи и дизайн: % от чека + за дизайн
+          } else if (emp.name === "Жалгас" || emp.role === "SALES_DESIGNER") {
+            // Продажи и дизайн: % от чека + за дизайн
             if (item.serviceType === "CUSTOM" && item.title.toLowerCase().includes("дизайн")) {
-              itemLabor += PIECE_RATES.DESIGN_PER_FILE;
+              itemLabor += PIECE_RATES.DESIGN_PER_FILE * qty;
             }
             // 5% от чека заказа
             itemLabor += item.totalPrice * PIECE_RATES.SALES_COMMISSION;
@@ -103,6 +124,14 @@ export async function GET() {
 
 export async function POST(req: Request) {
   try {
+    const cookieStore = cookies();
+    const token = cookieStore.get("mp_auth_session")?.value;
+    const currentUser = token ? verifyToken(token) : null;
+
+    if (!currentUser || currentUser.role !== "DIRECTOR") {
+      return NextResponse.json({ error: "Только руководитель может регистрировать выплаты зарплаты" }, { status: 403 });
+    }
+
     const body = await req.json();
     const { employeeId, amount, type, orderId, description } = body;
 

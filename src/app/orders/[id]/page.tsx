@@ -204,11 +204,15 @@ export default function OrderDetailPage({ params }: { params: { id: string } }) 
     }
   };
 
+  const [isSubmittingPayment, setIsSubmittingPayment] = useState(false);
+
   const handleAddPayment = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isSubmittingPayment) return;
     const amount = Number(paymentAmount);
     if (!amount || amount <= 0) return;
 
+    setIsSubmittingPayment(true);
     try {
       const res = await fetch("/api/payments", {
         method: "POST",
@@ -230,6 +234,8 @@ export default function OrderDetailPage({ params }: { params: { id: string } }) 
       }
     } catch (e) {
       console.error(e);
+    } finally {
+      setIsSubmittingPayment(false);
     }
   };
 
@@ -1463,9 +1469,10 @@ export default function OrderDetailPage({ params }: { params: { id: string } }) 
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow"
+                  disabled={isSubmittingPayment}
+                  className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white text-xs font-bold shadow"
                 >
-                  Создать оплату (на подтверждение)
+                  {isSubmittingPayment ? "Сохранение..." : "Создать оплату (на подтверждение)"}
                 </button>
               </div>
             </form>

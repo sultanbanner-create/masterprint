@@ -51,8 +51,16 @@ export function KanbanBoard({
 
   useEffect(() => {
     reloadOrders();
-    const timer = setInterval(reloadOrders, 4000);
-    const onFocus = () => reloadOrders();
+    const timer = setInterval(() => {
+      if (typeof document !== "undefined" && !document.hidden) {
+        reloadOrders();
+      }
+    }, 5000);
+    const onFocus = () => {
+      if (typeof document !== "undefined" && !document.hidden) {
+        reloadOrders();
+      }
+    };
     window.addEventListener("focus", onFocus);
     window.addEventListener("visibilitychange", onFocus);
 

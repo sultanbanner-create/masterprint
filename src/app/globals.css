@@ -24,10 +24,19 @@ body {
     background: white !important;
     color: black !important;
   }
-  .no-print {
+  .no-print,
+  .no-print-bg {
     display: none !important;
+    background: transparent !important;
   }
   .print-only {
     display: block !important;
+  }
+  .printable-area {
+    position: static !important;
+    overflow: visible !important;
+    max-height: none !important;
+    width: 100% !important;
+    box-shadow: none !important;
   }
 }

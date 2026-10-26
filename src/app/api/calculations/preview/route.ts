@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
+import { cookies } from "next/headers";
 import { calculateAdvertisingItem } from "@/lib/calculator/engine";
 import { CalculationParameterInputs, PricingMode } from "@/lib/calculator/types";
+import { verifyToken } from "@/lib/auth";
 
 export async function POST(req: NextRequest) {
   try {
@@ -10,7 +12,6 @@ export async function POST(req: NextRequest) {
       parameters, 
       selected_options, 
       pricing_mode = "tariff",
-      user_role = "MANAGER"
     } = body;
 
     if (!parameters) {
@@ -20,8 +21,11 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Проверка прав: себестоимость и маржа видны только Владельцу (DIRECTOR/OWNER) или Финансам (FINANCE)
-    const canViewCost = user_role === "DIRECTOR" || user_role === "OWNER" || user_role === "FINANCE";
+    // Проверка прав по проверенной серверной сессии: себестоимость и маржа видны только Владельцу (DIRECTOR)
+    const cookieStore = cookies();
+    const token = cookieStore.get("mp_auth_session")?.value;
+    const sessionUser = token ? verifyToken(token) : null;
+    const canViewCost = sessionUser?.role === "DIRECTOR";
 
     // Адаптация входных параметров
     const calcParams: CalculationParameterInputs = {

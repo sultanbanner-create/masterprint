@@ -33,10 +33,13 @@ export default function ClientsPage() {
     loadClients();
   }, []);
 
+  const [isSavingClient, setIsSavingClient] = useState(false);
+
   const handleCreateClient = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name.trim()) return;
+    if (isSavingClient || !name.trim()) return;
 
+    setIsSavingClient(true);
     try {
       const res = await fetch("/api/clients", {
         method: "POST",
@@ -59,6 +62,8 @@ export default function ClientsPage() {
       }
     } catch (e) {
       console.error(e);
+    } finally {
+      setIsSavingClient(false);
     }
   };
 
@@ -292,9 +297,10 @@ export default function ClientsPage() {
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 rounded-xl bg-teal-600 hover:bg-teal-700 text-white text-xs font-bold shadow"
+                  disabled={isSavingClient}
+                  className="px-4 py-2 rounded-xl bg-teal-600 hover:bg-teal-700 disabled:opacity-50 text-white text-xs font-bold shadow"
                 >
-                  Сохранить
+                  {isSavingClient ? "Сохранение..." : "Сохранить"}
                 </button>
               </div>
             </form>

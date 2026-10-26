@@ -85,9 +85,20 @@ export async function POST(req: Request) {
       });
     }
 
-    // 2. Номер наряда
-    const count = await prisma.order.count();
-    const orderNumber = `ORD-${String(count + 101).padStart(3, "0")}`;
+    // 2. Номер наряда (безопасная генерация от максимального ID без коллизий при удалении старых заказов)
+    const lastOrder = await prisma.order.findFirst({
+      orderBy: { id: "desc" },
+      select: { id: true },
+    });
+    const baseNum = (lastOrder?.id || 0) + 101;
+    let orderNumber = `ORD-${String(baseNum).padStart(3, "0")}`;
+    const existingOrder = await prisma.order.findUnique({
+      where: { orderNumber },
+      select: { id: true },
+    });
+    if (existingOrder) {
+      orderNumber = `ORD-${String(baseNum).padStart(3, "0")}-${Math.floor(10 + Math.random() * 90)}`;
+    }
 
     const total = Number(totalAmount || 0);
     const advance = Number(advanceAmount || 0);

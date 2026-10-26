@@ -39,8 +39,10 @@ export default function LoginPage() {
         throw new Error(data.error || "Неверный логин или пароль");
       }
 
-      // Успешный вход — делаем полноценный переход для применения сессии
-      const targetUrl = from && from !== "/login" ? from : "/";
+      // Успешный вход — делаем безопасный переход (защита от Open Redirect)
+      const isSafeRelative =
+        Boolean(from && from.startsWith("/") && !from.startsWith("//") && from !== "/login");
+      const targetUrl = isSafeRelative ? from : "/";
       window.location.href = targetUrl;
     } catch (err: any) {
       setErrorMsg(err.message || "Ошибка авторизации");

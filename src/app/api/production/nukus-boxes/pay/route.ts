@@ -11,7 +11,7 @@ export async function POST(req: Request) {
     const currentUser = token ? verifyToken(token) : null;
 
     // Вносить оплату может руководитель или менеджер, но списание долга происходит ТОЛЬКО после подтверждения Админом
-    if (currentUser && currentUser.role !== "DIRECTOR" && currentUser.role !== "SALES_DESIGNER") {
+    if (!currentUser || (currentUser.role !== "DIRECTOR" && currentUser.role !== "SALES_DESIGNER")) {
       return NextResponse.json(
         { error: "Только руководитель или менеджер может регистрировать оплату" },
         { status: 403 }

@@ -4,6 +4,17 @@ import { prisma } from "@/lib/db";
 export async function GET() {
   try {
     const employees = await prisma.employee.findMany({
+      select: {
+        id: true,
+        name: true,
+        login: true,
+        role: true,
+        roleTitle: true,
+        phone: true,
+        avatar: true,
+        isActive: true,
+        createdAt: true,
+      },
       orderBy: { createdAt: "asc" },
     });
     return NextResponse.json(employees);

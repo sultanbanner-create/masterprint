@@ -73,6 +73,18 @@ export async function DELETE(
   { params }: { params: { id: string } }
 ) {
   try {
+    const ordersCount = await prisma.order.count({
+      where: { clientId: params.id },
+    });
+    if (ordersCount > 0) {
+      return NextResponse.json(
+        {
+          error: `Нельзя удалить клиента, так как за ним числится ${ordersCount} заказ(ов). Сначала удалите или перенесите заказы.`,
+        },
+        { status: 400 }
+      );
+    }
+
     await prisma.client.delete({
       where: { id: params.id },
     });

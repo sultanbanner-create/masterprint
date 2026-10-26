@@ -62,10 +62,12 @@ export function middleware(request: NextRequest) {
     return NextResponse.redirect(loginUrl);
   }
 
-  // 3. Decode payload to check expiration and roles
+  // 3. Decode payload to check expiration, signature presence, and roles
   try {
-    const [base64Data] = sessionCookie.split(".");
-    if (!base64Data) throw new Error("Invalid token format");
+    const [base64Data, signature] = sessionCookie.split(".");
+    if (!base64Data || !signature || signature.length < 32) {
+      throw new Error("Invalid token format");
+    }
     
     // Base64Url decode in standard JS with padding and UTF-8 safety
     let b64 = base64Data.replace(/-/g, "+").replace(/_/g, "/");
@@ -95,6 +97,15 @@ export function middleware(request: NextRequest) {
 
     // 4. Финансовые отчеты, касса, зарплаты и бэкапы доступны ТОЛЬКО директору (Тимуру)
     if (!isDirector) {
+      const isRestrictedApiRoute =
+        pathname.startsWith("/api/backup") ||
+        pathname.startsWith("/api/payroll") ||
+        pathname.startsWith("/api/finance");
+
+      if (isRestrictedApiRoute) {
+        return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+      }
+
       const isRestrictedFinancialRoute =
         pathname.startsWith("/finance") ||
         pathname.startsWith("/reports") ||

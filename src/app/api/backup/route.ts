@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
+import { cookies } from "next/headers";
 import { prisma } from "@/lib/db";
+import { verifyToken } from "@/lib/auth";
 import fs from "fs";
 import path from "path";
 
@@ -7,6 +9,17 @@ export const dynamic = "force-dynamic";
 
 export async function GET(req: Request) {
   try {
+    const cookieStore = cookies();
+    const token = cookieStore.get("mp_auth_session")?.value;
+    const currentUser = token ? verifyToken(token) : null;
+
+    if (!currentUser || currentUser.role !== "DIRECTOR") {
+      return NextResponse.json(
+        { error: "Доступ к резервным копиям разрешен только руководителю (Директору)" },
+        { status: 403 }
+      );
+    }
+
     const url = new URL(req.url);
     const downloadRaw = url.searchParams.get("raw") === "true";
 
@@ -40,7 +53,19 @@ export async function GET(req: Request) {
     ] = await Promise.all([
       prisma.order.findMany({ include: { items: true, comments: true } }),
       prisma.client.findMany(),
-      prisma.employee.findMany(),
+      prisma.employee.findMany({
+        select: {
+          id: true,
+          name: true,
+          login: true,
+          role: true,
+          roleTitle: true,
+          phone: true,
+          avatar: true,
+          isActive: true,
+          createdAt: true,
+        },
+      }),
       prisma.payment.findMany(),
       prisma.stockMaterial.findMany(),
       prisma.stockMovement.findMany(),

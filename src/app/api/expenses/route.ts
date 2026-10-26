@@ -40,7 +40,7 @@ export async function GET(req: NextRequest) {
     }
 
     if (spentByNameParam) {
-      where.spentByName = { contains: spentByNameParam, mode: "insensitive" };
+      where.spentByName = { contains: spentByNameParam };
     }
 
     const expenses = await prisma.expense.findMany({
@@ -60,24 +60,37 @@ export async function GET(req: NextRequest) {
       take: limit,
     });
 
-    // Расчет агрегированной сводки
-    const allExpenses = await prisma.expense.findMany({
-      select: {
-        amount: true,
-        category: true,
-        orderId: true,
-      },
-    });
+    // Расчет агрегированной сводки на уровне СУБД без выгрузки всей таблицы в память
+    const [totalAgg, byCategory, orderSpecificAgg] = await Promise.all([
+      prisma.expense.aggregate({
+        _sum: { amount: true },
+        _count: { _all: true },
+      }),
+      prisma.expense.groupBy({
+        by: ["category"],
+        _sum: { amount: true },
+      }),
+      prisma.expense.aggregate({
+        where: { orderId: { not: null } },
+        _sum: { amount: true },
+      }),
+    ]);
+
+    const catSum = (cat: string) =>
+      byCategory.find((c) => c.category === cat)?._sum.amount || 0;
+
+    const totalAmount = totalAgg._sum.amount || 0;
+    const orderSpecificAmount = orderSpecificAgg._sum.amount || 0;
 
     const summary = {
-      totalAmount: allExpenses.reduce((sum, e) => sum + e.amount, 0),
-      materialsAmount: allExpenses.filter(e => e.category === "MATERIALS").reduce((sum, e) => sum + e.amount, 0),
-      consumablesAmount: allExpenses.filter(e => e.category === "CONSUMABLES").reduce((sum, e) => sum + e.amount, 0),
-      transportAmount: allExpenses.filter(e => e.category === "TRANSPORT").reduce((sum, e) => sum + e.amount, 0),
-      otherAmount: allExpenses.filter(e => e.category === "OTHER").reduce((sum, e) => sum + e.amount, 0),
-      orderSpecificAmount: allExpenses.filter(e => e.orderId !== null).reduce((sum, e) => sum + e.amount, 0),
-      overheadAmount: allExpenses.filter(e => e.orderId === null).reduce((sum, e) => sum + e.amount, 0),
-      count: allExpenses.length,
+      totalAmount,
+      materialsAmount: catSum("MATERIALS"),
+      consumablesAmount: catSum("CONSUMABLES"),
+      transportAmount: catSum("TRANSPORT"),
+      otherAmount: catSum("OTHER"),
+      orderSpecificAmount,
+      overheadAmount: Math.max(0, totalAmount - orderSpecificAmount),
+      count: totalAgg._count._all || 0,
     };
 
     return NextResponse.json({ expenses, summary });

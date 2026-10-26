@@ -241,11 +241,16 @@ export async function POST(req: Request) {
       );
     }
 
-    // Генерируем уникальный номер заказа, например NG-2609-842
+    // Генерируем уникальный номер заказа без коллизий, например NG-2609-105
     const now = new Date();
     const datePart = `${now.getFullYear().toString().slice(-2)}${(now.getMonth() + 1).toString().padStart(2, "0")}`;
-    const randomSuffix = Math.floor(100 + Math.random() * 900);
-    const orderNumber = `NG-${datePart}-${randomSuffix}`;
+    const lastOrder = await prisma.order.findFirst({ orderBy: { id: "desc" }, select: { id: true } });
+    const nextSeq = (lastOrder?.id || 0) + 101;
+    let orderNumber = `NG-${datePart}-${nextSeq}`;
+    const existingNum = await prisma.order.findUnique({ where: { orderNumber }, select: { id: true } });
+    if (existingNum) {
+      orderNumber = `NG-${datePart}-${nextSeq}-${Math.floor(10 + Math.random() * 90)}`;
+    }
 
     const summaryList = itemDetails
       .map((i) => `${i.title} [${i.options}]: ${i.quantity} шт.`)
@@ -338,22 +343,63 @@ export async function PATCH(req: Request) {
     }
 
     if (action === "RESET_DEBT") {
-      const updated = await prisma.order.update({
-        where: { id: order.id },
-        data: {
-          paidAmount: 0,
-          debtAmount: order.totalAmount,
-          status: order.status === "COMPLETED" ? "READY" : order.status,
-        },
-      });
+      const updated = await prisma.$transaction(async (tx) => {
+        const updatedOrder = await tx.order.update({
+          where: { id: order.id },
+          data: {
+            paidAmount: 0,
+            debtAmount: order.totalAmount,
+            status: order.status === "COMPLETED" ? "READY" : order.status,
+          },
+        });
 
-      await prisma.orderComment.create({
-        data: {
-          orderId: order.id,
-          authorName: `${currentUser.name || "Тимур"} (Админ)`,
-          text: `↩️ Статус оплаты партии сброшен Администратором. Долг восстановлен: ${order.totalAmount.toLocaleString("ru-RU")} сум.`,
-        },
-      }).catch(() => {});
+        // Синхронизируем связанные платежи: если в платежах есть аллокация на этот order.id, корректируем или удаляем платеж
+        const relatedPayments = await tx.payment.findMany({
+          where: {
+            OR: [
+              { orderId: order.id },
+              { notes: { contains: `[ALLOC:` } },
+            ],
+          },
+        });
+
+        for (const p of relatedPayments) {
+          const allocMatch = p.notes?.match(/\[ALLOC:([^\]]+)\]/);
+          if (allocMatch && allocMatch[1]) {
+            const pairs = allocMatch[1].split(",");
+            const targetPair = pairs.find((pair) => Number(pair.split(":")[0]) === order.id);
+            if (targetPair) {
+              const allocatedAmt = Number(targetPair.split(":")[1]) || 0;
+              const remainingPairs = pairs.filter((pair) => Number(pair.split(":")[0]) !== order.id);
+              const newAmount = Math.round((p.amount - allocatedAmt) * 100) / 100;
+              if (newAmount <= 0 || remainingPairs.length === 0) {
+                await tx.payment.delete({ where: { id: p.id } });
+              } else {
+                const cleanNotes = (p.notes || "").replace(/\s*\[ALLOC:[^\]]*\]/g, "");
+                await tx.payment.update({
+                  where: { id: p.id },
+                  data: {
+                    amount: newAmount,
+                    notes: `${cleanNotes} [ALLOC:${remainingPairs.join(",")}]`,
+                  },
+                });
+              }
+            }
+          } else if (p.orderId === order.id && p.status === "CONFIRMED") {
+            await tx.payment.delete({ where: { id: p.id } });
+          }
+        }
+
+        await tx.orderComment.create({
+          data: {
+            orderId: order.id,
+            authorName: `${currentUser.name || "Тимур"} (Админ)`,
+            text: `↩️ Статус оплаты партии сброшен Администратором. Долг восстановлен: ${order.totalAmount.toLocaleString("ru-RU")} сум.`,
+          },
+        });
+
+        return updatedOrder;
+      });
 
       return NextResponse.json({
         success: true,

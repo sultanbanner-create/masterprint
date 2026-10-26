@@ -42,51 +42,60 @@ export async function POST(
     // 1. Если это оплата по линии коробок Улугбека («Нукус гуллери»)
     if (isNukusPayment) {
       const ulugbek = await getOrCreateUlugbekClient();
-      const debtorOrders = await prisma.order.findMany({
-        where: {
-          clientId: ulugbek.id,
-          debtAmount: { gt: 0 },
-        },
-        orderBy: { createdAt: "asc" },
-      });
 
-      let remainingPayment = payment.amount;
-      const allocations: string[] = [];
+      const updatedPayment = await prisma.$transaction(async (tx) => {
+        const freshPayment = await tx.payment.findUnique({ where: { id: params.id } });
+        if (!freshPayment || freshPayment.status === "CONFIRMED") {
+          throw new Error("Этот платеж уже подтвержден");
+        }
 
-      for (const order of debtorOrders) {
-        if (remainingPayment <= 0) break;
-
-        const toPay = Math.min(order.debtAmount, remainingPayment);
-        if (toPay <= 0) continue;
-
-        const newPaid = order.paidAmount + toPay;
-        const newDebt = Math.max(0, order.debtAmount - toPay);
-        const newStatus = newDebt === 0 && order.status === "READY" ? "COMPLETED" : order.status;
-
-        await prisma.order.update({
-          where: { id: order.id },
-          data: {
-            paidAmount: newPaid,
-            debtAmount: newDebt,
-            status: newStatus,
+        const debtorOrders = await tx.order.findMany({
+          where: {
+            clientId: ulugbek.id,
+            debtAmount: { gt: 0 },
           },
+          orderBy: { createdAt: "asc" },
         });
 
-        allocations.push(`${order.id}:${toPay}`);
-        remainingPayment -= toPay;
-      }
+        let remainingPayment = Math.round(freshPayment.amount * 100) / 100;
+        const allocations: string[] = [];
 
-      const allocTag = allocations.length > 0 ? ` [ALLOC:${allocations.join(",")}]` : "";
-      const cleanNotes = (payment.notes || "Оплата за коробки («Нукус гуллери»)").replace(/\s*\[ALLOC:[^\]]*\]/g, "");
+        for (const order of debtorOrders) {
+          if (remainingPayment <= 0) break;
 
-      const updatedPayment = await prisma.payment.update({
-        where: { id: params.id },
-        data: {
-          status: "CONFIRMED",
-          acceptedBy: user.name || "Тимур",
-          acceptedAt: new Date(),
-          notes: `${cleanNotes}${allocTag}`,
-        },
+          const toPay = Math.round(Math.min(order.debtAmount, remainingPayment) * 100) / 100;
+          if (toPay <= 0) continue;
+
+          const newPaid = Math.round((order.paidAmount + toPay) * 100) / 100;
+          const rawNewDebt = Math.round((order.debtAmount - toPay) * 100) / 100;
+          const newDebt = rawNewDebt <= 0.01 ? 0 : rawNewDebt;
+          const newStatus = newDebt === 0 && order.status === "READY" ? "COMPLETED" : order.status;
+
+          await tx.order.update({
+            where: { id: order.id },
+            data: {
+              paidAmount: newPaid,
+              debtAmount: newDebt,
+              status: newStatus,
+            },
+          });
+
+          allocations.push(`${order.id}:${toPay}`);
+          remainingPayment = Math.round((remainingPayment - toPay) * 100) / 100;
+        }
+
+        const allocTag = allocations.length > 0 ? ` [ALLOC:${allocations.join(",")}]` : "";
+        const cleanNotes = (freshPayment.notes || "Оплата за коробки («Нукус гуллери»)").replace(/\s*\[ALLOC:[^\]]*\]/g, "");
+
+        return tx.payment.update({
+          where: { id: params.id },
+          data: {
+            status: "CONFIRMED",
+            acceptedBy: user.name || "Тимур",
+            acceptedAt: new Date(),
+            notes: `${cleanNotes}${allocTag}`,
+          },
+        });
       });
 
       return NextResponse.json({
@@ -96,77 +105,84 @@ export async function POST(
       });
     }
 
-    // 2. Обычный заказ
-    const updatedPayment = await prisma.payment.update({
-      where: { id: params.id },
-      data: {
-        status: "CONFIRMED",
-        acceptedBy: user.name || "Тимур",
-        acceptedAt: new Date(),
-      },
-    });
+    // 2. Обычный заказ — атомарная транзакция
+    const updatedPayment = await prisma.$transaction(async (tx) => {
+      const freshPayment = await tx.payment.findUnique({ where: { id: params.id } });
+      if (!freshPayment || freshPayment.status === "CONFIRMED") {
+        throw new Error("Этот платеж уже подтвержден");
+      }
 
-    if (payment.orderId) {
-      const order = await prisma.order.findUnique({
-        where: { id: payment.orderId },
-        include: { payments: true },
+      const confirmedPayment = await tx.payment.update({
+        where: { id: params.id },
+        data: {
+          status: "CONFIRMED",
+          acceptedBy: user.name || "Тимур",
+          acceptedAt: new Date(),
+        },
       });
 
-      if (order) {
-        const confirmedPaid = order.payments
-          .filter((p) => p.status === "CONFIRMED" || p.id === payment.id)
-          .reduce((sum, p) => sum + p.amount, 0);
-
-        const newDebt = Math.max(0, order.totalAmount - confirmedPaid);
-
-        // Автоматический перевод наряда в цех мастеру при подтверждении оплаты Тимуром
-        let nextStatus = order.status;
-        let nextAssignedToId = order.assignedToId;
-
-        if (order.status === "NEW" || order.status === "DESIGN") {
-          const orderWithItems = await prisma.order.findUnique({
-            where: { id: order.id },
-            include: { items: true },
-          });
-
-          const hasPrint = orderWithItems?.items.some(
-            (it) => it.serviceType === "BANNER" || it.serviceType === "ORACAL"
-          );
-          const [albert, abzal] = await Promise.all([
-            prisma.employee.findFirst({ where: { name: "Альберт" } }),
-            prisma.employee.findFirst({ where: { name: "Абзал" } }),
-          ]);
-
-          if (hasPrint && albert) {
-            nextStatus = "PRINTING";
-            nextAssignedToId = albert.id;
-          } else if (abzal) {
-            nextStatus = "ASSEMBLY";
-            nextAssignedToId = abzal.id;
-          }
-        } else if (newDebt === 0 && order.status === "READY") {
-          nextStatus = "COMPLETED";
-        }
-
-        await prisma.order.update({
-          where: { id: order.id },
-          data: {
-            paidAmount: confirmedPaid,
-            debtAmount: newDebt,
-            status: nextStatus,
-            assignedToId: nextAssignedToId,
-          },
+      if (freshPayment.orderId) {
+        const order = await tx.order.findUnique({
+          where: { id: freshPayment.orderId },
+          include: { payments: true, items: true },
         });
 
-        await prisma.orderComment.create({
-          data: {
-            orderId: order.id,
-            authorName: `${user.name || "Тимур"} (Админ)`,
-            text: `💵 Оплата на сумму ${payment.amount.toLocaleString("ru-RU")} сум подтверждена в кассу. Остаток долга: ${newDebt.toLocaleString("ru-RU")} сум.`,
-          },
-        }).catch((e) => console.error("Auto comment error:", e));
+        if (order) {
+          const confirmedPaid = Math.round(
+            order.payments
+              .filter((p) => p.status === "CONFIRMED" || p.id === freshPayment.id)
+              .reduce((sum, p) => sum + p.amount, 0) * 100
+          ) / 100;
+
+          const rawDebt = Math.round((order.totalAmount - confirmedPaid) * 100) / 100;
+          const newDebt = rawDebt <= 0.01 ? 0 : rawDebt;
+
+          // Автоматический перевод наряда в цех мастеру при подтверждении оплаты Тимуром
+          let nextStatus = order.status;
+          let nextAssignedToId = order.assignedToId;
+
+          if (order.status === "NEW" || order.status === "DESIGN") {
+            const hasPrint = order.items.some(
+              (it) => it.serviceType === "BANNER" || it.serviceType === "ORACAL"
+            );
+            const [albert, abzal] = await Promise.all([
+              tx.employee.findFirst({ where: { name: "Альберт" } }),
+              tx.employee.findFirst({ where: { name: "Абзал" } }),
+            ]);
+
+            if (hasPrint && albert) {
+              nextStatus = "PRINTING";
+              nextAssignedToId = albert.id;
+            } else if (abzal) {
+              nextStatus = "ASSEMBLY";
+              nextAssignedToId = abzal.id;
+            }
+          } else if (newDebt === 0 && order.status === "READY") {
+            nextStatus = "COMPLETED";
+          }
+
+          await tx.order.update({
+            where: { id: order.id },
+            data: {
+              paidAmount: confirmedPaid,
+              debtAmount: newDebt,
+              status: nextStatus,
+              assignedToId: nextAssignedToId,
+            },
+          });
+
+          await tx.orderComment.create({
+            data: {
+              orderId: order.id,
+              authorName: `${user.name || "Тимур"} (Админ)`,
+              text: `💵 Оплата на сумму ${freshPayment.amount.toLocaleString("ru-RU")} сум подтверждена в кассу. Остаток долга: ${newDebt.toLocaleString("ru-RU")} сум.`,
+            },
+          });
+        }
       }
-    }
+
+      return confirmedPayment;
+    });
 
     return NextResponse.json({
       success: true,
@@ -216,7 +232,7 @@ export async function DELETE(
       });
     }
 
-    // Сценарий Б: Платеж УЖЕ БЫЛ подтвержден (CONFIRMED) по ошибке -> отменяем его и возвращаем сумму обратно в долг!
+    // Сценарий Б: Платеж УЖЕ БЫЛ подтвержден (CONFIRMED) по ошибке -> отменяем его и возвращаем сумму обратно в долг в одной транзакции!
     const allocMatch = payment.notes?.match(/\[ALLOC:([^\]]+)\]/);
     const isNukusPayment =
       Boolean(allocMatch) ||
@@ -224,98 +240,103 @@ export async function DELETE(
       payment.notes?.includes("Нукус гуллери") ||
       payment.order?.items?.some((it) => it.serviceType === "BOXES_NUKUS");
 
-    if (allocMatch && allocMatch[1]) {
-      // Точный возврат по сохраненным партиям [ALLOC:orderId:amount,...]
-      const pairs = allocMatch[1].split(",");
-      for (const pair of pairs) {
-        const [ordIdStr, amtStr] = pair.split(":");
-        const ordId = parseInt(ordIdStr, 10);
-        const amt = Number(amtStr);
-        if (!isNaN(ordId) && amt > 0) {
-          const ord = await prisma.order.findUnique({ where: { id: ordId } });
-          if (ord) {
-            const restoredPaid = Math.max(0, ord.paidAmount - amt);
-            const restoredDebt = Math.min(ord.totalAmount, ord.debtAmount + amt);
-            const restoredStatus = ord.status === "COMPLETED" && restoredDebt > 0 ? "READY" : ord.status;
+    const ulugbek = isNukusPayment ? await getOrCreateUlugbekClient() : null;
 
-            await prisma.order.update({
-              where: { id: ord.id },
-              data: {
-                paidAmount: restoredPaid,
-                debtAmount: restoredDebt,
-                status: restoredStatus,
-              },
-            });
+    await prisma.$transaction(async (tx) => {
+      if (allocMatch && allocMatch[1]) {
+        // Точный возврат по сохраненным партиям [ALLOC:orderId:amount,...]
+        const pairs = allocMatch[1].split(",");
+        for (const pair of pairs) {
+          const [ordIdStr, amtStr] = pair.split(":");
+          const ordId = parseInt(ordIdStr, 10);
+          const amt = Number(amtStr);
+          if (!isNaN(ordId) && amt > 0) {
+            const ord = await tx.order.findUnique({ where: { id: ordId } });
+            if (ord) {
+              const restoredPaid = Math.max(0, Math.round((ord.paidAmount - amt) * 100) / 100);
+              const restoredDebt = Math.min(ord.totalAmount, Math.round((ord.debtAmount + amt) * 100) / 100);
+              const restoredStatus = ord.status === "COMPLETED" && restoredDebt > 0 ? "READY" : ord.status;
+
+              await tx.order.update({
+                where: { id: ord.id },
+                data: {
+                  paidAmount: restoredPaid,
+                  debtAmount: restoredDebt,
+                  status: restoredStatus,
+                },
+              });
+            }
           }
         }
-      }
-    } else if (isNukusPayment) {
-      // Возврат суммы по оплаченным заказам Улугбека (от новых к старым)
-      const ulugbek = await getOrCreateUlugbekClient();
-      const paidOrders = await prisma.order.findMany({
-        where: {
-          clientId: ulugbek.id,
-          paidAmount: { gt: 0 },
-        },
-        orderBy: { createdAt: "desc" },
-      });
-
-      let remainingToRevert = payment.amount;
-      for (const ord of paidOrders) {
-        if (remainingToRevert <= 0) break;
-        const revertAmt = Math.min(ord.paidAmount, remainingToRevert);
-        if (revertAmt <= 0) continue;
-
-        const restoredPaid = Math.max(0, ord.paidAmount - revertAmt);
-        const restoredDebt = Math.min(ord.totalAmount, ord.debtAmount + revertAmt);
-        const restoredStatus = ord.status === "COMPLETED" && restoredDebt > 0 ? "READY" : ord.status;
-
-        await prisma.order.update({
-          where: { id: ord.id },
-          data: {
-            paidAmount: restoredPaid,
-            debtAmount: restoredDebt,
-            status: restoredStatus,
+      } else if (isNukusPayment && ulugbek) {
+        // Возврат суммы по оплаченным заказам Улугбека (от новых к старым)
+        const paidOrders = await tx.order.findMany({
+          where: {
+            clientId: ulugbek.id,
+            paidAmount: { gt: 0 },
           },
+          orderBy: { createdAt: "desc" },
         });
 
-        remainingToRevert -= revertAmt;
-      }
-    } else if (payment.orderId) {
-      // Обычный заказ: пересчитываем сумму подтвержденных оплат без этого платежа
-      const ord = await prisma.order.findUnique({
-        where: { id: payment.orderId },
-        include: { payments: true },
-      });
+        let remainingToRevert = Math.round(payment.amount * 100) / 100;
+        for (const ord of paidOrders) {
+          if (remainingToRevert <= 0) break;
+          const revertAmt = Math.round(Math.min(ord.paidAmount, remainingToRevert) * 100) / 100;
+          if (revertAmt <= 0) continue;
 
-      if (ord) {
-        const remainingConfirmedPaid = ord.payments
-          .filter((p) => p.status === "CONFIRMED" && p.id !== payment.id)
-          .reduce((sum, p) => sum + p.amount, 0);
+          const restoredPaid = Math.max(0, Math.round((ord.paidAmount - revertAmt) * 100) / 100);
+          const restoredDebt = Math.min(ord.totalAmount, Math.round((ord.debtAmount + revertAmt) * 100) / 100);
+          const restoredStatus = ord.status === "COMPLETED" && restoredDebt > 0 ? "READY" : ord.status;
 
-        const restoredDebt = Math.max(0, ord.totalAmount - remainingConfirmedPaid);
-        const restoredStatus = ord.status === "COMPLETED" && restoredDebt > 0 ? "READY" : ord.status;
+          await tx.order.update({
+            where: { id: ord.id },
+            data: {
+              paidAmount: restoredPaid,
+              debtAmount: restoredDebt,
+              status: restoredStatus,
+            },
+          });
 
-        await prisma.order.update({
-          where: { id: ord.id },
-          data: {
-            paidAmount: remainingConfirmedPaid,
-            debtAmount: restoredDebt,
-            status: restoredStatus,
-          },
+          remainingToRevert = Math.round((remainingToRevert - revertAmt) * 100) / 100;
+        }
+      } else if (payment.orderId) {
+        // Обычный заказ: пересчитываем сумму подтвержденных оплат без этого платежа
+        const ord = await tx.order.findUnique({
+          where: { id: payment.orderId },
+          include: { payments: true },
         });
 
-        await prisma.orderComment.create({
-          data: {
-            orderId: ord.id,
-            authorName: `${user.name || "Тимур"} (Админ)`,
-            text: `↩️ Ошибочная оплата на сумму ${payment.amount.toLocaleString("ru-RU")} сум отменена Администратором. Долг восстановлен (${restoredDebt.toLocaleString("ru-RU")} сум).`,
-          },
-        }).catch(() => {});
-      }
-    }
+        if (ord) {
+          const remainingConfirmedPaid = Math.round(
+            ord.payments
+              .filter((p) => p.status === "CONFIRMED" && p.id !== payment.id)
+              .reduce((sum, p) => sum + p.amount, 0) * 100
+          ) / 100;
 
-    await prisma.payment.delete({ where: { id: params.id } });
+          const restoredDebt = Math.max(0, Math.round((ord.totalAmount - remainingConfirmedPaid) * 100) / 100);
+          const restoredStatus = ord.status === "COMPLETED" && restoredDebt > 0 ? "READY" : ord.status;
+
+          await tx.order.update({
+            where: { id: ord.id },
+            data: {
+              paidAmount: remainingConfirmedPaid,
+              debtAmount: restoredDebt,
+              status: restoredStatus,
+            },
+          });
+
+          await tx.orderComment.create({
+            data: {
+              orderId: ord.id,
+              authorName: `${user.name || "Тимур"} (Админ)`,
+              text: `↩️ Ошибочная оплата на сумму ${payment.amount.toLocaleString("ru-RU")} сум отменена Администратором. Долг восстановлен (${restoredDebt.toLocaleString("ru-RU")} сум).`,
+            },
+          });
+        }
+      }
+
+      await tx.payment.delete({ where: { id: params.id } });
+    });
 
     return NextResponse.json({
       success: true,

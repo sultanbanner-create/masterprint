@@ -256,6 +256,7 @@ export function OrderList({ initialOrders, employees, currentUser }: OrderListPr
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
   };
 
   return (

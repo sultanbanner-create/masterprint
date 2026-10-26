@@ -96,7 +96,7 @@ export default function ExpensesPage() {
 
       if (resOrders.ok) {
         const orderData = await resOrders.json();
-        setOrders(orderData.orders || []);
+        setOrders(Array.isArray(orderData) ? orderData : orderData.orders || []);
       }
     } catch (err) {
       console.error("Error fetching expenses:", err);

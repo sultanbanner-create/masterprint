@@ -346,8 +346,12 @@ export function AppLayout({ children }: AppLayoutProps) {
     return rawNavGroups;
   }, [currentUser, pathname]);
 
-  // On Login page or Telegram Mini App (/tma), render directly without layout shell
-  if (pathname?.startsWith("/login") || pathname?.startsWith("/tma")) {
+  // On Login page, Telegram Mini App (/tma), or Public Order Tracker (/track), render directly without layout shell
+  if (
+    pathname?.startsWith("/login") ||
+    pathname?.startsWith("/tma") ||
+    pathname?.startsWith("/track")
+  ) {
     return <>{children}</>;
   }
 

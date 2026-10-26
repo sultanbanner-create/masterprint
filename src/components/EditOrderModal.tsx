@@ -52,11 +52,18 @@ export function EditOrderModal({
   const [clientPhone, setClientPhone] = useState(order.client?.phone || "");
   const [clientCompany, setClientCompany] = useState(order.client?.company || "");
   const [assignedToId, setAssignedToId] = useState(order.assignedToId || "");
+  // Форматирование даты в локальный часовой пояс для input[type="datetime-local"] без сдвига на 5 часов
+  const toLocalDatetimeInput = (isoStr?: string | null) => {
+    if (!isoStr) return "";
+    const d = new Date(isoStr);
+    if (isNaN(d.getTime())) return "";
+    const offsetMs = d.getTimezoneOffset() * 60000;
+    return new Date(d.getTime() - offsetMs).toISOString().slice(0, 16);
+  };
+
   const [status, setStatus] = useState(order.status || "NEW");
   const [priority, setPriority] = useState(order.priority || "NORMAL");
-  const [deadline, setDeadline] = useState(
-    order.deadline ? new Date(order.deadline).toISOString().slice(0, 16) : ""
-  );
+  const [deadline, setDeadline] = useState(toLocalDatetimeInput(order.deadline));
   const [installAddress, setInstallAddress] = useState(order.installAddress || "");
   const [notes, setNotes] = useState(order.notes || "");
 
