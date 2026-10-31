@@ -3,14 +3,14 @@ import { prisma } from "@/lib/db";
 
 export const dynamic = "force-dynamic";
 
-const BASE_URL = process.env.NEXT_PUBLIC_APP_URL || "https://masterprint-erp.vercel.app";
+const BASE_URL = process.env.NEXT_PUBLIC_APP_URL || "https://outdoor-erp.vercel.app";
 
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json().catch(() => ({}));
     let token = body.token;
 
-    const DEFAULT_BOT_TOKEN = "8999743919:AAF-aDlEkG32xSaG823aSYbUcBfLIpOTDnU";
+    const DEFAULT_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN || "8767812409:AAG0oVKQTzdvUavlwEJTl323YkCGNTu5YcA";
     if (!token) {
       const setting = await prisma.telegramSetting.findUnique({
         where: { id: "default" },

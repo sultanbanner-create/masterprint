@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 
-const DEFAULT_BOT_TOKEN = "8999743919:AAF-aDlEkG32xSaG823aSYbUcBfLIpOTDnU";
+const DEFAULT_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN || "8767812409:AAG0oVKQTzdvUavlwEJTl323YkCGNTu5YcA";
 
 export async function GET() {
   try {

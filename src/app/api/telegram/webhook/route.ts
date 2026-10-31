@@ -103,7 +103,7 @@ export async function POST(req: NextRequest) {
       where: { id: "default" },
     });
 
-    const DEFAULT_BOT_TOKEN = "8999743919:AAF-aDlEkG32xSaG823aSYbUcBfLIpOTDnU";
+    const DEFAULT_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN || "8767812409:AAG0oVKQTzdvUavlwEJTl323YkCGNTu5YcA";
     const botToken = setting?.botToken || process.env.TELEGRAM_BOT_TOKEN || DEFAULT_BOT_TOKEN;
 
     const callbackQuery = update.callback_query;
