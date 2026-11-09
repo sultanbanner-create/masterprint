@@ -1,22 +1,36 @@
 import { NextRequest, NextResponse } from "next/server";
+import { cookies } from "next/headers";
 import { prisma } from "@/lib/db";
+import { verifyToken, SESSION_COOKIE } from "@/lib/auth";
+import { appBaseUrl, resolveBotToken, webhookSecretFor } from "@/lib/telegram";
 
 export const dynamic = "force-dynamic";
 
-const BASE_URL = process.env.NEXT_PUBLIC_APP_URL || "https://outdoor-erp.vercel.app";
-
 export async function POST(req: NextRequest) {
   try {
-    const body = await req.json().catch(() => ({}));
-    let token = body.token;
+    const me = verifyToken(cookies().get(SESSION_COOKIE)?.value);
+    if (me?.role !== "DIRECTOR") {
+      return NextResponse.json({ error: "Подключать бота может только директор" }, { status: 403 });
+    }
 
-    const DEFAULT_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN || "8767812409:AAG0oVKQTzdvUavlwEJTl323YkCGNTu5YcA";
-    if (!token) {
+    const body = await req.json().catch(() => ({}));
+    let token: string | null = typeof body.token === "string" ? body.token.trim() : null;
+
+    // Замаскированный токен из формы означает «взять сохранённый»
+    if (!token || token.includes("•")) {
       const setting = await prisma.telegramSetting.findUnique({
         where: { id: "default" },
       });
-      token = setting?.botToken || DEFAULT_BOT_TOKEN;
+      token = resolveBotToken(setting?.botToken);
     }
+    if (!token) {
+      return NextResponse.json(
+        { error: "Введите токен бота из @BotFather" },
+        { status: 400 }
+      );
+    }
+
+    const BASE_URL = appBaseUrl(req);
 
     // 1. Проверяем бота через getMe
     const meRes = await fetch(`https://api.telegram.org/bot${token}/getMe`);
@@ -38,6 +52,8 @@ export async function POST(req: NextRequest) {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         url: webhookUrl,
+        secret_token: webhookSecretFor(token),
+        drop_pending_updates: true,
         allowed_updates: ["message", "edited_message", "callback_query"],
       }),
     });

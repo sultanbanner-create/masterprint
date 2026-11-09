@@ -1,39 +1,31 @@
+// Установка пароля сотруднику из командной строки (если забыли пароль директора).
+// Пример:  node prisma/seed-auth.js timur "НовыйНадёжныйПароль"
+// Пароли в этом файле больше не хранятся: раньше они были видны в открытом репозитории.
+
 const crypto = require("crypto");
 const { PrismaClient } = require("@prisma/client");
 
 const prisma = new PrismaClient();
-const secret = "masterprint_advertising_agency_secret_2026_jwt_salt";
 
-function hash(pwd) {
-  return crypto.createHash("sha256").update(pwd + secret).digest("hex");
+function hashPassword(password) {
+  const salt = crypto.randomBytes(16);
+  const hash = crypto.scryptSync(password, salt, 32);
+  return `scrypt$${salt.toString("hex")}$${hash.toString("hex")}`;
 }
 
 async function main() {
-  await prisma.employee.updateMany({
-    where: { name: "Тимур" },
-    data: { login: "timur", passwordHash: hash("timur2026") },
+  const [login, password] = process.argv.slice(2);
+  if (!login || !password || password.length < 8) {
+    console.log('Использование: node prisma/seed-auth.js <логин> "<пароль от 8 символов>"');
+    process.exit(1);
+  }
+
+  const result = await prisma.employee.updateMany({
+    where: { login },
+    data: { passwordHash: hashPassword(password) },
   });
 
-  await prisma.employee.updateMany({
-    where: { name: "Жалгас" },
-    data: { login: "zhalgas", passwordHash: hash("zhalgas2026") },
-  });
-
-  await prisma.employee.updateMany({
-    where: { name: "Абзал" },
-    data: { login: "abzal", passwordHash: hash("abzal2026") },
-  });
-
-  await prisma.employee.updateMany({
-    where: { name: "Альберт" },
-    data: { login: "albert", passwordHash: hash("albert2026") },
-  });
-
-  const all = await prisma.employee.findMany({
-    select: { id: true, name: true, login: true, role: true, roleTitle: true },
-  });
-
-  console.log("Updated employees with login/password:", all);
+  console.log(result.count ? `Пароль для «${login}» обновлён.` : `Сотрудник с логином «${login}» не найден.`);
 }
 
 main()

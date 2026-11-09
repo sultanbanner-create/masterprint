@@ -1,18 +1,14 @@
 {
-  "name": "MASTER PRINT — Рекламное агентство",
-  "short_name": "MasterPrint",
-  "description": "ERP и CRM система управления цехом рекламы и широкоформатной печати Master Print",
+  "name": "Master Print — агентство и цех",
+  "short_name": "Master Print",
+  "description": "Заказы, цех, касса и клиенты рекламного агентства Master Print",
   "start_url": "/",
   "display": "standalone",
   "orientation": "portrait",
-  "background_color": "#ffffff",
-  "theme_color": "#0d9488",
+  "background_color": "#070b1f",
+  "theme_color": "#ffffff",
   "icons": [
-    {
-      "src": "/icon.svg",
-      "sizes": "any",
-      "type": "image/svg+xml",
-      "purpose": "any maskable"
-    }
+    { "src": "/logo.png", "sizes": "640x640", "type": "image/png", "purpose": "any" },
+    { "src": "/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
   ]
 }

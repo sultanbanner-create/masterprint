@@ -39,7 +39,7 @@ export default function TelegramSettingsPage() {
 
   const tmaUrl = typeof window !== "undefined" 
     ? `${window.location.origin}/tma`
-    : "https://masterprint-erp.vercel.app/tma";
+    : "/tma";
 
   useEffect(() => {
     fetch("/api/telegram")

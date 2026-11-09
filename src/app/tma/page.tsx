@@ -416,7 +416,7 @@ export default function TelegramMiniApp() {
             <RefreshCw className="w-4 h-4" />
           </button>
           <a
-            href="https://masterprint-erp.vercel.app"
+            href="/"
             target="_blank"
             rel="noreferrer"
             className="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-blue-400 transition"

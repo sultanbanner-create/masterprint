@@ -6,11 +6,10 @@ import { usePathname } from "next/navigation";
 import {
   LayoutDashboard,
   Calculator,
-  PlusCircle,
+  Plus,
   KanbanSquare,
   ClipboardList,
   Calendar,
-  Wrench,
   Wallet,
   Users,
   Banknote,
@@ -23,14 +22,14 @@ import {
   QrCode,
   Menu,
   X,
-  Sparkles,
   Layers,
   ChevronLeft,
-  PanelLeftClose,
   PanelLeftOpen,
   LogOut,
-  UserCheck,
-  Package
+  Package,
+  KeyRound,
+  Receipt,
+  Wrench,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { GlobalSearchModal } from "@/components/GlobalSearchModal";
@@ -41,21 +40,90 @@ interface AppLayoutProps {
   children: React.ReactNode;
 }
 
+type NavItem = {
+  href: string;
+  label: string;
+  icon: React.ComponentType<{ className?: string }>;
+  match: (p: string) => boolean;
+};
+type NavGroup = { group: string; items: NavItem[] };
+
+const isOrdersRegistry = (p: string) =>
+  p.startsWith("/orders") && p !== "/orders/new" && p !== "/orders/kanban";
+
+// Все разделы системы
+const ALL: Record<string, NavItem> = {
+  dashboard: { href: "/", label: "Главная", icon: LayoutDashboard, match: (p) => p === "/" },
+  calculator: { href: "/calculator", label: "Калькулятор", icon: Calculator, match: (p) => p === "/calculator" },
+  kanban: { href: "/orders/kanban", label: "Канбан цеха", icon: KanbanSquare, match: (p) => p === "/orders/kanban" },
+  orders: { href: "/orders", label: "Заказы", icon: ClipboardList, match: isOrdersRegistry },
+  calendar: { href: "/calendar", label: "Календарь", icon: Calendar, match: (p) => p.startsWith("/calendar") },
+  finance: { href: "/finance", label: "Касса и долги", icon: Wallet, match: (p) => p.startsWith("/finance") },
+  expenses: { href: "/expenses", label: "Расходы цеха", icon: Receipt, match: (p) => p.startsWith("/expenses") },
+  clients: { href: "/clients", label: "Клиенты", icon: Users, match: (p) => p.startsWith("/clients") },
+  payroll: { href: "/payroll", label: "Зарплаты", icon: Banknote, match: (p) => p.startsWith("/payroll") },
+  warehouse: { href: "/warehouse", label: "Склад", icon: Warehouse, match: (p) => p.startsWith("/warehouse") },
+  equipment: { href: "/equipment", label: "Станки", icon: Wrench, match: (p) => p.startsWith("/equipment") },
+  boxes: { href: "/production/nukus-boxes", label: "Коробки Нукус", icon: Package, match: (p) => p.startsWith("/production/nukus-boxes") },
+  services: { href: "/settings/services", label: "Услуги и тарифы", icon: Sliders, match: (p) => p.startsWith("/settings/services") },
+  reports: { href: "/reports", label: "Отчёты", icon: BarChart3, match: (p) => p.startsWith("/reports") },
+  pricing: { href: "/settings/pricing", label: "Прайс-листы", icon: Layers, match: (p) => p.startsWith("/settings/pricing") },
+  telegram: { href: "/settings/telegram", label: "Telegram-бот", icon: Send, match: (p) => p.startsWith("/settings/telegram") },
+  backup: { href: "/settings/backup", label: "Резервные копии", icon: Database, match: (p) => p.startsWith("/settings/backup") },
+  security: { href: "/settings/security", label: "Пароль и вход", icon: KeyRound, match: (p) => p.startsWith("/settings/security") },
+};
+
+function navForRole(role: string | undefined): NavGroup[] {
+  if (role === "WORKSHOP_ASSEMBLY" || role === "WORKSHOP_PRINTING") {
+    return [
+      { group: "Цех", items: [ALL.dashboard, ALL.kanban, ALL.orders, ALL.calendar, ALL.boxes] },
+      { group: "Склад и станки", items: [ALL.warehouse, ALL.equipment] },
+      { group: "Аккаунт", items: [ALL.security] },
+    ];
+  }
+  if (role === "SALES_DESIGNER") {
+    return [
+      { group: "Работа", items: [ALL.dashboard, ALL.calculator, ALL.kanban, ALL.orders, ALL.calendar] },
+      { group: "Клиенты", items: [ALL.clients] },
+      { group: "Цех", items: [ALL.warehouse, ALL.boxes] },
+      { group: "Настройки", items: [ALL.telegram, ALL.security] },
+    ];
+  }
+  // Директор: полный доступ
+  return [
+    { group: "Работа", items: [ALL.dashboard, ALL.calculator, ALL.kanban, ALL.orders, ALL.calendar] },
+    { group: "Деньги и клиенты", items: [ALL.finance, ALL.expenses, ALL.clients, ALL.payroll] },
+    { group: "Цех и склад", items: [ALL.warehouse, ALL.equipment, ALL.boxes] },
+    { group: "Отчёты и настройки", items: [ALL.reports, ALL.services, ALL.pricing, ALL.telegram, ALL.backup, ALL.security] },
+  ];
+}
+
+function pageTitle(pathname: string): string {
+  if (pathname === "/") return "Главная";
+  if (pathname === "/orders/new") return "Новый наряд";
+  if (pathname === "/orders/kanban") return "Канбан цеха";
+  if (pathname === "/orders") return "Заказы";
+  if (pathname.startsWith("/orders/")) return "Карточка наряда";
+  if (pathname.startsWith("/clients/")) return "Карточка клиента";
+  const hit = Object.values(ALL).find((i) => i.href !== "/" && i.match(pathname));
+  if (hit) return hit.label;
+  if (pathname.startsWith("/tools/led-calc")) return "Расчёт подсветки";
+  return "Master Print";
+}
+
 export function AppLayout({ children }: AppLayoutProps) {
-  const pathname = usePathname();
+  const pathname = usePathname() || "/";
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isQRScannerOpen, setIsQRScannerOpen] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [currentUser, setCurrentUser] = useState<any>(null);
+  const [userLoaded, setUserLoaded] = useState(false);
 
-  // Restore sidebar collapse state from localStorage
   useEffect(() => {
     try {
       const saved = localStorage.getItem("masterprint_sidebar_collapsed");
-      if (saved !== null) {
-        setIsCollapsed(saved === "true");
-      }
+      if (saved !== null) setIsCollapsed(saved === "true");
     } catch {}
   }, []);
 
@@ -69,34 +137,31 @@ export function AppLayout({ children }: AppLayoutProps) {
     });
   };
 
-  // Close mobile drawer on route change
   useEffect(() => {
     setIsMobileMenuOpen(false);
   }, [pathname]);
 
-  // Load current user profile from /api/auth/me
+  // Профиль загружаем один раз, а не на каждой смене страницы
   useEffect(() => {
-    if (pathname?.startsWith("/login")) return;
-    fetch("/api/auth/me")
-      .then((r) => r.json())
+    if (pathname.startsWith("/login") || pathname.startsWith("/tma") || pathname.startsWith("/track")) return;
+    if (userLoaded) return;
+    fetch("/api/auth/me", { cache: "no-store" })
+      .then((r) => (r.ok ? r.json() : { user: null }))
       .then((data) => {
-        if (data.user) {
-          setCurrentUser(data.user);
-        }
+        if (data?.user) setCurrentUser(data.user);
       })
-      .catch(() => {});
-  }, [pathname]);
+      .catch(() => {})
+      .finally(() => setUserLoaded(true));
+  }, [pathname, userLoaded]);
 
   const handleLogout = async () => {
     try {
       await fetch("/api/auth/logout", { method: "POST" });
-      window.location.href = "/login";
-    } catch {
+    } finally {
       window.location.href = "/login";
     }
   };
 
-  // Global keyboard shortcut Ctrl+K
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "k") {
@@ -108,435 +173,164 @@ export function AppLayout({ children }: AppLayoutProps) {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, []);
 
-  // Dynamic page title based on active pathname
-  const getPageMeta = () => {
-    if (pathname === "/") return { title: "Дашборд цеха", section: "Главная" };
-    if (pathname === "/calculator") return { title: "Калькулятор изделий ТЗ 1.0", section: "Расчеты" };
-    if (pathname === "/orders/kanban") return { title: "Канбан цеха (7 этапов)", section: "Производство" };
-    if (pathname === "/orders/new") return { title: "Оформление нового наряда", section: "Заказы" };
-    if (pathname === "/orders") return { title: "Реестр заказов и нарядов", section: "Производство" };
-    if (pathname.startsWith("/orders/")) return { title: "Карточка наряда цеха", section: "Заказы" };
-    if (pathname.startsWith("/calendar")) return { title: "Календарь дедлайнов & монтажей", section: "План" };
-    if (pathname.startsWith("/finance")) return { title: "Касса, финансы & должники", section: "Бухгалтерия" };
-    if (pathname.startsWith("/clients")) return { title: "База клиентов & CRM", section: "Клиенты" };
-    if (pathname.startsWith("/payroll")) return { title: "Сдельные зарплаты мастеров", section: "Зарплаты" };
-    if (pathname.startsWith("/warehouse")) return { title: "Склад материалов и фурнитуры", section: "Склад" };
-    if (pathname.startsWith("/reports")) return { title: "Аналитика & производственные KPI", section: "Отчеты" };
-    if (pathname.startsWith("/settings/services")) return { title: "Конструктор услуг и тарифов (S02/S04)", section: "Настройки" };
-    if (pathname.startsWith("/settings/pricing")) return { title: "Базовые прайс-листы", section: "Настройки" };
-    if (pathname.startsWith("/settings/telegram")) return { title: "Интеграция Telegram-бота цеха", section: "Связь" };
-    if (pathname.startsWith("/settings/backup")) return { title: "Резервные копии БД", section: "Система" };
-    if (pathname.startsWith("/production/nukus-boxes")) return { title: "Линия коробок: Нукус гуллери", section: "Цех" };
-    return { title: "Master Print ERP", section: "Система" };
-  };
+  const role: string | undefined = currentUser?.role;
+  const navGroups = useMemo(() => navForRole(role), [role]);
+  const canCreateOrder = Boolean(currentUser) && role !== "WORKSHOP_PRINTING";
 
-  const pageMeta = getPageMeta();
+  // Нижняя панель на телефоне: самые частые разделы
+  const bottomItems = useMemo<(NavItem | "new" | "more")[]>(() => {
+    if (role === "WORKSHOP_PRINTING") return [ALL.dashboard, ALL.orders, ALL.kanban, ALL.calendar, "more"];
+    return [ALL.dashboard, ALL.orders, "new", ALL.kanban, "more"];
+  }, [role]);
 
-  // Full Navigation structure
-  const rawNavGroups = [
-    {
-      group: "ОСНОВНОЕ",
-      items: [
-        {
-          href: "/",
-          label: "Дашборд",
-          icon: LayoutDashboard,
-          active: pathname === "/",
-        },
-        {
-          href: "/calculator",
-          label: "Калькулятор ТЗ",
-          icon: Calculator,
-          active: pathname === "/calculator",
-          badge: "ТЗ 1.0",
-          badgeColor: "bg-emerald-50 text-emerald-700 border border-emerald-200",
-        },
-        {
-          href: "/orders/kanban",
-          label: "Канбан цеха",
-          icon: KanbanSquare,
-          active: pathname === "/orders/kanban",
-          badge: "7 этапов",
-          badgeColor: "bg-blue-50 text-blue-700 border border-blue-200",
-        },
-        {
-          href: "/orders",
-          label: "Реестр заказов",
-          icon: ClipboardList,
-          active:
-            pathname.startsWith("/orders") &&
-            pathname !== "/orders/new" &&
-            pathname !== "/orders/kanban",
-        },
-        {
-          href: "/calendar",
-          label: "Календарь",
-          icon: Calendar,
-          active: pathname.startsWith("/calendar"),
-        },
-      ],
-    },
-    {
-      group: "ФИНАНСЫ & КЛИЕНТЫ",
-      items: [
-        {
-          href: "/finance",
-          label: "Касса & Долги",
-          icon: Wallet,
-          active: pathname.startsWith("/finance"),
-        },
-        {
-          href: "/clients",
-          label: "Клиенты & CRM",
-          icon: Users,
-          active: pathname.startsWith("/clients"),
-        },
-        {
-          href: "/payroll",
-          label: "Зарплаты мастеров",
-          icon: Banknote,
-          active: pathname.startsWith("/payroll"),
-        },
-      ],
-    },
-    {
-      group: "ПРОИЗВОДСТВО & СКЛАД",
-      items: [
-        {
-          href: "/warehouse",
-          label: "Склад материалов",
-          icon: Warehouse,
-          active: pathname.startsWith("/warehouse"),
-        },
-        {
-          href: "/production/nukus-boxes",
-          label: "Коробки Нукус гуллери",
-          icon: Package,
-          active: pathname.startsWith("/production/nukus-boxes"),
-          badge: "Абзал",
-          badgeColor: "bg-emerald-50 text-emerald-700 border border-emerald-200",
-        },
-      ],
-    },
-    {
-      group: "НАСТРОЙКИ & ОТЧЕТЫ",
-      items: [
-        {
-          href: "/settings/services",
-          label: "Конструктор услуг",
-          icon: Sliders,
-          active: pathname.startsWith("/settings/services"),
-          badge: "S02/S04",
-          badgeColor: "bg-purple-50 text-purple-700 border border-purple-200",
-        },
-        {
-          href: "/reports",
-          label: "Отчеты & KPI",
-          icon: BarChart3,
-          active: pathname.startsWith("/reports"),
-        },
-        {
-          href: "/settings/pricing",
-          label: "Прайс-листы",
-          icon: Layers,
-          active: pathname.startsWith("/settings/pricing"),
-        },
-        {
-          href: "/settings/telegram",
-          label: "Telegram цеха",
-          icon: Send,
-          active: pathname.startsWith("/settings/telegram"),
-        },
-        {
-          href: "/settings/backup",
-          label: "Бэкапы БД",
-          icon: Database,
-          active: pathname.startsWith("/settings/backup"),
-        },
-      ],
-    },
-  ];
-
-  // Role-based filtering of navigation
-  const navGroups = useMemo(() => {
-    if (!currentUser) return rawNavGroups;
-    const role = currentUser.role;
-
-    // Мастера цеха (Абзал, Альберт): личная выработка, канбан, заказы, склад, станки
-    if (role === "WORKSHOP_ASSEMBLY" || role === "WORKSHOP_PRINTING") {
-      return [
-        {
-          group: "ЦЕХ & НАРЯДЫ",
-          items: [
-            {
-              href: "/",
-              label: "Моя выработка",
-              icon: LayoutDashboard,
-              active: pathname === "/",
-            },
-            {
-              href: "/orders/kanban",
-              label: "Канбан цеха",
-              icon: KanbanSquare,
-              active: pathname === "/orders/kanban",
-              badge: "7 этапов",
-              badgeColor: "bg-blue-50 text-blue-700 border border-blue-200",
-            },
-            {
-              href: "/orders",
-              label: "Реестр заказов",
-              icon: ClipboardList,
-              active:
-                pathname.startsWith("/orders") &&
-                pathname !== "/orders/new" &&
-                pathname !== "/orders/kanban",
-            },
-            {
-              href: "/calendar",
-              label: "Календарь",
-              icon: Calendar,
-              active: pathname.startsWith("/calendar"),
-            },
-            {
-              href: "/production/nukus-boxes",
-              label: "Коробки Нукус гуллери",
-              icon: Package,
-              active: pathname.startsWith("/production/nukus-boxes"),
-              badge: "Партии",
-              badgeColor: "bg-emerald-50 text-emerald-700 border border-emerald-200",
-            },
-          ],
-        },
-        {
-          group: "ПРОИЗВОДСТВО & СКЛАД",
-          items: [
-            {
-              href: "/warehouse",
-              label: "Склад материалов",
-              icon: Warehouse,
-              active: pathname.startsWith("/warehouse"),
-            },
-          ],
-        },
-      ];
-    }
-
-    // Менеджер (Жалгас): заказы, калькулятор, клиенты, канбан. БЕЗ полного финансового отчета и кассы
-    if (role === "SALES_DESIGNER") {
-      return rawNavGroups
-        .map((group) => {
-          if (group.group === "ФИНАНСЫ & КЛИЕНТЫ") {
-            return {
-              ...group,
-              items: group.items.filter((it) => it.href === "/clients"),
-            };
-          }
-          if (group.group === "НАСТРОЙКИ & ОТЧЕТЫ") {
-            return {
-              ...group,
-              items: group.items.filter((it) => it.href === "/settings/telegram"),
-            };
-          }
-          return group;
-        })
-        .filter((g) => g.items.length > 0);
-    }
-
-    // Директор (Тимур): полный доступ
-    return rawNavGroups;
-  }, [currentUser, pathname]);
-
-  // On Login page, Telegram Mini App (/tma), or Public Order Tracker (/track), render directly without layout shell
-  if (
-    pathname?.startsWith("/login") ||
-    pathname?.startsWith("/tma") ||
-    pathname?.startsWith("/track")
-  ) {
+  // Вход, мини-приложение Telegram и трекер клиента — без оболочки
+  if (pathname.startsWith("/login") || pathname.startsWith("/tma") || pathname.startsWith("/track")) {
     return <>{children}</>;
   }
+
+  const title = pageTitle(pathname);
+  const initials = (currentUser?.name || "").slice(0, 1).toUpperCase();
 
   const renderSidebarContent = (isDrawer = false) => {
     const collapsed = !isDrawer && isCollapsed;
 
     return (
-      <div className="flex flex-col h-full bg-white text-slate-700 border-r border-slate-200 shadow-xs select-none">
-        {/* Brand Header */}
-        <div
-          className={cn(
-            "h-16 border-b border-slate-100 flex items-center transition-all",
-            collapsed ? "justify-center px-2" : "justify-between px-4"
-          )}
-        >
-          <Link href="/" className="flex items-center gap-2.5 group overflow-hidden">
-            <img
-              src="/logo.png"
-              alt="Master Print"
-              className="w-9 h-9 rounded-xl object-cover shadow-sm group-hover:scale-105 transition-transform shrink-0"
-            />
+      <div className="flex flex-col h-full bg-ink text-slate-300 select-none">
+        {/* Логотип */}
+        <div className={cn("h-16 flex items-center shrink-0", collapsed ? "justify-center px-2" : "justify-between px-4")}>
+          <Link href="/" className="flex items-center gap-2.5 overflow-hidden">
+            <img src="/logo.png" alt="Master Print" className="w-9 h-9 rounded-xl object-cover shrink-0" />
             {!collapsed && (
-              <div className="truncate">
-                <div className="flex items-center gap-1 font-black text-slate-900 text-sm tracking-tight leading-none">
-                  <span>MASTER</span>
-                  <span className="text-blue-600">PRINT</span>
-                </div>
-                <p className="text-[10px] text-slate-500 font-medium mt-1 truncate">
-                  Рекламное агентство
-                </p>
+              <div className="truncate leading-none">
+                <div className="font-extrabold text-white text-[15px] tracking-tight">Master Print</div>
+                <div className="text-[11px] text-slate-400 mt-1">Агентство и цех</div>
               </div>
             )}
           </Link>
-
-          {/* Close button in mobile drawer */}
           {isDrawer && (
             <button
               type="button"
               onClick={() => setIsMobileMenuOpen(false)}
-              className="p-1.5 rounded-lg text-slate-400 hover:text-slate-800 hover:bg-slate-100 transition"
+              className="p-2 -mr-1 rounded-lg text-slate-400 hover:text-white hover:bg-white/10"
+              aria-label="Закрыть меню"
             >
               <X className="w-5 h-5" />
             </button>
           )}
-
-          {/* Desktop collapse toggle icon button */}
-          {!isDrawer && !collapsed && (
-            <button
-              type="button"
-              onClick={toggleCollapse}
-              className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition"
-              title="Свернуть панель"
-            >
-              <PanelLeftClose className="w-4 h-4" />
-            </button>
-          )}
         </div>
+        <div className="cmyk-strip opacity-80" />
 
-        {/* Quick Action: Новый наряд (если не мастер печати) */}
-        {currentUser?.role !== "WORKSHOP_PRINTING" && (
-          <div className={cn("p-3 border-b border-slate-100", collapsed && "px-2")}>
+        {/* Новый наряд */}
+        {canCreateOrder && (
+          <div className={cn("pt-4 pb-2", collapsed ? "px-2" : "px-3")}>
             <Link
               href="/orders/new"
               className={cn(
-                "flex items-center justify-center gap-2 rounded-xl text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 shadow-sm shadow-blue-600/20 transition active:scale-95",
-                collapsed ? "w-10 h-10 mx-auto p-0" : "w-full py-2.5 px-3"
+                "flex items-center justify-center gap-2 rounded-xl text-sm font-bold text-white bg-brand-600 hover:bg-brand-500 transition active:scale-95",
+                collapsed ? "w-11 h-11 mx-auto" : "w-full py-2.5"
               )}
-              title="Создать новый наряд"
+              title="Новый наряд"
             >
-              <PlusCircle className="w-4 h-4 shrink-0" />
+              <Plus className="w-4 h-4 shrink-0" />
               {!collapsed && <span>Новый наряд</span>}
             </Link>
           </div>
         )}
 
-        {/* Navigation list */}
-        <div className="flex-1 overflow-y-auto px-2.5 py-3 space-y-5 scrollbar-thin scrollbar-thumb-slate-200">
-          {navGroups.map((group) => (
-            <div key={group.group} className="space-y-0.5">
-              {!collapsed ? (
-                <div className="px-2.5 pb-1 text-[9px] font-bold uppercase tracking-wider text-slate-500">
-                  {group.group}
-                </div>
-              ) : (
-                <div className="w-4 h-0.5 bg-slate-100 mx-auto my-1.5 rounded-full" />
-              )}
-
-              {group.items.map((item) => {
-                const Icon = item.icon;
-                return (
-                  <Link
-                    key={item.href}
-                    href={item.href}
-                    title={collapsed ? item.label : undefined}
-                    className={cn(
-                      "flex items-center rounded-xl text-xs font-semibold transition-all group",
-                      collapsed
-                        ? "justify-center w-10 h-10 mx-auto"
-                        : "justify-between px-3 py-2",
-                      item.active
-                        ? "bg-blue-50 text-blue-700 font-bold shadow-2xs"
-                        : "text-slate-600 hover:text-slate-900 hover:bg-slate-50"
-                    )}
-                  >
-                    <div className={cn("flex items-center gap-2.5 truncate", collapsed && "justify-center")}>
-                      <Icon
-                        className={cn(
-                          "w-4 h-4 shrink-0 transition-colors",
-                          item.active
-                            ? "text-blue-600"
-                            : "text-slate-500 group-hover:text-slate-700"
-                        )}
-                      />
-                      {!collapsed && <span className="truncate">{item.label}</span>}
-                    </div>
-
-                    {!collapsed && item.badge && (
-                      <span
-                        className={cn(
-                          "px-1.5 py-0.5 rounded text-[9px] font-bold leading-none shrink-0",
-                          item.badgeColor || "bg-slate-100 text-slate-600"
-                        )}
-                      >
-                        {item.badge}
-                      </span>
-                    )}
-                  </Link>
-                );
-              })}
+        {/* Разделы */}
+        <nav className="flex-1 overflow-y-auto nav-scroll px-2.5 py-3 space-y-5" aria-label="Разделы">
+          {!userLoaded ? (
+            <div className="space-y-2 px-1">
+              {Array.from({ length: 7 }).map((_, i) => (
+                <div key={i} className="h-8 rounded-lg bg-white/5" />
+              ))}
             </div>
-          ))}
-        </div>
+          ) : (
+            navGroups.map((group) => (
+              <div key={group.group} className="space-y-0.5">
+                {!collapsed ? (
+                  <div className="px-3 pb-1.5 text-[10px] font-bold uppercase tracking-[0.12em] text-slate-500">
+                    {group.group}
+                  </div>
+                ) : (
+                  <div className="w-5 h-px bg-white/10 mx-auto my-2" />
+                )}
+                {group.items.map((item) => {
+                  const Icon = item.icon;
+                  const active = item.match(pathname);
+                  return (
+                    <Link
+                      key={item.href}
+                      href={item.href}
+                      title={collapsed ? item.label : undefined}
+                      aria-current={active ? "page" : undefined}
+                      className={cn(
+                        "flex items-center gap-3 rounded-lg text-[13px] font-semibold transition-colors",
+                        collapsed ? "justify-center w-11 h-11 mx-auto" : "px-3 py-2.5",
+                        active ? "bg-white/10 text-white" : "text-slate-400 hover:text-white hover:bg-white/5"
+                      )}
+                    >
+                      <Icon className={cn("w-[18px] h-[18px] shrink-0", active ? "text-brand-400" : "")} />
+                      {!collapsed && <span className="truncate">{item.label}</span>}
+                    </Link>
+                  );
+                })}
+              </div>
+            ))
+          )}
+        </nav>
 
-        {/* Bottom Profile with LOGOUT button */}
-        <div className="p-3 border-t border-slate-100 bg-slate-50/70">
+        {/* Профиль и выход */}
+        <div className="p-3 border-t border-white/10">
           {collapsed ? (
             <div className="flex flex-col items-center gap-2">
               <div
-                className="w-9 h-9 rounded-xl bg-blue-600 text-white font-bold text-xs flex items-center justify-center"
-                title={`${currentUser?.name || "Сотрудник"} (${currentUser?.roleTitle || ""})`}
+                className="w-9 h-9 rounded-full bg-brand-600 text-white font-bold text-sm flex items-center justify-center"
+                title={currentUser ? `${currentUser.name} · ${currentUser.roleTitle}` : ""}
               >
-                {currentUser?.name?.[0] || "М"}
+                {initials}
               </div>
               <button
                 type="button"
-                onClick={handleLogout}
-                className="p-2 rounded-lg text-slate-400 hover:text-red-600 hover:bg-white transition"
-                title="Выйти из системы"
+                onClick={toggleCollapse}
+                className="p-2 rounded-lg text-slate-500 hover:text-white hover:bg-white/10"
+                title="Развернуть панель"
               >
-                <LogOut className="w-4 h-4" />
+                <PanelLeftOpen className="w-4 h-4" />
               </button>
             </div>
           ) : (
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2.5 overflow-hidden">
-                <div className="w-8 h-8 rounded-xl bg-blue-600 text-white font-black text-xs flex items-center justify-center shrink-0 shadow-xs">
-                  {currentUser?.name?.[0] || "Т"}
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex items-center gap-2.5 min-w-0">
+                <div className="w-9 h-9 rounded-full bg-brand-600 text-white font-bold text-sm flex items-center justify-center shrink-0">
+                  {initials}
                 </div>
-                <div className="truncate">
-                  <div className="text-xs font-bold text-slate-900 leading-tight truncate">
-                    {currentUser?.name || "Тимур"}
-                  </div>
-                  <div className="text-[10px] text-slate-500 truncate">
-                    {currentUser?.roleTitle || "Директор"}
-                  </div>
+                <div className="min-w-0">
+                  <div className="text-sm font-bold text-white truncate">{currentUser?.name || "…"}</div>
+                  <div className="text-[11px] text-slate-400 truncate">{currentUser?.roleTitle || ""}</div>
                 </div>
               </div>
-
-              <div className="flex items-center gap-1">
+              <div className="flex items-center">
                 <button
                   type="button"
                   onClick={handleLogout}
-                  className="p-1.5 rounded-lg text-slate-400 hover:text-red-600 hover:bg-white border border-transparent hover:border-slate-200 transition"
-                  title="Выйти из системы"
+                  className="p-2 rounded-lg text-slate-400 hover:text-red-300 hover:bg-white/10"
+                  title="Выйти"
+                  aria-label="Выйти"
                 >
                   <LogOut className="w-4 h-4" />
                 </button>
-                <button
-                  type="button"
-                  onClick={toggleCollapse}
-                  className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-white border border-transparent hover:border-slate-200 transition"
-                  title="Свернуть панель"
-                >
-                  <ChevronLeft className="w-4 h-4" />
-                </button>
+                {!isDrawer && (
+                  <button
+                    type="button"
+                    onClick={toggleCollapse}
+                    className="p-2 rounded-lg text-slate-500 hover:text-white hover:bg-white/10"
+                    title="Свернуть панель"
+                    aria-label="Свернуть панель"
+                  >
+                    <ChevronLeft className="w-4 h-4" />
+                  </button>
+                )}
               </div>
             </div>
           )}
@@ -547,139 +341,136 @@ export function AppLayout({ children }: AppLayoutProps) {
 
   return (
     <div className="min-h-screen bg-slate-50 flex">
-      {/* DESKTOP FIXED SIDEBAR */}
+      {/* Боковое меню на компьютере */}
       <aside
         className={cn(
-          "hidden md:block fixed inset-y-0 left-0 z-40 transition-all duration-200 no-print",
-          isCollapsed ? "w-16" : "w-60"
+          "hidden md:block fixed inset-y-0 left-0 z-40 transition-[width] duration-200 no-print",
+          isCollapsed ? "w-[72px]" : "w-60"
         )}
       >
         {renderSidebarContent(false)}
       </aside>
 
-      {/* MOBILE DRAWER OVERLAY */}
+      {/* Выезжающее меню на телефоне */}
       {isMobileMenuOpen && (
-        <div className="fixed inset-0 z-50 md:hidden flex no-print">
-          <div
-            className="fixed inset-0 bg-slate-900/50 backdrop-blur-xs transition-opacity"
-            onClick={() => setIsMobileMenuOpen(false)}
-          />
-          <div className="relative w-64 max-w-[85vw] h-full shadow-2xl z-10 animate-in slide-in-from-left duration-200">
+        <div className="fixed inset-0 z-50 md:hidden flex no-print" role="dialog" aria-modal="true">
+          <div className="fixed inset-0 bg-ink/60" onClick={() => setIsMobileMenuOpen(false)} />
+          <div className="relative w-72 max-w-[85vw] h-full shadow-2xl z-10 pt-safe bg-ink">
             {renderSidebarContent(true)}
           </div>
         </div>
       )}
 
-      {/* MAIN CONTENT WRAPPER */}
-      <div
-        className={cn(
-          "flex-1 flex flex-col min-h-screen w-full transition-all duration-200",
-          isCollapsed ? "md:pl-16" : "md:pl-60"
-        )}
-      >
-        {/* COMPACT TOP UTILITY HEADER */}
-        <header className="sticky top-0 z-30 bg-white/95 backdrop-blur border-b border-slate-200/80 shadow-2xs h-14 flex items-center justify-between px-4 sm:px-6 lg:px-8 no-print">
-          <div className="flex items-center gap-3">
-            {/* Mobile menu toggle */}
-            <button
-              type="button"
-              onClick={() => setIsMobileMenuOpen(true)}
-              className="p-1.5 rounded-lg text-slate-600 hover:text-slate-900 hover:bg-slate-100 md:hidden transition border border-slate-200"
-              title="Меню разделов"
-            >
-              <Menu className="w-5 h-5" />
-            </button>
-
-            {/* Desktop un-collapse trigger when collapsed */}
-            {isCollapsed && (
-              <button
-                type="button"
-                onClick={toggleCollapse}
-                className="hidden md:flex p-1.5 rounded-lg text-slate-500 hover:text-slate-900 hover:bg-slate-100 transition border border-slate-200"
-                title="Развернуть панель"
-              >
-                <PanelLeftOpen className="w-4 h-4" />
-              </button>
-            )}
-
-            {/* Breadcrumb & Section Title */}
-            <div className="flex items-center gap-2">
-              <span className="hidden sm:inline-block px-2 py-0.5 rounded-md bg-slate-100 text-slate-600 text-[11px] font-bold">
-                {pageMeta.section}
-              </span>
-              <span className="hidden sm:inline text-slate-300 font-light">/</span>
-              <h1 className="text-sm font-black text-slate-900 truncate">
-                {pageMeta.title}
-              </h1>
+      <div className={cn("flex-1 flex flex-col min-h-screen min-w-0 transition-[padding] duration-200", isCollapsed ? "md:pl-[72px]" : "md:pl-60")}>
+        {/* Верхняя панель */}
+        <header className="sticky top-0 z-30 bg-white/95 backdrop-blur border-b border-slate-200 no-print pt-safe">
+          <div className="h-14 flex items-center justify-between gap-2 px-3 sm:px-6">
+            <div className="flex items-center gap-2.5 min-w-0">
+              <img src="/logo.png" alt="" className="w-8 h-8 rounded-lg object-cover md:hidden shrink-0" />
+              <h1 className="text-base sm:text-[17px] font-extrabold text-slate-900 tracking-tight truncate">{title}</h1>
             </div>
-          </div>
 
-          {/* Right utility actions */}
-          <div className="flex items-center gap-2">
-            {/* Центр контроля горящих дедлайнов (колокольчик с огнем и быстрые действия) */}
-            <DeadlineNotificationCenter currentUser={currentUser} />
-
-            {/* Current user badge */}
-            {currentUser && (
-              <div className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-slate-100 text-xs text-slate-700 font-medium">
-                <span className="w-2 h-2 rounded-full bg-emerald-500" />
-                <span className="font-bold text-slate-900">{currentUser.name}</span>
-                <span className="text-[11px] text-slate-400">({currentUser.roleTitle})</span>
-              </div>
-            )}
-
-            {/* Quick search input button */}
-            <button
-              onClick={() => setIsSearchOpen(true)}
-              className="px-3 py-1.5 rounded-xl text-slate-500 hover:text-slate-900 bg-slate-100 hover:bg-slate-200/80 transition border border-slate-200 flex items-center gap-2 text-xs font-medium"
-              title="Глобальный поиск по базе (Ctrl+K)"
-            >
-              <Search className="w-3.5 h-3.5 text-slate-400" />
-              <span className="hidden md:inline text-slate-500">Поиск...</span>
-              <kbd className="hidden lg:inline-block px-1.5 py-0.5 text-[9px] font-mono font-bold text-slate-400 bg-white border border-slate-200 rounded">
-                Ctrl+K
-              </kbd>
-            </button>
-
-            {/* QR Scanner */}
-            <button
-              onClick={() => setIsQRScannerOpen(true)}
-              className="p-2 rounded-xl text-slate-600 hover:text-blue-600 hover:bg-blue-50 transition border border-slate-200 hover:border-blue-200"
-              title="Сканировать QR-код наряда"
-            >
-              <QrCode className="w-4 h-4" />
-            </button>
-
-            {/* Quick Create Order */}
-            {currentUser?.role !== "WORKSHOP_PRINTING" && (
-              <Link
-                href="/orders/new"
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold transition shadow-xs shadow-blue-600/20"
+            <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+              <button
+                onClick={() => setIsSearchOpen(true)}
+                className="h-10 px-2.5 sm:px-3 rounded-xl text-slate-500 hover:text-slate-900 bg-slate-100 hover:bg-slate-200/70 transition flex items-center gap-2 text-sm"
+                title="Поиск (Ctrl+K)"
+                aria-label="Поиск"
               >
-                <PlusCircle className="w-4 h-4" />
-                <span className="hidden sm:inline">+ Наряд</span>
-              </Link>
-            )}
+                <Search className="w-4 h-4" />
+                <span className="hidden lg:inline pr-6">Поиск заказа, клиента…</span>
+                <kbd className="hidden lg:inline-block px-1.5 py-0.5 text-[10px] font-semibold text-slate-400 bg-white border border-slate-200 rounded">
+                  Ctrl K
+                </kbd>
+              </button>
+
+              <button
+                onClick={() => setIsQRScannerOpen(true)}
+                className="h-10 w-10 rounded-xl text-slate-600 hover:text-brand-700 hover:bg-brand-50 transition flex items-center justify-center"
+                title="Сканировать QR наряда"
+                aria-label="Сканировать QR наряда"
+              >
+                <QrCode className="w-5 h-5" />
+              </button>
+
+              <DeadlineNotificationCenter currentUser={currentUser} />
+
+              {canCreateOrder && (
+                <Link
+                  href="/orders/new"
+                  className="hidden md:inline-flex items-center gap-1.5 h-10 px-4 rounded-xl bg-brand-600 hover:bg-brand-700 text-white text-sm font-bold transition"
+                >
+                  <Plus className="w-4 h-4" />
+                  Наряд
+                </Link>
+              )}
+            </div>
           </div>
         </header>
 
-        {/* MAIN PAGE BODY */}
-        <main className="flex-1 w-full max-w-[1600px] mx-auto px-3 sm:px-5 lg:px-6 py-3 sm:py-4">
+        {/* Содержимое страницы; снизу место под панель вкладок на телефоне */}
+        <main className="flex-1 w-full max-w-[1600px] mx-auto px-3 sm:px-5 lg:px-6 py-4 pb-28 md:pb-6">
           {children}
         </main>
       </div>
 
-      {/* Global Search Modal */}
-      <GlobalSearchModal
-        isOpen={isSearchOpen}
-        onClose={() => setIsSearchOpen(false)}
-      />
+      {/* Нижняя панель вкладок на телефоне */}
+      <nav
+        className="md:hidden fixed bottom-0 inset-x-0 z-40 bg-white/95 backdrop-blur border-t border-slate-200 pb-safe no-print"
+        aria-label="Быстрые разделы"
+      >
+        <div className="grid grid-cols-5 h-16">
+          {bottomItems.map((item) => {
+            if (item === "new") {
+              return (
+                <Link
+                  key="new"
+                  href="/orders/new"
+                  className="flex flex-col items-center justify-center gap-0.5"
+                  aria-label="Новый наряд"
+                >
+                  <span className="w-12 h-12 -mt-5 rounded-2xl bg-brand-600 text-white flex items-center justify-center shadow-lg shadow-brand-600/30 ring-4 ring-white">
+                    <Plus className="w-6 h-6" />
+                  </span>
+                  <span className="text-[10px] font-bold text-slate-600">Наряд</span>
+                </Link>
+              );
+            }
+            if (item === "more") {
+              return (
+                <button
+                  key="more"
+                  type="button"
+                  onClick={() => setIsMobileMenuOpen(true)}
+                  className="flex flex-col items-center justify-center gap-1 text-slate-500"
+                >
+                  <Menu className="w-[22px] h-[22px]" />
+                  <span className="text-[10px] font-bold">Ещё</span>
+                </button>
+              );
+            }
+            const Icon = item.icon;
+            const active = item.match(pathname);
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                aria-current={active ? "page" : undefined}
+                className={cn(
+                  "flex flex-col items-center justify-center gap-1 transition-colors",
+                  active ? "text-brand-600" : "text-slate-500"
+                )}
+              >
+                <Icon className="w-[22px] h-[22px]" />
+                <span className="text-[10px] font-bold">{item.label === "Канбан цеха" ? "Канбан" : item.label}</span>
+              </Link>
+            );
+          })}
+        </div>
+      </nav>
 
-      {/* QR Scanner Modal */}
-      <QRScannerModal
-        isOpen={isQRScannerOpen}
-        onClose={() => setIsQRScannerOpen(false)}
-      />
+      <GlobalSearchModal isOpen={isSearchOpen} onClose={() => setIsSearchOpen(false)} />
+      <QRScannerModal isOpen={isQRScannerOpen} onClose={() => setIsQRScannerOpen(false)} />
     </div>
   );
 }

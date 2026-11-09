@@ -9,3 +9,8 @@ cloudflared.exe
 .turbo
 .mcp.json
 scripts
+
+# Файлы базы и секреты не храним в репозитории
+*.db
+*.db-journal
+*.sqlite

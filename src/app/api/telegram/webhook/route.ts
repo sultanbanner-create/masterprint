@@ -1,9 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
+import { appBaseUrl, resolveBotToken, webhookSecretFor } from "@/lib/telegram";
 
 export const dynamic = "force-dynamic";
 
-const BASE_URL = process.env.NEXT_PUBLIC_APP_URL || "https://masterprint-erp.vercel.app";
+// Адрес сайта для кнопок в сообщениях бота; задаётся в начале обработки запроса
+let BASE_URL = process.env.NEXT_PUBLIC_APP_URL || "";
 
 // Автоматическое определение категории расхода по ключевым словам
 function detectExpenseCategory(text: string): { category: string; label: string; icon: string } {
@@ -96,15 +98,24 @@ function parseExpenseInput(rawText: string) {
 
 export async function POST(req: NextRequest) {
   try {
-    const update = await req.json();
-
     // 1. Получаем настройки бота из БД
     const setting = await prisma.telegramSetting.findUnique({
       where: { id: "default" },
     });
 
-    const DEFAULT_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN || "8767812409:AAG0oVKQTzdvUavlwEJTl323YkCGNTu5YcA";
-    const botToken = setting?.botToken || process.env.TELEGRAM_BOT_TOKEN || DEFAULT_BOT_TOKEN;
+    const botToken = resolveBotToken(setting?.botToken);
+    if (!botToken) {
+      return NextResponse.json({ ok: false, error: "Bot is not configured" }, { status: 503 });
+    }
+
+    // Принимаем только запросы от Telegram с секретом, заданным при подключении бота
+    const secretHeader = req.headers.get("x-telegram-bot-api-secret-token") || "";
+    if (secretHeader !== webhookSecretFor(botToken)) {
+      return NextResponse.json({ ok: false }, { status: 401 });
+    }
+
+    BASE_URL = appBaseUrl(req);
+    const update = await req.json();
 
     const callbackQuery = update.callback_query;
     const message = update.message || update.edited_message || callbackQuery?.message;
