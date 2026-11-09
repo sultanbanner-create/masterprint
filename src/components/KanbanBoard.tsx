@@ -34,6 +34,13 @@ export function KanbanBoard({
   // По умолчанию для всех открываем полный конвейер цеха
   const [filterEmployee, setFilterEmployee] = useState<string>("ALL");
 
+  // На телефоне показываем один этап за раз; этап можно открыть ссылкой ?stage=PRINTING
+  const [mobileStage, setMobileStage] = useState<string | null>(null);
+  useEffect(() => {
+    const fromUrl = new URLSearchParams(window.location.search).get("stage");
+    if (fromUrl && STAGES.some((s) => s.key === fromUrl)) setMobileStage(fromUrl);
+  }, []);
+
   // Фоновая синхронизация канбана с базой данных
   const reloadOrders = async () => {
     try {
@@ -163,21 +170,26 @@ export function KanbanBoard({
     return true;
   });
 
+  const shownStage =
+    mobileStage ||
+    STAGES.find((st) => st.key !== "COMPLETED" && filteredOrders.some((o) => o.status === st.key))?.key ||
+    "NEW";
+
   return (
     <div className="space-y-4">
       {/* Личный блок мастера: только его заказы и сумма выполненной работы */}
       {!isDirector && currentUser && (
-        <div className="bg-white rounded-2xl p-4 border border-emerald-200 bg-gradient-to-r from-emerald-50/40 via-white to-teal-50/20 shadow-xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+        <div className="bg-white rounded-2xl p-4 border border-emerald-200 bg-gradient-to-r from-emerald-50/40 via-white to-blue-50/20 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-emerald-600 text-white flex items-center justify-center shadow-xs shrink-0">
+            <div className="w-10 h-10 rounded-xl bg-emerald-600 text-white flex items-center justify-center shrink-0">
               <Award className="w-5 h-5" />
             </div>
             <div>
-              <div className="text-xs font-bold text-emerald-800 uppercase tracking-wider">
+              <div className="text-xs font-bold text-emerald-800">
                 Выработка: {currentUser.name} ({currentUser.roleTitle || "Мастер цеха"})
               </div>
               <div className="flex items-baseline gap-2 mt-0.5">
-                <span className="text-xl font-black font-mono text-emerald-700">
+                <span className="text-xl font-black text-emerald-700">
                   {formatCurrency(myCompletedSum)}
                 </span>
                 <span className="text-xs text-slate-500 font-medium">
@@ -193,7 +205,7 @@ export function KanbanBoard({
               const match = employees.find((e) => e.id === currentUser.id || e.name === currentUser.name);
               setFilterEmployee((prev) => (prev === match?.id ? "ALL" : (match?.id || "ALL")));
             }}
-            className="px-3.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition shadow-xs shrink-0"
+            className="px-3.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition shrink-0"
           >
             {filterEmployee === currentUser?.id || filterEmployee === employees.find((e) => e.name === currentUser?.name)?.id
               ? "Показать все участки цеха"
@@ -203,9 +215,9 @@ export function KanbanBoard({
       )}
 
       {/* Фильтр по сотруднику на Канбане */}
-      <div className="bg-white p-3.5 rounded-2xl border border-slate-200 shadow-xs flex items-center justify-between gap-3 overflow-x-auto">
+      <div className="bg-white p-3.5 rounded-2xl border border-slate-200 flex items-center justify-between gap-3 overflow-x-auto">
         <div className="flex items-center gap-2">
-          <span className="text-xs font-bold text-slate-400 uppercase mr-1 flex items-center gap-1 shrink-0">
+          <span className="text-sm font-semibold text-slate-500 mr-1 flex items-center gap-1 shrink-0">
             <User className="w-3.5 h-3.5" /> Вид цеха:
           </span>
           <button
@@ -213,7 +225,7 @@ export function KanbanBoard({
             onClick={() => setFilterEmployee("ALL")}
             className={`px-3 py-1.5 rounded-xl text-xs font-bold transition shrink-0 ${
               filterEmployee === "ALL"
-                ? "bg-slate-900 text-white shadow-xs"
+                ? "bg-slate-900 text-white"
                 : "bg-slate-100 text-slate-600 hover:bg-slate-200"
             }`}
           >
@@ -226,7 +238,7 @@ export function KanbanBoard({
               onClick={() => setFilterEmployee(emp.id)}
               className={`px-3 py-1.5 rounded-xl text-xs font-bold transition shrink-0 flex items-center gap-1.5 ${
                 filterEmployee === emp.id
-                  ? "bg-teal-600 text-white shadow-xs"
+                  ? "bg-blue-600 text-white"
                   : "bg-slate-100 text-slate-700 hover:bg-slate-200"
               }`}
             >
@@ -238,13 +250,37 @@ export function KanbanBoard({
           ))}
         </div>
 
-        <span className="text-xs font-mono text-slate-500 shrink-0">
+        <span className="text-xs text-slate-500 shrink-0">
           Нарядов на доске: <b>{filteredOrders.length}</b>
         </span>
       </div>
 
-      {/* Колонки стадий конвейера */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-7 gap-3 overflow-x-auto pb-4">
+      {/* Выбор этапа на телефоне */}
+      <div className="md:hidden -mx-3 px-3 flex gap-2 overflow-x-auto pb-1" role="tablist" aria-label="Этапы цеха">
+        {STAGES.map((stage) => {
+          const n = filteredOrders.filter((o) => o.status === stage.key).length;
+          const on = stage.key === shownStage;
+          return (
+            <button
+              key={stage.key}
+              type="button"
+              role="tab"
+              aria-selected={on}
+              onClick={() => setMobileStage(stage.key)}
+              className={`h-10 px-3.5 rounded-full text-sm font-bold whitespace-nowrap flex items-center gap-2 shrink-0 border transition-colors ${
+                on ? "bg-ink text-white border-ink" : "bg-white text-slate-700 border-slate-200"
+              }`}
+            >
+              <span className={`w-2 h-2 rounded-full ${stage.bg}`} />
+              {stage.short}
+              <span className="text-slate-400">{n}</span>
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Колонки этапов: на компьютере доска с прокруткой вбок */}
+      <div className="flex flex-col md:flex-row gap-3 md:overflow-x-auto md:snap-x md:pb-4">
         {STAGES.map((stage) => {
           const stageOrders = filteredOrders.filter((o) => o.status === stage.key);
           const nextStageKey = getNextStage(stage.key);
@@ -252,21 +288,21 @@ export function KanbanBoard({
           return (
             <div
               key={stage.key}
-              className={`bg-slate-100/70 rounded-2xl p-3 border-t-4 ${stage.color} border border-slate-200 flex flex-col min-h-[520px] shadow-2xs`}
+              className={`${stage.key === shownStage ? "flex" : "hidden"} md:flex flex-col md:w-[288px] md:shrink-0 md:snap-start bg-slate-100/80 rounded-2xl p-3 border-t-4 ${stage.color} md:min-h-[520px]`}
             >
               {/* Шапка колонки */}
               <div className="pb-2.5 mb-2.5 border-b border-slate-200">
                 <div className="flex items-center justify-between">
-                  <span className="font-bold text-xs text-slate-900 uppercase tracking-tight">
+                  <span className="font-bold text-sm text-slate-900">
                     {stage.title}
                   </span>
-                  <span className="w-5 h-5 rounded-full bg-white text-slate-800 font-bold text-[11px] font-mono flex items-center justify-center border border-slate-200">
+                  <span className="w-5 h-5 rounded-full bg-white text-slate-800 font-bold text-[11px] flex items-center justify-center border border-slate-200">
                     {stageOrders.length}
                   </span>
                 </div>
                 {stage.role && (
                   <span className="text-[10px] text-slate-500 block mt-0.5">
-                    Ответственный: <b>{stage.role}</b>
+                    Отвечает <b>{stage.role}</b>
                   </span>
                 )}
               </div>
@@ -279,20 +315,18 @@ export function KanbanBoard({
                   return (
                     <div
                       key={order.id}
-                      className="bg-white p-3.5 rounded-xl border border-slate-200 shadow-2xs hover:shadow-sm transition space-y-2.5 group"
+                      className="bg-white p-3.5 rounded-xl border border-slate-200 hover:shadow-sm transition space-y-2.5 group"
                     >
                       {/* Верх: номер и срочность / дедлайн */}
                       <div className="flex items-center justify-between">
                         <Link
                           href={`/orders/${order.id}`}
-                          className="font-mono font-bold text-xs text-teal-700 hover:underline"
+                          className="font-mono font-bold text-xs text-blue-700 hover:underline"
                         >
                           {order.orderNumber}
                         </Link>
                         {order.status !== "READY" && order.status !== "COMPLETED" && deadlineInfo.isUrgent ? (
-                          <span className="text-[10px] font-black px-1.5 py-0.5 rounded bg-red-100 text-red-700 border border-red-200 flex items-center gap-0.5 animate-pulse">
-                            <Flame className="w-3 h-3 fill-red-600 text-red-600" /> Горит!
-                          </span>
+                          <span className="text-[11px] font-bold text-red-600">{deadlineInfo.label}</span>
                         ) : order.priority === "URGENT" ? (
                           <span className="text-[10px] font-bold px-1.5 py-0.2 rounded bg-red-100 text-red-700 flex items-center gap-0.5">
                             <Flame className="w-3 h-3 fill-red-600 text-red-600" /> Срочно
@@ -311,7 +345,7 @@ export function KanbanBoard({
                       </div>
 
                       {/* Заголовок заказа */}
-                      <div className="text-xs font-semibold text-slate-800 bg-slate-50 p-2 rounded-lg border border-slate-100 line-clamp-2">
+                      <div className="text-sm font-bold text-slate-900 line-clamp-2">
                         {order.title}
                       </div>
 
@@ -345,7 +379,7 @@ export function KanbanBoard({
                           {isWorkshop ? (
                             <div className="text-[10px] text-slate-400 font-medium">Наряд цеха</div>
                           ) : order.debtAmount > 0 ? (
-                            <div className="text-[10px] font-mono text-red-600 font-semibold">
+                            <div className="text-[10px] text-red-600 font-semibold">
                               Долг: {formatCurrency(order.debtAmount)}
                             </div>
                           ) : (
@@ -358,21 +392,21 @@ export function KanbanBoard({
                             <button
                               type="button"
                               onClick={() => toggleCompletion(order)}
-                              className="px-2 py-1 bg-emerald-100 hover:bg-emerald-200 text-emerald-900 border border-emerald-300 rounded-lg text-[10px] font-bold transition flex items-center gap-0.5 shadow-2xs active:scale-95"
+                              className="px-2 py-1 bg-emerald-100 hover:bg-emerald-200 text-emerald-900 border border-emerald-300 rounded-lg text-[10px] font-bold transition flex items-center gap-0.5 active:scale-95"
                               title={`Выполнено! Нажмите для отмены отметки. Выполнил: ${order.completedBy || order.assignedTo?.name || "Мастер"}`}
                             >
                               <CheckSquare className="w-3 h-3 text-emerald-600 shrink-0" />
-                              <span className="truncate max-w-[70px]">{order.completedBy || "Готов"}</span>
+                              <span className="truncate max-w-[70px]">{order.completedBy || "Готово"}</span>
                             </button>
                           ) : (
                             <button
                               type="button"
                               onClick={() => toggleCompletion(order)}
-                              className="px-2 py-1 bg-slate-50 hover:bg-emerald-50 text-slate-700 hover:text-emerald-800 border border-slate-300 hover:border-emerald-400 rounded-lg text-[10px] font-semibold transition flex items-center gap-0.5 shadow-2xs active:scale-95 group"
-                              title={`Поставить галочку: Отметить наряд выполненным (${currentUser?.name || "Мастер"})`}
+                              className="px-2 py-1 bg-slate-50 hover:bg-emerald-50 text-slate-700 hover:text-emerald-800 border border-slate-300 hover:border-emerald-400 rounded-lg text-[10px] font-semibold transition flex items-center gap-0.5 active:scale-95 group"
+                              title={`Отметить наряд выполненным (${currentUser?.name || "Мастер"})`}
                             >
                               <Square className="w-3 h-3 text-slate-400 group-hover:text-emerald-600 shrink-0" />
-                              <span>Галочка</span>
+                              <span>Готово</span>
                             </button>
                           )}
 
@@ -380,10 +414,10 @@ export function KanbanBoard({
                             <button
                               type="button"
                               onClick={() => updateOrderStatus(order.id, nextStageKey)}
-                              className="px-2 py-1 bg-slate-100 hover:bg-teal-600 hover:text-white rounded-lg text-[10px] font-bold text-slate-700 transition flex items-center gap-0.5 shadow-2xs"
+                              className="px-2 py-1 bg-slate-100 hover:bg-blue-600 hover:text-white rounded-lg text-[10px] font-bold text-slate-700 transition flex items-center gap-0.5"
                               title="Перевести на следующий этап"
                             >
-                              <span>Вперёд</span>
+                              <span>Дальше</span>
                               <ChevronRight className="w-3 h-3" />
                             </button>
                           )}
@@ -395,7 +429,7 @@ export function KanbanBoard({
 
                 {stageOrders.length === 0 && (
                   <div className="h-28 flex items-center justify-center text-[11px] text-slate-400 border border-dashed border-slate-200 rounded-xl">
-                    Пусто
+                    Нарядов нет
                   </div>
                 )}
               </div>

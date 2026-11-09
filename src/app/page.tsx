@@ -2,36 +2,36 @@ import Link from "next/link";
 import { cookies } from "next/headers";
 import { prisma } from "@/lib/db";
 import { verifyToken } from "@/lib/auth";
-import { formatCurrency, formatDate, formatDateTime, getDeadlineInfo, STATUS_CONFIG } from "@/lib/utils";
+import { formatCurrency, getDeadlineInfo, plural, STATUS_CONFIG } from "@/lib/utils";
 import { DailyShiftPlanner } from "@/components/DailyShiftPlanner";
 import { DashboardActiveOrders } from "@/components/DashboardActiveOrders";
-import { 
-  PlusCircle, 
-  ClipboardList, 
-  KanbanSquare, 
-  Clock, 
-  Flame, 
-  AlertCircle, 
-  TrendingUp, 
-  User, 
-  Layers, 
-  ArrowRight, 
-  Printer, 
-  Sparkles, 
-  Hammer,
-  Banknote,
-  Warehouse,
-  Send,
-  PieChart,
-  ShieldCheck,
-  CheckCircle2,
-  AlertTriangle,
-  Award
-} from "lucide-react";
+import { ProductionPipeline } from "@/components/ProductionPipeline";
+import { ChevronRight } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 export const fetchCache = "force-no-store";
 export const revalidate = 0;
+
+const TZ = "Asia/Tashkent";
+
+function greetingFor(now: Date): string {
+  const hour = Number(new Intl.DateTimeFormat("ru-RU", { hour: "numeric", hourCycle: "h23", timeZone: TZ }).format(now));
+  if (hour < 5) return "Доброй ночи";
+  if (hour < 12) return "Доброе утро";
+  if (hour < 18) return "Добрый день";
+  return "Добрый вечер";
+}
+
+function dateLabel(now: Date): string {
+  const s = new Intl.DateTimeFormat("ru-RU", { weekday: "long", day: "numeric", month: "long", timeZone: TZ }).format(now);
+  return s.charAt(0).toUpperCase() + s.slice(1);
+}
+
+function isUrgent(o: { priority: string | null; deadline: Date | null }): boolean {
+  if (o.priority === "URGENT") return true;
+  if (!o.deadline) return false;
+  return (new Date(o.deadline).getTime() - Date.now()) / 3_600_000 <= 24;
+}
 
 export default async function DashboardPage() {
   const cookieStore = cookies();
@@ -39,13 +39,12 @@ export default async function DashboardPage() {
   const currentUser = token ? verifyToken(token) : null;
   const isDirector = currentUser?.role === "DIRECTOR";
 
-  const [orders, employees, clientsCount, materials, movements] = await Promise.all([
+  const [orders, employees, materials, movements] = await Promise.all([
     prisma.order.findMany({
       include: { client: true, assignedTo: true, items: true },
       orderBy: { createdAt: "desc" },
     }),
     prisma.employee.findMany(),
-    prisma.client.count(),
     prisma.stockMaterial.findMany(),
     prisma.stockMovement.findMany({
       where: { type: "DEDUCTION" },
@@ -53,418 +52,211 @@ export default async function DashboardPage() {
     }),
   ]);
 
-  // Очищаем тяжелые base64 изображения из списка для ускорения загрузки HTML страницы
+  // Тяжёлые base64-картинки в список не передаём — страница грузится быстрее
   const sanitizedOrders = orders.map(({ previewUrl, ...o }) => o);
 
-  // Расчет персональной выработки сотрудника (с учетом специфики цеха)
+  const now = new Date();
+  const firstName = currentUser?.name || "коллега";
+
+  // Конвейер: сколько нарядов на каждом этапе и сколько из них горят
+  const activeOrders = orders.filter((o) => o.status !== "COMPLETED");
+  const urgentOrders = activeOrders.filter((o) => o.status !== "READY" && isUrgent(o));
+  const stageCounts: Record<string, number> = {};
+  const stageUrgent: Record<string, number> = {};
+  for (const o of activeOrders) {
+    stageCounts[o.status] = (stageCounts[o.status] || 0) + 1;
+    if (o.status !== "READY" && isUrgent(o)) stageUrgent[o.status] = (stageUrgent[o.status] || 0) + 1;
+  }
+
+  // Личная выработка сотрудника
   const isAlbert = currentUser?.role === "WORKSHOP_PRINTING" || currentUser?.name === "Альберт";
   const isAbzal = currentUser?.role === "WORKSHOP_ASSEMBLY" || currentUser?.name === "Абзал";
-
   const myOrders = orders.filter((o) => {
     if (o.assignedToId === currentUser?.id || o.assignedTo?.name === currentUser?.name) return true;
     if (isAlbert && (o.status === "PRINTING" || o.items?.some((i) => i.serviceType === "BANNER" || i.serviceType === "ORACAL"))) return true;
     if (isAbzal && (["ASSEMBLY", "MOUNTING"].includes(o.status) || o.items?.some((i) => ["LETTERS", "LIGHTBOX", "STAND", "INSTALL"].includes(i.serviceType)))) return true;
     return false;
   });
-  const myCompletedOrders = myOrders.filter(
-    (o) => o.status === "COMPLETED" || o.status === "READY"
-  );
-  const myCompletedSum = myCompletedOrders.reduce((sum, o) => sum + o.totalAmount, 0);
-  const myActiveOrders = myOrders.filter((o) => o.status !== "COMPLETED");
-  const myUrgentOrders = myActiveOrders.filter((o) => {
-    if (o.priority === "URGENT") return true;
-    if (!o.deadline) return false;
-    const diffHours = (new Date(o.deadline).getTime() - Date.now()) / (1000 * 60 * 60);
-    return diffHours <= 24;
-  });
+  const myDone = myOrders.filter((o) => o.status === "COMPLETED" || o.status === "READY");
+  const myDoneSum = myDone.reduce((sum, o) => sum + o.totalAmount, 0);
+  const myActive = myOrders.filter((o) => o.status !== "COMPLETED");
+  const myUrgent = myActive.filter((o) => o.status !== "READY" && isUrgent(o));
 
-  // Общие показатели цеха
-  const activeOrders = orders.filter((o) => o.status !== "COMPLETED");
-  const totalRevenue = orders.reduce((sum, o) => sum + o.paidAmount, 0);
+  // Короткая фраза о том, что сейчас в цехе
+  const summary = isDirector
+    ? urgentOrders.length > 0
+      ? `${urgentOrders.length} ${plural(urgentOrders.length, "наряд горит", "наряда горят", "нарядов горят")} по срокам. Всего в работе ${activeOrders.length}.`
+      : `Сроки в порядке. В работе ${activeOrders.length} ${plural(activeOrders.length, "наряд", "наряда", "нарядов")}.`
+    : myActive.length > 0
+      ? `У вас ${myActive.length} ${plural(myActive.length, "наряд", "наряда", "нарядов")} в работе${myUrgent.length ? `, срочных ${myUrgent.length}` : ""}.`
+      : "Ваших нарядов в работе нет. Общая очередь цеха ниже.";
+
+  // Деньги (только директору)
+  const totalPaid = orders.reduce((sum, o) => sum + o.paidAmount, 0);
   const totalDebts = orders.reduce((sum, o) => sum + o.debtAmount, 0);
+  const debtOrdersCount = orders.filter((o) => o.debtAmount > 0).length;
+  const materialCost = movements.reduce((sum, m) => sum + m.quantity * (m.material?.costPerUnit || 0), 0);
 
-  const urgentOrders = activeOrders.filter((o) => {
-    if (o.priority === "URGENT") return true;
-    if (!o.deadline) return false;
-    const diffHours = (new Date(o.deadline).getTime() - Date.now()) / (1000 * 60 * 60);
-    return diffHours <= 24;
-  });
-
-  // Анализ выручки по категориям (только для директора)
-  const categoryRevenue: Record<string, number> = {
-    BANNER: 0,
-    LETTERS: 0,
-    LIGHTBOX: 0,
-    STAND: 0,
-    ORACAL: 0,
-    AUTO_BRANDING: 0,
-    INSTALL: 0,
-    CUSTOM: 0,
-  };
-
+  let laborCost = 0;
   orders.forEach((o) => {
     o.items?.forEach((item) => {
-      const cat = item.serviceType || "CUSTOM";
-      categoryRevenue[cat] = (categoryRevenue[cat] || 0) + item.totalPrice;
+      if (item.serviceType === "BANNER" && item.area) laborCost += item.area * 3000;
+      else if (item.serviceType === "LETTERS" && item.letterCount && item.letterHeight) laborCost += item.letterCount * item.letterHeight * 1200;
+      else if (item.serviceType === "STAND" && item.area) laborCost += item.area * 40000;
+      else if (item.serviceType === "INSTALL") laborCost += item.totalPrice * 0.3;
+      laborCost += item.totalPrice * 0.05;
     });
   });
+  const netProfit = Math.max(0, totalPaid - materialCost - laborCost);
 
-  const CATEGORY_META: Record<string, { label: string; icon: string; color: string }> = {
-    LETTERS: { label: "Объемные буквы LED", icon: "💡", color: "bg-orange-500" },
-    BANNER: { label: "Печать баннеров 3.2м", icon: "🖨️", color: "bg-purple-500" },
-    STAND: { label: "Стенды из Фомекса", icon: "📋", color: "bg-emerald-500" },
-    LIGHTBOX: { label: "Лайтбоксы / Короба", icon: "📦", color: "bg-blue-500" },
-    ORACAL: { label: "Пленка Oracal & Накатка", icon: "🎨", color: "bg-teal-500" },
-    AUTO_BRANDING: { label: "Оклейка авто (Damas/Labo)", icon: "🚐", color: "bg-amber-500" },
-    INSTALL: { label: "Монтажные работы", icon: "🛠️", color: "bg-cyan-500" },
-    CUSTOM: { label: "Дизайн и прочее", icon: "✨", color: "bg-slate-500" },
-  };
+  const hotList = [...urgentOrders]
+    .sort((a, b) => (a.deadline ? new Date(a.deadline).getTime() : Infinity) - (b.deadline ? new Date(b.deadline).getTime() : Infinity))
+    .slice(0, 5);
+  const lowStock = materials
+    .filter((m) => m.quantity <= m.minThreshold)
+    .sort((a, b) => a.quantity / (a.minThreshold || 1) - b.quantity / (b.minThreshold || 1))
+    .slice(0, 5);
 
-  const totalMaterialCostDeducted = movements.reduce(
-    (sum, m) => sum + m.quantity * (m.material?.costPerUnit || 0),
-    0
-  );
-
-  let totalLaborAccrued = 0;
-  orders.forEach((o) => {
-    o.items?.forEach((item) => {
-      if (item.serviceType === "BANNER" && item.area) {
-        totalLaborAccrued += item.area * 3000;
-      } else if (item.serviceType === "LETTERS" && item.letterCount && item.letterHeight) {
-        totalLaborAccrued += item.letterCount * item.letterHeight * 1200;
-      } else if (item.serviceType === "STAND" && item.area) {
-        totalLaborAccrued += item.area * 40000;
-      } else if (item.serviceType === "INSTALL") {
-        totalLaborAccrued += item.totalPrice * 0.30;
-      }
-      totalLaborAccrued += item.totalPrice * 0.05;
-    });
-  });
-
-  const estimatedNetProfit = Math.max(0, totalRevenue - totalMaterialCostDeducted - totalLaborAccrued);
-  const profitMarginPercent = totalRevenue > 0 ? Math.round((estimatedNetProfit / totalRevenue) * 100) : 0;
-  const lowStockMaterials = materials.filter((m) => m.quantity <= m.minThreshold);
-
-  // =========================================================================
-  // РЕЖИМ СОТРУДНИКА (Жалгас, Абзал, Альберт): ТОЛЬКО ЗАКАЗЫ И СУММА ВЫРАБОТКИ
-  // =========================================================================
-  if (!isDirector) {
-    return (
-      <div className="space-y-6">
-        {/* Шапка сотрудника */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-slate-200">
-          <div>
-            <div className="flex items-center gap-2">
-              <span className="w-2.5 h-2.5 rounded-full bg-emerald-500" />
-              <h1 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
-                Рабочее место: {currentUser?.name || "Сотрудник"}
-              </h1>
-              <span className="text-xs font-bold px-2.5 py-0.5 rounded-lg bg-blue-50 text-blue-800 border border-blue-200">
-                {currentUser?.roleTitle || "Мастер цеха"}
-              </span>
+  return (
+    <div className="space-y-5 sm:space-y-6">
+      {/* Смена: приветствие и конвейер цеха */}
+      <section className="rounded-2xl bg-ink text-white overflow-hidden">
+        <div className="cmyk-strip" />
+        <div className="p-5 sm:p-6 lg:p-7">
+          <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3">
+            <div className="min-w-0">
+              <p className="text-sm text-slate-400">{dateLabel(now)}</p>
+              <h2 className="mt-1 text-[26px] sm:text-[32px] leading-tight font-extrabold tracking-tight text-balance">
+                {greetingFor(now)}, {firstName}
+              </h2>
+              <p className="mt-2 text-[15px] text-slate-300 max-w-xl">{summary}</p>
+              {!isDirector && myDone.length > 0 && (
+                <p className="mt-1 text-sm text-slate-400">
+                  Сделано и сдано: {myDone.length} {plural(myDone.length, "наряд", "наряда", "нарядов")} на{" "}
+                  <span className="text-emerald-300 font-bold">{formatCurrency(myDoneSum)}</span>
+                </p>
+              )}
             </div>
-            <p className="text-xs text-slate-500 mt-1">
-              Учет ваших личных нарядов и суммарного объема выполненных работ
-            </p>
-          </div>
-
-          <div className="flex items-center gap-2">
             <Link
               href="/orders/kanban"
-              className="px-3.5 py-2 rounded-xl bg-white hover:bg-slate-50 text-slate-700 text-xs font-bold transition flex items-center gap-1.5 border border-slate-200 shadow-2xs"
+              className="inline-flex items-center gap-1 text-sm font-bold text-brand-300 hover:text-white shrink-0"
             >
-              <KanbanSquare className="w-4 h-4 text-blue-600" />
-              Канбан цеха
-            </Link>
-            {currentUser?.role === "SALES_DESIGNER" && (
-              <Link
-                href="/orders/new"
-                className="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold shadow-xs shadow-blue-600/30 transition flex items-center gap-1.5"
-              >
-                <PlusCircle className="w-4 h-4" />
-                + Новый наряд
-              </Link>
-            )}
-          </div>
-        </div>
-
-        {/* 4 Карточки сотрудника: Сумма выполненной работы и наряды */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          {/* 1. Сумма выполненной работы */}
-          <div className="bg-white rounded-2xl p-5 border border-emerald-200 bg-emerald-50/20 shadow-xs">
-            <div className="flex items-center justify-between">
-              <span className="text-xs uppercase font-bold text-emerald-800 tracking-wider flex items-center gap-1">
-                <Award className="w-4 h-4 text-emerald-600" /> Выполнено мной
-              </span>
-              <span className="p-2 rounded-xl bg-emerald-100 text-emerald-700">
-                <CheckCircle2 className="w-5 h-5" />
-              </span>
-            </div>
-            <div className="text-2xl font-black text-emerald-700 mt-2 font-mono">
-              {formatCurrency(myCompletedSum)}
-            </div>
-            <div className="text-xs text-emerald-800/80 mt-1 font-semibold">
-              Сдано / готово: <b>{myCompletedOrders.length} нарядов</b>
-            </div>
-          </div>
-
-          {/* 2. Моих нарядов в работе */}
-          <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-xs">
-            <div className="flex items-center justify-between">
-              <span className="text-xs uppercase font-bold text-slate-500 tracking-wider">
-                В работе у меня
-              </span>
-              <span className="p-2 rounded-xl bg-blue-50 text-blue-600">
-                <Layers className="w-5 h-5" />
-              </span>
-            </div>
-            <div className="text-3xl font-black text-blue-700 mt-2 font-mono">
-              {myActiveOrders.length}
-            </div>
-            <div className="text-xs text-slate-500 mt-1">
-              Всего закреплено: <b>{myOrders.length} нарядов</b>
-            </div>
-          </div>
-
-          {/* 3. Горящие дедлайны по моим заказам */}
-          <div
-            className={`bg-white rounded-2xl p-5 border shadow-xs ${
-              myUrgentOrders.length > 0 ? "border-amber-300 bg-amber-50/20" : "border-slate-200"
-            }`}
-          >
-            <div className="flex items-center justify-between">
-              <span className="text-xs uppercase font-bold text-amber-800 tracking-wider flex items-center gap-1">
-                <Flame className="w-3.5 h-3.5 fill-amber-500 text-amber-500" /> Срочные (24ч)
-              </span>
-              <span className="p-2 rounded-xl bg-amber-100 text-amber-700">
-                <Clock className="w-5 h-5" />
-              </span>
-            </div>
-            <div className="text-3xl font-black text-amber-800 mt-2 font-mono">
-              {myUrgentOrders.length}
-            </div>
-            <div className="text-xs text-slate-500 mt-1">
-              {myUrgentOrders.length > 0 ? "Срочные наряды мастера" : "Все задачи по графику"}
-            </div>
-          </div>
-
-          {/* 4. Заказов всего цеха */}
-          <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-xs">
-            <div className="flex items-center justify-between">
-              <span className="text-xs uppercase font-bold text-slate-500 tracking-wider">
-                Всего в цехе
-              </span>
-              <span className="p-2 rounded-xl bg-slate-100 text-slate-600">
-                <ClipboardList className="w-5 h-5" />
-              </span>
-            </div>
-            <div className="text-3xl font-black text-slate-900 mt-2 font-mono">
-              {activeOrders.length}
-            </div>
-            <div className="text-xs text-slate-500 mt-1 flex items-center justify-between">
-              <span>Общая очередь</span>
-              <Link href="/orders/kanban" className="text-blue-600 font-bold hover:underline">
-                Канбан &rarr;
-              </Link>
-            </div>
-          </div>
-        </div>
-
-        {/* Автоматически обновляемый список нарядов в цехе (с табами и галочкой выполнения) */}
-        <DashboardActiveOrders initialOrders={sanitizedOrders} currentUser={currentUser} />
-      </div>
-    );
-  }
-
-  // =========================================================================
-  // РЕЖИМ ДИРЕКТОРА (Тимур): ПОЛНЫЙ ФИНАНСОВЫЙ ОТЧЕТ, ВЫРУЧКА, КАССА И МАРЖА
-  // =========================================================================
-  return (
-    <div className="space-y-6">
-      {/* Шапка руководителя */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-slate-200">
-        <div>
-          <h1 className="text-2xl font-black text-slate-900 tracking-tight flex items-center gap-2">
-            Производственный дашборд «Master Print»
-            <span className="text-xs font-bold px-2.5 py-0.5 rounded-full bg-purple-100 text-purple-800">
-              Кабинет Директора (Тимур)
-            </span>
-          </h1>
-          <p className="text-xs text-slate-500 mt-0.5">
-            Полный контроль кассы, дебиторской задолженности, маржинальности цеха и загрузки мастеров
-          </p>
-        </div>
-
-        <div className="flex items-center gap-2 flex-wrap">
-          <Link
-            href="/finance"
-            className="px-3 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition flex items-center gap-1.5 border border-slate-200"
-          >
-            <Banknote className="w-4 h-4 text-blue-600" />
-            Касса & Финансы
-          </Link>
-          <Link
-            href="/payroll"
-            className="px-3 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition flex items-center gap-1.5 border border-slate-200"
-          >
-            <Banknote className="w-4 h-4 text-emerald-600" />
-            Зарплаты
-          </Link>
-          <Link
-            href="/warehouse"
-            className="px-3 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition flex items-center gap-1.5 border border-slate-200"
-          >
-            <Warehouse className="w-4 h-4 text-teal-600" />
-            Склад
-          </Link>
-          <Link
-            href="/orders/new"
-            className="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold shadow-xs shadow-blue-600/30 transition flex items-center gap-1.5"
-          >
-            <PlusCircle className="w-4 h-4" />
-            + Новый наряд
-          </Link>
-        </div>
-      </div>
-
-      {/* 4 Карточки ключевых показателей */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        {/* 1. Заказов в работе */}
-        <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-xs">
-          <div className="flex items-center justify-between">
-            <span className="text-xs uppercase font-bold text-slate-500 tracking-wider">
-              В производстве
-            </span>
-            <span className="p-2 rounded-xl bg-teal-50 text-teal-600">
-              <Layers className="w-5 h-5" />
-            </span>
-          </div>
-          <div className="text-3xl font-black text-slate-900 mt-2 font-mono">
-            {activeOrders.length}
-          </div>
-          <div className="text-xs text-slate-500 mt-1 flex items-center justify-between">
-            <span>Всего заказов: <b>{orders.length}</b></span>
-            <Link href="/orders" className="text-teal-600 font-bold hover:underline">
-              Все наряды &rarr;
+              Открыть канбан <ChevronRight className="w-4 h-4" />
             </Link>
           </div>
-        </div>
 
-        {/* 2. Горящие дедлайны */}
-        <div className={`bg-white rounded-2xl p-5 border shadow-xs ${urgentOrders.length > 0 ? "border-amber-300 bg-amber-50/20" : "border-slate-200"}`}>
-          <div className="flex items-center justify-between">
-            <span className="text-xs uppercase font-bold text-amber-800 tracking-wider flex items-center gap-1">
-              <Flame className="w-3.5 h-3.5 fill-amber-500 text-amber-500" /> Горят сроки (24ч)
-            </span>
-            <span className="p-2 rounded-xl bg-amber-100 text-amber-700">
-              <Clock className="w-5 h-5" />
-            </span>
-          </div>
-          <div className="text-3xl font-black text-amber-800 mt-2 font-mono">
-            {urgentOrders.length}
-          </div>
-          <div className="text-xs text-slate-500 mt-1">
-            {urgentOrders.length > 0 ? "Требуют первоочередного внимания" : "Все наряды идут по графику"}
+          <div className="mt-6">
+            <ProductionPipeline counts={stageCounts} urgent={stageUrgent} />
           </div>
         </div>
+      </section>
 
-        {/* 3. Оплачено / Выручка */}
-        <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-xs">
-          <div className="flex items-center justify-between">
-            <span className="text-xs uppercase font-bold text-slate-500 tracking-wider">
-              Оплачено в кассу
-            </span>
-            <span className="p-2 rounded-xl bg-emerald-50 text-emerald-600">
-              <TrendingUp className="w-5 h-5" />
-            </span>
-          </div>
-          <div className="text-2xl font-black text-emerald-700 mt-2 font-mono">
-            {formatCurrency(totalRevenue)}
-          </div>
-          <div className="text-xs text-slate-500 mt-1 flex items-center justify-between">
-            <span>Касса агентства</span>
-            <Link href="/finance" className="text-emerald-700 font-bold hover:underline">
-              В кассу &rarr;
+      {isDirector && (
+        <>
+          {/* Деньги */}
+          <section className="bg-white rounded-2xl border border-slate-200 grid sm:grid-cols-3 divide-y sm:divide-y-0 sm:divide-x divide-slate-200">
+            <Link href="/finance" className="block p-5 hover:bg-slate-50/70 transition-colors rounded-t-2xl sm:rounded-l-2xl sm:rounded-tr-none">
+              <div className="text-sm text-slate-500">Оплачено клиентами</div>
+              <div className="mt-1 text-[24px] lg:text-[28px] font-extrabold tracking-tight text-slate-900">{formatCurrency(totalPaid)}</div>
+              <div className="mt-1 text-xs text-slate-500">за всё время, по всем нарядам</div>
             </Link>
-          </div>
-        </div>
-
-        {/* 4. Долги клиентов */}
-        <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-xs">
-          <div className="flex items-center justify-between">
-            <span className="text-xs uppercase font-bold text-slate-500 tracking-wider">
-              Долги клиентов
-            </span>
-            <span className="p-2 rounded-xl bg-amber-50 text-amber-600">
-              <AlertCircle className="w-5 h-5" />
-            </span>
-          </div>
-          <div className="text-2xl font-black text-amber-800 mt-2 font-mono">
-            {formatCurrency(totalDebts)}
-          </div>
-          <div className="text-xs text-slate-500 mt-1 flex items-center justify-between">
-            <span>Дебиторка</span>
-            <Link href="/finance" className="text-amber-700 font-bold hover:underline">
-              Должники &rarr;
+            <Link href="/finance" className="block p-5 hover:bg-slate-50/70 transition-colors">
+              <div className="text-sm text-slate-500">Долги клиентов</div>
+              <div className={`mt-1 text-[24px] lg:text-[28px] font-extrabold tracking-tight ${totalDebts > 0 ? "text-red-600" : "text-slate-900"}`}>
+                {formatCurrency(totalDebts)}
+              </div>
+              <div className="mt-1 text-xs text-slate-500">
+                {debtOrdersCount > 0
+                  ? `${debtOrdersCount} ${plural(debtOrdersCount, "наряд оплачен", "наряда оплачены", "нарядов оплачены")} не полностью`
+                  : "все наряды оплачены"}
+              </div>
             </Link>
+            <div className="p-5">
+              <div className="text-sm text-slate-500">Прибыль, оценка</div>
+              <div className="mt-1 text-[24px] lg:text-[28px] font-extrabold tracking-tight text-emerald-700">{formatCurrency(netProfit)}</div>
+              <div className="mt-1 text-xs text-slate-500">
+                после материалов ({formatCurrency(materialCost)}) и работы мастеров ({formatCurrency(laborCost)})
+              </div>
+            </div>
+          </section>
+
+          {/* Что требует внимания */}
+          <div className="grid lg:grid-cols-2 gap-5">
+            <section className="bg-white rounded-2xl border border-slate-200">
+              <header className="flex items-center justify-between px-5 pt-4 pb-3">
+                <h3 className="font-bold text-slate-900">Горит по срокам</h3>
+                <Link href="/orders" className="text-sm font-semibold text-brand-600 hover:text-brand-800">Все заказы</Link>
+              </header>
+              {hotList.length === 0 ? (
+                <p className="px-5 pb-5 text-sm text-slate-500">Сроки под контролем. Наряды с дедлайном меньше суток появятся здесь.</p>
+              ) : (
+                <ul className="divide-y divide-slate-100 border-t border-slate-100">
+                  {hotList.map((o) => {
+                    const d = getDeadlineInfo(o.deadline);
+                    const cfg = STATUS_CONFIG[o.status];
+                    return (
+                      <li key={o.id}>
+                        <Link href={`/orders/${o.id}`} className="flex items-center gap-3 px-5 py-3 hover:bg-slate-50 transition-colors">
+                          <span className={`w-2 h-2 rounded-full shrink-0 ${cfg?.dot || "bg-slate-400"}`} title={cfg?.label} />
+                          <div className="min-w-0 flex-1">
+                            <div className="text-sm font-semibold text-slate-900 truncate">{o.title}</div>
+                            <div className="text-xs text-slate-500 truncate">
+                              {o.orderNumber}, {o.client?.name || "без клиента"}
+                            </div>
+                          </div>
+                          <span className={`text-xs font-bold shrink-0 ${d.isOverdue ? "text-red-600" : "text-amber-700"}`}>
+                            {o.deadline ? d.label : "Срочный"}
+                          </span>
+                        </Link>
+                      </li>
+                    );
+                  })}
+                </ul>
+              )}
+            </section>
+
+            <section className="bg-white rounded-2xl border border-slate-200">
+              <header className="flex items-center justify-between px-5 pt-4 pb-3">
+                <h3 className="font-bold text-slate-900">Заканчивается на складе</h3>
+                <Link href="/warehouse" className="text-sm font-semibold text-brand-600 hover:text-brand-800">Склад</Link>
+              </header>
+              {lowStock.length === 0 ? (
+                <p className="px-5 pb-5 text-sm text-slate-500">Всех материалов хватает. Позиции ниже минимального остатка появятся здесь.</p>
+              ) : (
+                <ul className="divide-y divide-slate-100 border-t border-slate-100">
+                  {lowStock.map((m) => {
+                    const ratio = Math.max(0, Math.min(1, m.quantity / (m.minThreshold || 1)));
+                    return (
+                      <li key={m.id} className="px-5 py-3">
+                        <div className="flex items-baseline justify-between gap-3">
+                          <span className="text-sm font-semibold text-slate-900 truncate">{m.name}</span>
+                          <span className="text-xs text-slate-500 shrink-0">
+                            <b className={m.quantity <= 0 ? "text-red-600" : "text-slate-900"}>
+                              {m.quantity} {m.unit}
+                            </b>{" "}
+                            из {m.minThreshold}
+                          </span>
+                        </div>
+                        <div className="mt-2 h-1.5 rounded-full bg-slate-100 overflow-hidden">
+                          <div
+                            className={`h-full rounded-full ${ratio < 0.34 ? "bg-red-500" : "bg-amber-400"}`}
+                            style={{ width: `${Math.max(4, ratio * 100)}%` }}
+                          />
+                        </div>
+                      </li>
+                    );
+                  })}
+                </ul>
+              )}
+            </section>
           </div>
-        </div>
-      </div>
+        </>
+      )}
 
-      {/* Финансовый блок директора: Чистая прибыль и Рентабельность */}
-      <div className="bg-gradient-to-br from-slate-900 via-slate-800 to-blue-950 text-white p-6 rounded-3xl shadow-md border border-slate-800">
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
-          <div className="space-y-1">
-            <div className="flex items-center gap-2">
-              <span className="px-2.5 py-0.5 rounded-full bg-blue-500/20 text-blue-300 text-xs font-semibold border border-blue-500/30">
-                Финансовый отчет руководителя
-              </span>
-              <span className="text-xs text-slate-400">Доступно только Тимуру</span>
-            </div>
-            <h2 className="text-xl sm:text-2xl font-black tracking-tight">
-              Экономика цеха «Master Print»
-            </h2>
-            <p className="text-xs text-slate-400 max-w-xl">
-              Фактическая выручка, списанная себестоимость рулонов/акрила и чистый финансовый результат
-            </p>
-          </div>
-
-          <div className="flex items-center gap-4 sm:gap-6 flex-wrap">
-            <div className="p-3.5 bg-white/5 rounded-2xl border border-white/10">
-              <span className="text-[10px] text-slate-400 font-semibold uppercase block">
-                Списано материалов:
-              </span>
-              <span className="text-lg font-black font-mono text-rose-300 block mt-0.5">
-                ~{formatCurrency(totalMaterialCostDeducted)}
-              </span>
-            </div>
-
-            <div className="p-3.5 bg-white/5 rounded-2xl border border-white/10">
-              <span className="text-[10px] text-slate-400 font-semibold uppercase block">
-                Фонд мастеров:
-              </span>
-              <span className="text-lg font-black font-mono text-orange-300 block mt-0.5">
-                ~{formatCurrency(totalLaborAccrued)}
-              </span>
-            </div>
-
-            <div className="p-3.5 bg-emerald-500/10 rounded-2xl border border-emerald-500/30">
-              <span className="text-[10px] text-emerald-300 font-semibold uppercase block">
-                Расчетная чистая прибыль:
-              </span>
-              <span className="text-xl font-black font-mono text-emerald-400 block mt-0.5">
-                +{formatCurrency(estimatedNetProfit)}
-              </span>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Живой реестр активных нарядов цеха в реальном времени с галочками */}
+      {/* Живой список нарядов цеха с отметкой «готово» */}
       <DashboardActiveOrders initialOrders={sanitizedOrders} currentUser={currentUser} />
 
-      {/* Планировщик смен мастеров */}
-      <DailyShiftPlanner employees={employees} orders={sanitizedOrders} />
+      {isDirector && <DailyShiftPlanner employees={employees} orders={sanitizedOrders} />}
     </div>
   );
 }

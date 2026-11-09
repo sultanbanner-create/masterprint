@@ -64,7 +64,7 @@ export default function LoginPage() {
           </p>
           <div className="mt-8 flex items-center gap-3">
             <div className="cmyk-strip w-24 rounded-full" />
-            <span className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">C · M · Y · K</span>
+            <span className="text-xs text-slate-500">Печать, вывески, монтаж</span>
           </div>
         </div>
 

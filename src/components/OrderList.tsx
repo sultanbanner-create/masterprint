@@ -21,6 +21,17 @@ import {
 } from "lucide-react";
 import { formatCurrency, formatDate, formatDateTime, getDeadlineInfo, STATUS_CONFIG } from "@/lib/utils";
 
+
+const STATUS_OPTIONS = [
+  { value: "NEW", label: "Новый" },
+  { value: "DESIGN", label: "Макет (Жалгас)" },
+  { value: "PRINTING", label: "Печать (Альберт)" },
+  { value: "ASSEMBLY", label: "Сборка (Абзал)" },
+  { value: "MOUNTING", label: "Монтаж (Абзал)" },
+  { value: "READY", label: "Готов к сдаче" },
+  { value: "COMPLETED", label: "Сдан и оплачен" },
+];
+
 interface OrderListProps {
   initialOrders: any[];
   employees: any[];
@@ -193,7 +204,7 @@ export function OrderList({ initialOrders, employees, currentUser }: OrderListPr
   const exportToExcel = () => {
     const headers = isWorkshop
       ? [
-          "№ Наряда",
+          "Наряд",
           "Название изделия",
           "Клиент",
           "Телефон",
@@ -204,7 +215,7 @@ export function OrderList({ initialOrders, employees, currentUser }: OrderListPr
           "Адрес монтажа",
         ]
       : [
-          "№ Наряда",
+          "Наряд",
           "Название изделия",
           "Клиент",
           "Компания",
@@ -263,14 +274,14 @@ export function OrderList({ initialOrders, employees, currentUser }: OrderListPr
     <div className="space-y-4">
       {/* Личный блок мастера: только его заказы и сумма выполненной работы */}
       {!isDirector && currentUser && (
-        <div className="bg-white rounded-2xl p-4 sm:p-5 border border-emerald-200 bg-gradient-to-r from-emerald-50/50 via-white to-teal-50/30 shadow-xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <div className="bg-white rounded-2xl p-4 sm:p-5 border border-emerald-200 bg-gradient-to-r from-emerald-50/50 via-white to-blue-50/30 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div className="flex items-center gap-3.5">
             <div className="w-11 h-11 rounded-2xl bg-emerald-600 text-white flex items-center justify-center shadow-sm shadow-emerald-600/30 shrink-0">
               <Award className="w-6 h-6" />
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <span className="text-xs font-bold uppercase tracking-wider text-emerald-800">
+                <span className="text-xs font-bold tracking-wider text-emerald-800">
                   Выработка: {currentUser.name}
                 </span>
                 <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800">
@@ -278,7 +289,7 @@ export function OrderList({ initialOrders, employees, currentUser }: OrderListPr
                 </span>
               </div>
               <div className="flex items-baseline gap-2 mt-0.5">
-                <span className="text-2xl font-black font-mono text-emerald-700">
+                <span className="text-2xl font-black text-emerald-700">
                   {formatCurrency(myCompletedSum)}
                 </span>
                 <span className="text-xs font-semibold text-slate-500">
@@ -289,11 +300,11 @@ export function OrderList({ initialOrders, employees, currentUser }: OrderListPr
           </div>
 
           <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
-            <div className="px-3 py-1.5 rounded-xl bg-white border border-slate-200 text-xs text-slate-700 shadow-2xs">
+            <div className="px-3 py-1.5 rounded-xl bg-white border border-slate-200 text-xs text-slate-700">
               В работе: <b className="text-slate-900">{myActiveOrders.length}</b> нарядов
             </div>
             {myUrgentOrders.length > 0 && (
-              <div className="px-3 py-1.5 rounded-xl bg-red-50 border border-red-200 text-xs text-red-700 font-bold flex items-center gap-1 shadow-2xs">
+              <div className="px-3 py-1.5 rounded-xl bg-red-50 border border-red-200 text-xs text-red-700 font-bold flex items-center gap-1">
                 <Flame className="w-3.5 h-3.5 text-red-600" />
                 <span>Срочные: {myUrgentOrders.length}</span>
               </div>
@@ -304,7 +315,7 @@ export function OrderList({ initialOrders, employees, currentUser }: OrderListPr
                 const match = employees.find((e) => e.id === currentUser.id || e.name === currentUser.name);
                 setFilterEmployee((prev) => (prev === match?.id ? "ALL" : (match?.id || "ALL")));
               }}
-              className="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition shadow-xs"
+              className="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition"
             >
               {filterEmployee === currentUser?.id || filterEmployee === employees.find((e) => e.name === currentUser?.name)?.id
                 ? "Показать все наряды цеха"
@@ -315,10 +326,10 @@ export function OrderList({ initialOrders, employees, currentUser }: OrderListPr
       )}
 
       {/* Верхний блок фильтрации: по сотруднику и строке поиска */}
-      <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs flex flex-col lg:flex-row items-center justify-between gap-4">
+      <div className="bg-white p-4 rounded-2xl border border-slate-200 flex flex-col lg:flex-row items-center justify-between gap-4">
         {/* Фильтр по мастерам */}
         <div className="flex items-center gap-1.5 overflow-x-auto w-full lg:w-auto pb-1 lg:pb-0">
-          <span className="text-xs font-bold text-slate-400 uppercase mr-1 flex items-center gap-1 shrink-0">
+          <span className="text-xs font-bold text-slate-400 mr-1 flex items-center gap-1 shrink-0">
             <User className="w-3.5 h-3.5" /> Мастер:
           </span>
           <button
@@ -326,11 +337,11 @@ export function OrderList({ initialOrders, employees, currentUser }: OrderListPr
             onClick={() => setFilterEmployee("ALL")}
             className={`px-3 py-1.5 rounded-xl text-xs font-bold transition shrink-0 ${
               filterEmployee === "ALL"
-                ? "bg-slate-900 text-white shadow-xs"
+                ? "bg-slate-900 text-white"
                 : "bg-slate-100 text-slate-600 hover:bg-slate-200"
             }`}
           >
-            Все мастера ({orders.length})
+            Все ({orders.length})
           </button>
           {employees.map((emp) => {
             const count = orders.filter((o) => o.assignedToId === emp.id).length;
@@ -343,12 +354,12 @@ export function OrderList({ initialOrders, employees, currentUser }: OrderListPr
                 onClick={() => setFilterEmployee(emp.id)}
                 className={`px-3 py-1.5 rounded-xl text-xs font-bold transition shrink-0 flex items-center gap-1.5 ${
                   isSelected
-                    ? "bg-teal-600 text-white shadow-xs"
+                    ? "bg-blue-600 text-white"
                     : "bg-slate-100 text-slate-700 hover:bg-slate-200"
                 }`}
               >
                 <span>{emp.name}</span>
-                <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-mono ${isSelected ? "bg-teal-800 text-white" : "bg-slate-200 text-slate-600"}`}>
+                <span className={`text-[10px] px-1.5 py-0.2 rounded-full ${isSelected ? "bg-blue-800 text-white" : "bg-slate-200 text-slate-600"}`}>
                   {count}
                 </span>
               </button>
@@ -365,7 +376,7 @@ export function OrderList({ initialOrders, employees, currentUser }: OrderListPr
               placeholder="Поиск по наряду, клиенту, вывеске..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full pl-9 pr-3 py-1.5 text-xs bg-slate-50 border border-slate-300 rounded-xl focus:bg-white focus:border-teal-600 focus:outline-none"
+              className="w-full pl-9 pr-3 py-1.5 text-xs bg-slate-50 border border-slate-300 rounded-xl focus:bg-white focus:border-blue-600 focus:outline-none"
             />
           </div>
 
@@ -404,13 +415,13 @@ export function OrderList({ initialOrders, employees, currentUser }: OrderListPr
             onClick={() => setFilterUrgentOnly(!filterUrgentOnly)}
             className={`px-3 py-1.5 rounded-xl font-bold transition flex items-center gap-1.5 border ${
               filterUrgentOnly
-                ? "bg-red-500 text-white border-red-600 shadow-xs"
+                ? "bg-red-500 text-white border-red-600"
                 : "bg-white text-slate-700 border-slate-200 hover:border-red-300 hover:text-red-700"
             }`}
           >
             <Flame className={`w-3.5 h-3.5 ${filterUrgentOnly ? "text-white" : "text-red-500"}`} />
-            <span>Срочные 🔥</span>
-            <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-mono ${filterUrgentOnly ? "bg-red-700 text-white" : "bg-red-100 text-red-700"}`}>
+            <span>Срочные</span>
+            <span className={`px-1.5 py-0.2 rounded-full text-[10px] ${filterUrgentOnly ? "bg-red-700 text-white" : "bg-red-100 text-red-700"}`}>
               {urgentCount}
             </span>
           </button>
@@ -421,12 +432,12 @@ export function OrderList({ initialOrders, employees, currentUser }: OrderListPr
               onClick={() => setFilterDebtOnly(!filterDebtOnly)}
               className={`px-3 py-1.5 rounded-xl font-bold transition flex items-center gap-1.5 border ${
                 filterDebtOnly
-                  ? "bg-amber-500 text-white border-amber-600 shadow-xs"
+                  ? "bg-amber-500 text-white border-amber-600"
                   : "bg-white text-slate-700 border-slate-200 hover:border-amber-300 hover:text-amber-800"
               }`}
             >
-              <span>💰 С остатком долга</span>
-              <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-mono ${filterDebtOnly ? "bg-amber-700 text-white" : "bg-amber-100 text-amber-800"}`}>
+              <span>С долгом</span>
+              <span className={`px-1.5 py-0.2 rounded-full text-[10px] ${filterDebtOnly ? "bg-amber-700 text-white" : "bg-amber-100 text-amber-800"}`}>
                 {debtCount}
               </span>
             </button>
@@ -438,13 +449,13 @@ export function OrderList({ initialOrders, employees, currentUser }: OrderListPr
             className="px-3 py-1.5 font-bold rounded-xl border border-slate-200 bg-white text-slate-700 focus:outline-none cursor-pointer"
           >
             <option value="ALL">Все виды изделий</option>
-            <option value="STAND">📋 Стенды и таблички</option>
-            <option value="BANNER">🖨️ Баннеры</option>
-            <option value="LETTERS">💡 Световые буквы LED</option>
-            <option value="LIGHTBOX">📦 Лайтбоксы</option>
-            <option value="ORACAL">✂️ Пленка Oracal</option>
-            <option value="AUTO_BRANDING">🚗 Брендирование авто</option>
-            <option value="INSTALL">🔨 Только монтаж</option>
+            <option value="STAND">Стенды и таблички</option>
+            <option value="BANNER">Баннеры</option>
+            <option value="LETTERS">Световые буквы</option>
+            <option value="LIGHTBOX">Лайтбоксы</option>
+            <option value="ORACAL">Плёнка Oracal</option>
+            <option value="AUTO_BRANDING">Брендирование авто</option>
+            <option value="INSTALL">Только монтаж</option>
           </select>
         </div>
 
@@ -453,21 +464,91 @@ export function OrderList({ initialOrders, employees, currentUser }: OrderListPr
         </div>
       </div>
 
-      {/* Таблица реестра нарядов */}
-      <div className="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
-        <div className="overflow-x-auto">
+      {/* Список нарядов: карточки на телефоне, таблица на компьютере */}
+      <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden">
+        <ul className="md:hidden divide-y divide-slate-100">
+          {filteredOrders.map((order) => {
+            const deadlineInfo = getDeadlineInfo(order.deadline, order.status === "COMPLETED");
+            const statusCfg = STATUS_CONFIG[order.status];
+            const done = order.status === "READY" || order.status === "COMPLETED" || !!order.completedBy;
+            const doneBy = order.completedBy || order.assignedTo?.name;
+            return (
+              <li key={order.id} className="p-4">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs">
+                      <span className="font-bold text-slate-500">{order.orderNumber}</span>
+                      {order.priority === "URGENT" && <span className="font-bold text-red-600">Срочный</span>}
+                      {order.deadline && order.status !== "COMPLETED" && (
+                        <span className={deadlineInfo.isUrgent && !done ? "font-bold text-red-600" : "text-slate-500"}>
+                          {deadlineInfo.label}
+                        </span>
+                      )}
+                    </div>
+                    <Link href={`/orders/${order.id}`} className="block mt-1 text-[15px] font-bold text-slate-900 truncate">
+                      {order.title}
+                    </Link>
+                    <div className="text-sm text-slate-500 truncate">
+                      {order.client?.name || "Без клиента"}
+                      {order.assignedTo ? `, мастер ${order.assignedTo.name}` : ""}
+                    </div>
+                  </div>
+                  <div className="text-right shrink-0">
+                    <div className="text-[15px] font-extrabold text-slate-900 whitespace-nowrap">{formatCurrency(order.totalAmount)}</div>
+                    {!isWorkshop &&
+                      (order.debtAmount > 0 ? (
+                        <div className="text-xs font-bold text-red-600 whitespace-nowrap">долг {formatCurrency(order.debtAmount)}</div>
+                      ) : (
+                        <div className="text-xs text-emerald-700">оплачен</div>
+                      ))}
+                  </div>
+                </div>
+                <div className="mt-3 flex items-center gap-2">
+                  <select
+                    value={order.status}
+                    onChange={(e) => updateStatus(order.id, e.target.value)}
+                    aria-label={`Этап наряда ${order.orderNumber}`}
+                    className={`h-10 flex-1 min-w-0 px-3 rounded-xl border font-semibold ${statusCfg?.bg || "bg-slate-50"} ${statusCfg?.color || "text-slate-700"} ${statusCfg?.border || "border-slate-300"} focus:outline-none`}
+                  >
+                    {STATUS_OPTIONS.map((opt) => (
+                      <option key={opt.value} value={opt.value}>{opt.label}</option>
+                    ))}
+                  </select>
+                  <button
+                    type="button"
+                    onClick={() => toggleCompletion(order)}
+                    aria-pressed={done}
+                    className={`h-10 px-3.5 rounded-xl text-sm font-bold flex items-center gap-2 shrink-0 active:scale-95 transition ${
+                      done ? "bg-emerald-50 text-emerald-800" : "border border-slate-300 text-slate-700"
+                    }`}
+                  >
+                    {done ? <CheckSquare className="w-4 h-4 text-emerald-600" /> : <Square className="w-4 h-4 text-slate-400" />}
+                    <span className="max-w-[110px] truncate">{done ? (doneBy ? `Сделал ${doneBy}` : "Готово") : "Готово"}</span>
+                  </button>
+                </div>
+              </li>
+            );
+          })}
+          {filteredOrders.length === 0 && (
+            <li className="px-5 py-10 text-center text-sm text-slate-500">
+              Заказы не найдены. Измените фильтры или создайте новый наряд.
+            </li>
+          )}
+        </ul>
+
+        <div className="hidden md:block overflow-x-auto">
           <table className="w-full text-left text-xs">
             <thead>
-              <tr className="bg-slate-50 text-slate-600 uppercase font-bold border-b border-slate-200">
-                <th className="py-3 px-5">№ Наряда</th>
+              <tr className="bg-slate-50 text-slate-600 font-bold border-b border-slate-200">
+                <th className="py-3 px-5">Наряд</th>
                 <th className="py-3 px-4">Клиент / Объект</th>
                 <th className="py-3 px-4">Изделие / Задача</th>
-                <th className="py-3 px-4">Ответственный мастер</th>
+                <th className="py-3 px-4">Мастер</th>
                 <th className="py-3 px-4 text-center">Статус</th>
                 <th className="py-3 px-4 text-center bg-emerald-50/60 text-emerald-900 border-x border-emerald-200">
-                  Выполнение (Галочка)
+                  Готово
                 </th>
-                <th className="py-3 px-4">Время исполнения (Дедлайн)</th>
+                <th className="py-3 px-4">Срок</th>
                 <th className="py-3 px-4 text-right">{isWorkshop ? "Сумма наряда" : "Сумма / Оплата"}</th>
                 <th className="py-3 px-5 text-center">Действие</th>
               </tr>
@@ -485,11 +566,11 @@ export function OrderList({ initialOrders, employees, currentUser }: OrderListPr
                 return (
                   <tr key={order.id} className="hover:bg-slate-50/80 transition">
                     {/* Номер наряда и приоритет */}
-                    <td className="py-3.5 px-5 font-mono font-bold text-slate-900 whitespace-nowrap">
+                    <td className="py-3.5 px-5 font-bold text-slate-900 whitespace-nowrap">
                       <div className="flex items-center gap-1.5">
                         <Link
                           href={`/orders/${order.id}`}
-                          className="text-teal-700 hover:text-teal-900 hover:underline text-sm font-bold"
+                          className="text-blue-700 hover:text-blue-900 hover:underline text-sm font-bold"
                         >
                           {order.orderNumber}
                         </Link>
@@ -519,7 +600,7 @@ export function OrderList({ initialOrders, employees, currentUser }: OrderListPr
                       )}
                     </td>
 
-                    {/* Ответственный мастер */}
+                    {/* Мастер */}
                     <td className="py-3.5 px-4 whitespace-nowrap">
                       {order.assignedTo ? (
                         <div className="flex items-center gap-2">
@@ -547,39 +628,35 @@ export function OrderList({ initialOrders, employees, currentUser }: OrderListPr
                         onChange={(e) => updateStatus(order.id, e.target.value)}
                         className={`text-[11px] font-bold px-2.5 py-1 rounded-full border cursor-pointer ${statusCfg.bg} ${statusCfg.color} ${statusCfg.border} focus:outline-none`}
                       >
-                        <option value="NEW">Новый</option>
-                        <option value="DESIGN">Макет (Жалгас)</option>
-                        <option value="PRINTING">Печать (Альберт)</option>
-                        <option value="ASSEMBLY">Сборка (Абзал)</option>
-                        <option value="MOUNTING">Монтаж (Абзал)</option>
-                        <option value="READY">Готов к сдаче</option>
-                        <option value="COMPLETED">Сдан & Оплачен</option>
+                        {STATUS_OPTIONS.map((opt) => (
+                          <option key={opt.value} value={opt.value}>{opt.label}</option>
+                        ))}
                       </select>
                     </td>
 
-                    {/* Колонка «Выполнение (Галочка)»: кто выполнил заказ ставит галочку */}
+                    {/* Колонка «Готово»: кто выполнил заказ ставит галочку */}
                     <td className="py-3.5 px-4 text-center whitespace-nowrap bg-emerald-50/20 border-x border-emerald-100/60">
                       {order.status === "READY" || order.status === "COMPLETED" || order.completedBy ? (
                         <button
                           type="button"
                           onClick={() => toggleCompletion(order)}
-                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-100 hover:bg-emerald-200 text-emerald-900 border border-emerald-300 font-bold text-xs transition active:scale-95 shadow-2xs group"
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-100 hover:bg-emerald-200 text-emerald-900 border border-emerald-300 font-bold text-xs transition active:scale-95 group"
                           title={`Выполнено! Нажмите, если нужно снять галочку. Отметил: ${order.completedBy || order.assignedTo?.name || "Мастер"}`}
                         >
                           <CheckSquare className="w-4 h-4 text-emerald-600 shrink-0" />
                           <span className="font-extrabold">
-                            {order.completedBy ? `Выполнил: ${order.completedBy}` : (order.assignedTo?.name ? `Выполнил: ${order.assignedTo.name}` : "Выполнен ✅")}
+                            {order.completedBy ? `Сделал ${order.completedBy}` : (order.assignedTo?.name ? `Сделал ${order.assignedTo.name}` : "Готово")}
                           </span>
                         </button>
                       ) : (
                         <button
                           type="button"
                           onClick={() => toggleCompletion(order)}
-                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white hover:bg-emerald-50 text-slate-700 hover:text-emerald-800 border border-slate-300 hover:border-emerald-400 font-semibold text-xs transition active:scale-95 shadow-2xs group"
-                          title={`Поставить галочку: Я выполнил этот наряд (${currentUser?.name || "Мастер"})`}
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white hover:bg-emerald-50 text-slate-700 hover:text-emerald-800 border border-slate-300 hover:border-emerald-400 font-semibold text-xs transition active:scale-95 group"
+                          title={`Готово: Я выполнил этот наряд (${currentUser?.name || "Мастер"})`}
                         >
                           <Square className="w-4 h-4 text-slate-400 group-hover:text-emerald-600 shrink-0" />
-                          <span className="group-hover:font-bold">Поставить галочку</span>
+                          <span className="group-hover:font-bold">Готово</span>
                         </button>
                       )}
                     </td>
@@ -598,17 +675,11 @@ export function OrderList({ initialOrders, employees, currentUser }: OrderListPr
                             {deadlineInfo.label}
                           </span>
                         </div>
-                        {order.status !== "READY" && order.status !== "COMPLETED" && deadlineInfo.isUrgent && (
-                          <div className="flex items-center gap-1 text-[10px] font-black text-red-600 bg-red-50 border border-red-200 px-1.5 py-0.5 rounded animate-pulse">
-                            <Flame className="w-3 h-3 fill-red-600 text-red-600 shrink-0" />
-                            <span>ГОРИТ ДЕДЛАЙН!</span>
-                          </div>
-                        )}
                       </div>
                     </td>
 
                     {/* Финансы */}
-                    <td className="py-3.5 px-4 text-right font-mono whitespace-nowrap">
+                    <td className="py-3.5 px-4 text-right whitespace-nowrap">
                       <div className="font-bold text-slate-900 text-sm">
                         {formatCurrency(order.totalAmount)}
                       </div>
@@ -633,7 +704,7 @@ export function OrderList({ initialOrders, employees, currentUser }: OrderListPr
                     <td className="py-3.5 px-5 text-center whitespace-nowrap">
                       <Link
                         href={`/orders/${order.id}`}
-                        className="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition inline-flex items-center gap-0.5 shadow-2xs"
+                        className="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition inline-flex items-center gap-0.5"
                       >
                         <span>Открыть</span>
                         <ChevronRight className="w-3.5 h-3.5" />

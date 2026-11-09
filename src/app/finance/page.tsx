@@ -2,7 +2,7 @@ import Link from "next/link";
 import { cookies } from "next/headers";
 import { prisma } from "@/lib/db";
 import { verifyToken } from "@/lib/auth";
-import { formatCurrency, formatDate, formatDateTime } from "@/lib/utils";
+import { formatCurrency, formatDate, formatDateTime, plural } from "@/lib/utils";
 import { Wallet, CreditCard, Banknote, Building, AlertCircle, ShieldCheck, Package, ArrowRight } from "lucide-react";
 import { PendingPaymentsList } from "@/components/PendingPaymentsList";
 import { RevertPaymentButton } from "@/components/RevertPaymentButton";
@@ -71,19 +71,12 @@ export default async function FinancePage() {
 
   return (
     <div className="space-y-5">
-      <div className="pb-2 border-b border-slate-200 flex items-center justify-between">
+      <div className="flex flex-wrap items-end justify-between gap-2">
         <div>
-          <h1 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
-            Касса, Финансы & Контроль оплат
-          </h1>
-          <p className="text-xs text-slate-500 mt-0.5">
-            Двухэтапный контроль: Жалгас получает оплату от клиента → Тимур утверждает в кассу
+          <h2 className="text-xl sm:text-2xl font-extrabold text-slate-900 tracking-tight">Касса и долги</h2>
+          <p className="text-sm text-slate-500 mt-1">
+            Жалгас принимает оплату от клиента, директор подтверждает её в кассу.
           </p>
-        </div>
-
-        <div className="hidden sm:flex items-center gap-1.5 px-3 py-1 rounded-xl bg-blue-50 border border-blue-200 text-xs text-blue-800 font-bold">
-          <ShieldCheck className="w-4 h-4 text-blue-600" />
-          <span>Кассир: {isDirector ? "Тимур (Руководитель)" : currentUser?.name || "Менеджер"}</span>
         </div>
       </div>
 
@@ -93,68 +86,36 @@ export default async function FinancePage() {
         isDirector={isDirector}
       />
 
-      {/* 4 Карточки кассы (Только подтвержденные средства) */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
-        <div className="bg-white rounded-2xl p-4 border border-slate-200 shadow-xs">
-          <div className="flex items-center justify-between">
-            <span className="text-[11px] uppercase font-bold text-slate-500">Наличные в кассе</span>
-            <span className="p-1.5 rounded-lg bg-blue-50 text-blue-600">
-              <Banknote className="w-4 h-4" />
-            </span>
-          </div>
-          <div className="text-xl font-black text-slate-900 mt-2 font-mono">
-            {formatCurrency(cashTotal)}
-          </div>
-          <span className="text-[10px] text-slate-400 mt-0.5 block">Подтверждено директором</span>
+      {/* Касса: только подтверждённые деньги */}
+      <section className="bg-white rounded-2xl border border-slate-200 grid grid-cols-2 lg:grid-cols-4 divide-slate-200 [&>*]:border-slate-200">
+        <div className="p-4 sm:p-5 border-b lg:border-b-0 border-r">
+          <div className="flex items-center gap-2 text-sm text-slate-500"><Banknote className="w-4 h-4" /> Наличные</div>
+          <div className="mt-1 text-xl sm:text-[22px] font-extrabold text-slate-900">{formatCurrency(cashTotal)}</div>
         </div>
-
-        <div className="bg-white rounded-2xl p-4 border border-slate-200 shadow-xs">
-          <div className="flex items-center justify-between">
-            <span className="text-[11px] uppercase font-bold text-slate-500">Click / Карта</span>
-            <span className="p-1.5 rounded-lg bg-purple-50 text-purple-600">
-              <CreditCard className="w-4 h-4" />
-            </span>
-          </div>
-          <div className="text-xl font-black text-slate-900 mt-2 font-mono">
-            {formatCurrency(cardTotal)}
-          </div>
-          <span className="text-[10px] text-slate-400 mt-0.5 block">Безналичные переводы</span>
+        <div className="p-4 sm:p-5 border-b lg:border-b-0 lg:border-r">
+          <div className="flex items-center gap-2 text-sm text-slate-500"><CreditCard className="w-4 h-4" /> Карта и Click</div>
+          <div className="mt-1 text-xl sm:text-[22px] font-extrabold text-slate-900">{formatCurrency(cardTotal)}</div>
         </div>
-
-        <div className="bg-white rounded-2xl p-4 border border-slate-200 shadow-xs">
-          <div className="flex items-center justify-between">
-            <span className="text-[11px] uppercase font-bold text-slate-500">Расчетный счет</span>
-            <span className="p-1.5 rounded-lg bg-emerald-50 text-emerald-600">
-              <Building className="w-4 h-4" />
-            </span>
-          </div>
-          <div className="text-xl font-black text-slate-900 mt-2 font-mono">
-            {formatCurrency(transferTotal)}
-          </div>
-          <span className="text-[10px] text-slate-400 mt-0.5 block">Юр. лица / Договоры</span>
+        <div className="p-4 sm:p-5 border-r">
+          <div className="flex items-center gap-2 text-sm text-slate-500"><Building className="w-4 h-4" /> Расчётный счёт</div>
+          <div className="mt-1 text-xl sm:text-[22px] font-extrabold text-slate-900">{formatCurrency(transferTotal)}</div>
         </div>
-
-        <div className="bg-white rounded-2xl p-4 border border-slate-200 shadow-xs">
-          <div className="flex items-center justify-between">
-            <span className="text-[11px] uppercase font-bold text-slate-500">Долги клиентов</span>
-            <span className="p-1.5 rounded-lg bg-amber-50 text-amber-600">
-              <AlertCircle className="w-4 h-4" />
-            </span>
-          </div>
-          <div className="text-xl font-black text-amber-800 mt-2 font-mono">
+        <div className="p-4 sm:p-5">
+          <div className="flex items-center gap-2 text-sm text-slate-500"><AlertCircle className="w-4 h-4" /> Долги клиентов</div>
+          <div className={`mt-1 text-xl sm:text-[22px] font-extrabold ${totalDebts > 0 ? "text-red-600" : "text-slate-900"}`}>
             {formatCurrency(totalDebts)}
           </div>
-          <span className="text-[10px] text-amber-700/70 mt-0.5 block">
-            {debtorOrders.length} нарядов с долгом
-          </span>
+          <div className="text-xs text-slate-500 mt-0.5">
+            {debtorOrders.length} {plural(debtorOrders.length, "наряд", "наряда", "нарядов")} с долгом
+          </div>
         </div>
-      </div>
+      </section>
 
       {/* Спецсчёт: Улугбек («Нукус гуллери») — Суммированный баланс за коробки цеха */}
-      <div className="bg-gradient-to-r from-slate-900 via-slate-900 to-emerald-950 rounded-2xl p-4 sm:p-5 text-white border border-emerald-800/40 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className="bg-ink rounded-2xl p-4 sm:p-5 text-white flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div className="space-y-1">
           <div className="flex items-center gap-2">
-            <span className="px-2 py-0.5 rounded-lg bg-emerald-500/20 text-emerald-300 text-[10px] font-black uppercase tracking-wider border border-emerald-500/30 flex items-center gap-1">
+            <span className="px-2 py-0.5 rounded-lg bg-emerald-500/20 text-emerald-300 text-[10px] font-black border border-emerald-500/30 flex items-center gap-1">
               <Package className="w-3 h-3 text-emerald-400" />
               Линия коробок: Нукус гуллери
             </span>
@@ -162,19 +123,19 @@ export default async function FinancePage() {
           </div>
           <div className="text-lg sm:text-xl font-black text-white flex items-center gap-2">
             <span>Улугбек («Нукус гуллери»)</span>
-            <span className="text-xs text-slate-400 font-normal font-mono">{ulugbek?.phone || "+998 90 735-00-11"}</span>
+            <span className="text-xs text-slate-400 font-normal">{ulugbek?.phone || "+998 90 735-00-11"}</span>
           </div>
           <p className="text-xs text-slate-300">
-            Всего изготовлено: <strong className="text-white font-mono">{ulugbekTotalBoxes} шт.</strong> ({ulugbek?.orders?.length || 0} партий) • Сумма заказов: <strong className="text-emerald-300 font-mono">{formatCurrency(ulugbekTotalOrdered)}</strong>
+            Всего изготовлено: <strong className="text-white">{ulugbekTotalBoxes} шт.</strong> ({ulugbek?.orders?.length || 0} партий) • Сумма заказов: <strong className="text-emerald-300">{formatCurrency(ulugbekTotalOrdered)}</strong>
           </p>
         </div>
 
         <div className="flex items-center gap-4 bg-white/5 border border-white/10 p-3 sm:p-4 rounded-xl backdrop-blur-xs justify-between md:justify-end">
           <div>
-            <span className="text-[10px] uppercase font-bold text-slate-400 block tracking-wider">
+            <span className="text-[10px] font-bold text-slate-400 block tracking-wider">
               Текущий долг Улугбека:
             </span>
-            <span className={`text-xl sm:text-2xl font-black font-mono ${ulugbekDebt > 0 ? "text-red-400" : "text-emerald-400"}`}>
+            <span className={`text-xl sm:text-2xl font-black ${ulugbekDebt > 0 ? "text-red-400" : "text-emerald-400"}`}>
               {formatCurrency(ulugbekDebt)}
             </span>
             <span className="text-[10px] text-slate-400 block">
@@ -195,7 +156,7 @@ export default async function FinancePage() {
       {/* 2 Колонки: Должники и История поступлений */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
         {/* Реестр должников */}
-        <div className="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
+        <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden">
           <div className="px-4 py-3 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between">
             <div>
               <h2 className="text-sm font-bold text-slate-900 flex items-center gap-1.5">
@@ -204,7 +165,7 @@ export default async function FinancePage() {
               </h2>
               <span className="text-[10px] text-slate-400">Наряды с неоплаченным остатком</span>
             </div>
-            <span className="text-xs font-mono font-bold text-amber-800">
+            <span className="text-xs font-bold text-amber-800">
               {debtorOrders.length} клиентов
             </span>
           </div>
@@ -259,7 +220,7 @@ export default async function FinancePage() {
         </div>
 
         {/* Журнал всех платежей */}
-        <div className="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
+        <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden">
           <div className="px-4 py-3 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between">
             <div>
               <h2 className="text-sm font-bold text-slate-900 flex items-center gap-1.5">
@@ -268,7 +229,7 @@ export default async function FinancePage() {
               </h2>
               <span className="text-[10px] text-slate-400">История оплат и статусы кассы</span>
             </div>
-            <span className="text-xs font-mono font-bold text-slate-600">
+            <span className="text-xs font-bold text-slate-600">
               {payments.length} записей
             </span>
           </div>
@@ -313,7 +274,7 @@ export default async function FinancePage() {
                   <span className="font-mono font-black text-emerald-700 text-sm block">
                     +{formatCurrency(p.amount)}
                   </span>
-                  <span className="text-[10px] text-slate-400 font-mono block">
+                  <span className="text-[10px] text-slate-400 block">
                     {formatDateTime(p.createdAt)}
                   </span>
                   {isDirector && (

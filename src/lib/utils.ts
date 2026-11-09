@@ -82,13 +82,13 @@ export function getDeadlineInfo(deadline: string | Date | null | undefined, isCo
       isOverdue: true,
       isUrgent: true,
       colorClass: "text-red-600 font-bold",
-      badgeClass: "bg-red-100 text-red-700 border-red-300 font-bold animate-pulse",
+      badgeClass: "bg-red-50 text-red-700 border-red-200 font-bold",
     };
   }
 
   if (diffHours <= 12) {
     return {
-      label: `Осталось ${diffHours} ч 🔥`,
+      label: diffHours <= 1 ? "Меньше часа" : `Осталось ${diffHours} ч`,
       isOverdue: false,
       isUrgent: true,
       colorClass: "text-amber-700 font-bold",
@@ -98,7 +98,7 @@ export function getDeadlineInfo(deadline: string | Date | null | undefined, isCo
 
   if (diffHours <= 36) {
     return {
-      label: "Срок: завтра",
+      label: "Завтра",
       isOverdue: false,
       isUrgent: false,
       colorClass: "text-blue-700",
@@ -116,22 +116,32 @@ export function getDeadlineInfo(deadline: string | Date | null | undefined, isCo
   };
 }
 
+// Цвета этапов согласованы по всей системе: печать — пурпурный (M), монтаж — голубой (C), как краски CMYK
 export const STAGES = [
-  { key: "NEW", title: "Новые заявки", color: "border-amber-400", bg: "bg-amber-500", text: "text-amber-700" },
-  { key: "DESIGN", title: "Дизайн / Макет", color: "border-blue-500", bg: "bg-blue-500", text: "text-blue-700", role: "Жалгас" },
-  { key: "PRINTING", title: "Печать баннера", color: "border-purple-500", bg: "bg-purple-500", text: "text-purple-700", role: "Альберт" },
-  { key: "ASSEMBLY", title: "Сборка букв/короба", color: "border-orange-500", bg: "bg-orange-500", text: "text-orange-700", role: "Абзал" },
-  { key: "MOUNTING", title: "Монтаж на объекте", color: "border-cyan-500", bg: "bg-cyan-500", text: "text-cyan-700", role: "Абзал" },
-  { key: "READY", title: "Готовы к выдаче", color: "border-teal-500", bg: "bg-teal-500", text: "text-teal-700" },
-  { key: "COMPLETED", title: "Сданы и оплачены", color: "border-emerald-500", bg: "bg-emerald-500", text: "text-emerald-700" },
+  { key: "NEW", title: "Новые заявки", short: "Новые", color: "border-amber-400", bg: "bg-amber-400", text: "text-amber-700" },
+  { key: "DESIGN", title: "Дизайн / Макет", short: "Макет", color: "border-blue-500", bg: "bg-blue-500", text: "text-blue-700", role: "Жалгас" },
+  { key: "PRINTING", title: "Печать баннера", short: "Печать", color: "border-fuchsia-500", bg: "bg-fuchsia-500", text: "text-fuchsia-700", role: "Альберт" },
+  { key: "ASSEMBLY", title: "Сборка букв/короба", short: "Сборка", color: "border-orange-500", bg: "bg-orange-500", text: "text-orange-700", role: "Абзал" },
+  { key: "MOUNTING", title: "Монтаж на объекте", short: "Монтаж", color: "border-cyan-500", bg: "bg-cyan-500", text: "text-cyan-700", role: "Абзал" },
+  { key: "READY", title: "Готовы к выдаче", short: "Готовы", color: "border-emerald-500", bg: "bg-emerald-500", text: "text-emerald-700" },
+  { key: "COMPLETED", title: "Сданы и оплачены", short: "Сданы", color: "border-slate-400", bg: "bg-slate-400", text: "text-slate-600" },
 ];
 
-export const STATUS_CONFIG: Record<string, { label: string; color: string; bg: string; border: string; responsible?: string }> = {
-  NEW: { label: "Новый", color: "text-amber-800", bg: "bg-amber-50", border: "border-amber-300" },
-  DESIGN: { label: "Макет / Дизайн", color: "text-blue-800", bg: "bg-blue-50", border: "border-blue-300", responsible: "Жалгас" },
-  PRINTING: { label: "Печать баннера", color: "text-purple-800", bg: "bg-purple-50", border: "border-purple-300", responsible: "Альберт" },
-  ASSEMBLY: { label: "Сборка букв", color: "text-orange-800", bg: "bg-orange-50", border: "border-orange-300", responsible: "Абзал" },
-  MOUNTING: { label: "Монтаж", color: "text-cyan-800", bg: "bg-cyan-50", border: "border-cyan-300", responsible: "Абзал" },
-  READY: { label: "Готов к сдаче", color: "text-teal-800", bg: "bg-teal-50", border: "border-teal-300" },
-  COMPLETED: { label: "Сдан", color: "text-emerald-800", bg: "bg-emerald-50", border: "border-emerald-300" },
+export const STATUS_CONFIG: Record<string, { label: string; color: string; bg: string; border: string; dot: string; responsible?: string }> = {
+  NEW: { label: "Новый", color: "text-amber-800", bg: "bg-amber-50", border: "border-amber-300", dot: "bg-amber-400" },
+  DESIGN: { label: "Макет", color: "text-blue-800", bg: "bg-blue-50", border: "border-blue-300", dot: "bg-blue-500", responsible: "Жалгас" },
+  PRINTING: { label: "Печать", color: "text-fuchsia-800", bg: "bg-fuchsia-50", border: "border-fuchsia-300", dot: "bg-fuchsia-500", responsible: "Альберт" },
+  ASSEMBLY: { label: "Сборка", color: "text-orange-800", bg: "bg-orange-50", border: "border-orange-300", dot: "bg-orange-500", responsible: "Абзал" },
+  MOUNTING: { label: "Монтаж", color: "text-cyan-800", bg: "bg-cyan-50", border: "border-cyan-300", dot: "bg-cyan-500", responsible: "Абзал" },
+  READY: { label: "Готов к сдаче", color: "text-emerald-800", bg: "bg-emerald-50", border: "border-emerald-300", dot: "bg-emerald-500" },
+  COMPLETED: { label: "Сдан", color: "text-slate-600", bg: "bg-slate-100", border: "border-slate-300", dot: "bg-slate-400" },
 };
+
+/** Русское множественное число: plural(3, "наряд", "наряда", "нарядов") */
+export function plural(n: number, one: string, few: string, many: string): string {
+  const m10 = n % 10;
+  const m100 = n % 100;
+  if (m10 === 1 && m100 !== 11) return one;
+  if (m10 >= 2 && m10 <= 4 && (m100 < 12 || m100 > 14)) return few;
+  return many;
+}

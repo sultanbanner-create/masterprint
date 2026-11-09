@@ -249,7 +249,7 @@ export function AppLayout({ children }: AppLayoutProps) {
             navGroups.map((group) => (
               <div key={group.group} className="space-y-0.5">
                 {!collapsed ? (
-                  <div className="px-3 pb-1.5 text-[10px] font-bold uppercase tracking-[0.12em] text-slate-500">
+                  <div className="px-3 pb-1.5 text-xs font-semibold text-slate-500">
                     {group.group}
                   </div>
                 ) : (
