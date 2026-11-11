@@ -1,136 +1,100 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
+import { SESSION_COOKIE, integrationApiKey } from "@/lib/session-config";
+import { verifySessionEdge } from "@/lib/session-edge";
 
-// Public paths that do not require authentication
-const PUBLIC_PATHS = [
+// Страницы и API, открытые без входа
+const PUBLIC_EXACT = new Set([
   "/login",
   "/api/auth/login",
-  "/api/test-tz",
-  "/api/jarvis",
-  "/tma",
-  "/api/telegram/webhook",
-  "/api/telegram/setup-bot",
-  "/logo.png",
-  "/icon.svg",
+  "/api/auth/logout",
+  "/api/telegram/webhook", // Telegram проверяется секретным заголовком внутри маршрута
   "/manifest.json",
   "/favicon.ico",
-];
+]);
 
-export function middleware(request: NextRequest) {
+// Мини-приложение Telegram и трекер для клиента открыты как страницы;
+// данные в мини-приложении всё равно требуют входа (см. TmaAuthGate).
+const PUBLIC_PAGE_PREFIXES = ["/tma", "/track/"];
+
+// Только настоящие статические файлы из /public, и никогда не API
+const STATIC_FILE = /\.(png|jpe?g|gif|webp|svg|ico|txt|xml|webmanifest|woff2?|ttf|map)$/i;
+
+function isPublic(pathname: string): boolean {
+  if (PUBLIC_EXACT.has(pathname)) return true;
+  if (pathname.startsWith("/_next/")) return true;
+  if (!pathname.startsWith("/api/") && STATIC_FILE.test(pathname)) return true;
+  return PUBLIC_PAGE_PREFIXES.some((p) => pathname === p || pathname.startsWith(p.endsWith("/") ? p : p + "/"));
+}
+
+function constantTimeEqual(a: string, b: string): boolean {
+  if (a.length !== b.length) return false;
+  let diff = 0;
+  for (let i = 0; i < a.length; i++) diff |= a.charCodeAt(i) ^ b.charCodeAt(i);
+  return diff === 0;
+}
+
+function toLogin(request: NextRequest, pathname: string, clearCookie = false) {
+  if (pathname.startsWith("/api/")) {
+    const res = NextResponse.json({ error: "Нужно войти в систему" }, { status: 401 });
+    if (clearCookie) res.cookies.delete(SESSION_COOKIE);
+    return res;
+  }
+  const loginUrl = new URL("/login", request.url);
+  if (pathname && pathname !== "/") loginUrl.searchParams.set("from", pathname);
+  const res = NextResponse.redirect(loginUrl);
+  if (clearCookie) res.cookies.delete(SESSION_COOKIE);
+  return res;
+}
+
+export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  // 1. Allow public static assets, Telegram webhook, TMA, and Jarvis API
-  if (
-    PUBLIC_PATHS.some((path) => pathname === path || pathname.startsWith("/track/")) ||
-    pathname.startsWith("/tma") ||
-    pathname.startsWith("/api/telegram") ||
-    pathname.startsWith("/api/jarvis") ||
-    pathname.startsWith("/_next") ||
-    pathname.includes(".") ||
-    (request.headers.get("referer")?.includes("/tma") && 
-      (pathname.startsWith("/api/orders") || pathname.startsWith("/api/calculations") || pathname.startsWith("/api/expenses")))
-  ) {
-    return NextResponse.next();
+  if (isPublic(pathname)) return NextResponse.next();
+
+  // Ключ внешней интеграции (Jarvis): только для API и только из переменной окружения
+  if (pathname.startsWith("/api/")) {
+    const expectedKey = integrationApiKey();
+    const providedKey =
+      request.headers.get("x-api-key") ||
+      request.headers.get("authorization")?.replace(/^Bearer\s+/i, "") ||
+      request.nextUrl.searchParams.get("api_key");
+    if (expectedKey && providedKey && constantTimeEqual(providedKey.trim(), expectedKey)) {
+      return NextResponse.next();
+    }
   }
 
-  // 1.5. Check API Key for Jarvis / external integrations (Header or Query param)
-  const apiKey = request.headers.get("x-api-key") || 
-                 request.headers.get("authorization")?.replace(/^Bearer\s+/i, "") ||
-                 request.nextUrl.searchParams.get("api_key");
+  const token = request.cookies.get(SESSION_COOKIE)?.value;
+  if (!token) return toLogin(request, pathname);
 
-  const VALID_KEYS = [
-    "jarvis_masterprint_2026",
-    "jarvis_mp_sec_9918273645",
-    "masterprint_jarvis_secret_key",
-    process.env.JARVIS_API_KEY || ""
-  ].filter(Boolean);
+  const user = await verifySessionEdge(token);
+  if (!user) return toLogin(request, pathname, true);
 
-  if (apiKey && VALID_KEYS.includes(apiKey.trim())) {
-    // Authorized Jarvis request
-    return NextResponse.next();
+  if (user.role !== "DIRECTOR") {
+    // Финансы, зарплаты, бэкапы и прайсы — только директору
+    const restrictedApi =
+      pathname.startsWith("/api/backup") ||
+      pathname.startsWith("/api/payroll") ||
+      pathname.startsWith("/api/finance");
+    if (restrictedApi) {
+      return NextResponse.json({ error: "Недостаточно прав" }, { status: 403 });
+    }
+
+    const restrictedPage =
+      pathname.startsWith("/finance") ||
+      pathname.startsWith("/reports") ||
+      pathname.startsWith("/payroll") ||
+      pathname.startsWith("/settings/backup") ||
+      pathname.startsWith("/settings/services") ||
+      pathname.startsWith("/settings/pricing");
+    if (restrictedPage) {
+      return NextResponse.redirect(new URL("/orders", request.url));
+    }
   }
 
-  // 2. Read session cookie
-  const sessionCookie = request.cookies.get("mp_auth_session")?.value;
-
-  if (!sessionCookie) {
-    if (pathname.startsWith("/api/")) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-    const loginUrl = new URL("/login", request.url);
-    loginUrl.searchParams.set("from", pathname);
-    return NextResponse.redirect(loginUrl);
-  }
-
-  // 3. Decode payload to check expiration, signature presence, and roles
-  try {
-    const [base64Data, signature] = sessionCookie.split(".");
-    if (!base64Data || !signature || signature.length < 32) {
-      throw new Error("Invalid token format");
-    }
-    
-    // Base64Url decode in standard JS with padding and UTF-8 safety
-    let b64 = base64Data.replace(/-/g, "+").replace(/_/g, "/");
-    while (b64.length % 4) b64 += "=";
-    
-    let jsonStr: string;
-    try {
-      jsonStr = decodeURIComponent(
-        atob(b64)
-          .split("")
-          .map((c) => "%" + ("00" + c.charCodeAt(0).toString(16)).slice(-2))
-          .join("")
-      );
-    } catch {
-      jsonStr = atob(b64);
-    }
-    const user = JSON.parse(jsonStr);
-
-    if (user.exp && user.exp < Date.now()) {
-      const loginUrl = new URL("/login", request.url);
-      const response = NextResponse.redirect(loginUrl);
-      response.cookies.delete("mp_auth_session");
-      return response;
-    }
-
-    const isDirector = user.role === "DIRECTOR";
-
-    // 4. Финансовые отчеты, касса, зарплаты и бэкапы доступны ТОЛЬКО директору (Тимуру)
-    if (!isDirector) {
-      const isRestrictedApiRoute =
-        pathname.startsWith("/api/backup") ||
-        pathname.startsWith("/api/payroll") ||
-        pathname.startsWith("/api/finance");
-
-      if (isRestrictedApiRoute) {
-        return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-      }
-
-      const isRestrictedFinancialRoute =
-        pathname.startsWith("/finance") ||
-        pathname.startsWith("/reports") ||
-        pathname.startsWith("/payroll") ||
-        pathname.startsWith("/settings/backup") ||
-        pathname.startsWith("/settings/services") ||
-        pathname.startsWith("/settings/pricing");
-
-      if (isRestrictedFinancialRoute) {
-        // Сотрудникам доступны только заказы и канбан цеха
-        return NextResponse.redirect(new URL("/orders", request.url));
-      }
-    }
-
-    return NextResponse.next();
-  } catch (err) {
-    const loginUrl = new URL("/login", request.url);
-    const response = NextResponse.redirect(loginUrl);
-    response.cookies.delete("mp_auth_session");
-    return response;
-  }
+  return NextResponse.next();
 }
 
 export const config = {
-  matcher: [
-    "/((?!_next/static|_next/image|favicon.ico).*)",
-  ],
+  matcher: ["/((?!_next/static|_next/image|favicon.ico).*)"],
 };

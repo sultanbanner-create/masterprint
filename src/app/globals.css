@@ -4,19 +4,77 @@
 
 :root {
   --foreground-rgb: 15, 23, 42;
-  --background-start-rgb: 248, 250, 252;
-  --background-end-rgb: 241, 245, 249;
+  --brand: #0a45f0;
+  --ink: #070b1f;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
 }
 
 body {
   color: rgb(var(--foreground-rgb));
-  background: linear-gradient(
-      to bottom,
-      rgb(var(--background-start-rgb)),
-      rgb(var(--background-end-rgb))
-    );
+  background: #f6f8fc;
   min-height: 100vh;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  font-family: "Manrope", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  font-feature-settings: "tnum" 1; /* цифры одной ширины: суммы и метры в столбик ровнее */
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* На телефоне поля ввода не мельче 16px — иначе iPhone приближает страницу при вводе */
+@media (max-width: 767px) {
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+  select,
+  textarea {
+    font-size: 16px !important;
+  }
+}
+
+:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+}
+
+/* Полоска CMYK — фирменная деталь печатного цеха */
+.cmyk-strip {
+  height: 3px;
+  background: linear-gradient(
+    90deg,
+    #00aeef 0 25%,
+    #ec008c 25% 50%,
+    #ffe600 50% 75%,
+    #1d1d1b 75% 100%
+  );
+}
+
+/* Отступы под вырез и полоску жестов на телефонах */
+.pb-safe {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+.pt-safe {
+  padding-top: env(safe-area-inset-top, 0px);
+}
+
+/* Тонкая полоса прокрутки в боковом меню */
+.nav-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.15) transparent;
+}
+.nav-scroll::-webkit-scrollbar {
+  width: 6px;
+}
+.nav-scroll::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 6px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
 }
 
 @media print {
@@ -38,5 +96,8 @@ body {
     max-height: none !important;
     width: 100% !important;
     box-shadow: none !important;
+  }
+  main {
+    padding-bottom: 0 !important;
   }
 }

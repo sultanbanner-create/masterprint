@@ -1,5 +1,6 @@
 import Script from "next/script";
 import type { Metadata, Viewport } from "next";
+import { TmaAuthGate } from "@/components/TmaAuthGate";
 
 export const metadata: Metadata = {
   title: "Master Print ERP • Telegram App",
@@ -25,7 +26,7 @@ export default function TmaLayout({
         src="https://telegram.org/js/telegram-web-app.js"
         strategy="beforeInteractive"
       />
-      {children}
+      <TmaAuthGate>{children}</TmaAuthGate>
     </div>
   );
 }

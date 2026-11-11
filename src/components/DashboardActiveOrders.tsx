@@ -2,16 +2,8 @@
 
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
-import { 
-  ClipboardList, 
-  Flame, 
-  CheckCircle2, 
-  Square, 
-  CheckSquare, 
-  ChevronRight,
-  Clock
-} from "lucide-react";
-import { formatCurrency, formatDateTime, getDeadlineInfo, STATUS_CONFIG } from "@/lib/utils";
+import { Square, CheckSquare, ChevronRight } from "lucide-react";
+import { formatCurrency, getDeadlineInfo, STATUS_CONFIG } from "@/lib/utils";
 
 interface DashboardActiveOrdersProps {
   initialOrders: any[];
@@ -115,153 +107,89 @@ export function DashboardActiveOrders({ initialOrders, currentUser }: DashboardA
     }
   };
 
+  const tabCls = (on: boolean) =>
+    `h-9 px-3.5 rounded-lg text-sm font-bold transition-colors flex items-center gap-1.5 ${
+      on ? "bg-white text-slate-900 shadow-sm" : "text-slate-500 hover:text-slate-900"
+    }`;
+
   return (
-    <div className="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
-      {/* Шапка списка с табами */}
-      <div className="px-5 py-4 border-b border-slate-100 bg-slate-50/50 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-        <div className="flex items-center gap-2">
-          <div className="flex items-center bg-slate-200/80 p-0.5 rounded-xl text-xs font-bold">
-            <button
-              type="button"
-              onClick={() => setViewTab("ALL")}
-              className={`px-3 py-1.5 rounded-lg transition ${
-                viewTab === "ALL"
-                  ? "bg-white text-slate-900 shadow-xs"
-                  : "text-slate-600 hover:text-slate-900"
-              }`}
-            >
-              Все наряды цеха ({activeOrders.length})
-            </button>
-            <button
-              type="button"
-              onClick={() => setViewTab("MY")}
-              className={`px-3 py-1.5 rounded-lg transition flex items-center gap-1.5 ${
-                viewTab === "MY"
-                  ? "bg-white text-slate-900 shadow-xs"
-                  : "text-slate-600 hover:text-slate-900"
-              }`}
-            >
-              <span>Мои задачи</span>
-              <span className={`text-[10px] px-1.5 py-0.2 rounded-full ${viewTab === "MY" ? "bg-blue-100 text-blue-700" : "bg-slate-300 text-slate-700"}`}>
-                {myOrders.length}
-              </span>
-            </button>
-          </div>
+    <section className="bg-white rounded-2xl border border-slate-200 overflow-hidden">
+      <header className="px-4 sm:px-5 py-3.5 border-b border-slate-100 flex flex-wrap items-center justify-between gap-3">
+        <div className="flex items-center bg-slate-100 p-1 rounded-xl" role="tablist" aria-label="Какие наряды показать">
+          <button type="button" role="tab" aria-selected={viewTab === "ALL"} onClick={() => setViewTab("ALL")} className={tabCls(viewTab === "ALL")}>
+            Весь цех <span className="text-slate-400 font-semibold">{activeOrders.length}</span>
+          </button>
+          <button type="button" role="tab" aria-selected={viewTab === "MY"} onClick={() => setViewTab("MY")} className={tabCls(viewTab === "MY")}>
+            Мои <span className="text-slate-400 font-semibold">{myOrders.length}</span>
+          </button>
         </div>
+        <Link href="/orders" className="text-sm font-semibold text-brand-600 hover:text-brand-800 inline-flex items-center gap-0.5">
+          Все заказы <ChevronRight className="w-4 h-4" />
+        </Link>
+      </header>
 
-        <div className="flex items-center gap-3">
-          <span className="text-[11px] text-slate-400 font-medium hidden sm:inline">
-            ⚡ Авто-обновление каждые 4 сек
-          </span>
-          <Link href="/orders" className="text-xs text-blue-600 font-bold hover:underline flex items-center gap-0.5">
-            <span>Реестр нарядов ({orders.length})</span>
-            <ChevronRight className="w-3.5 h-3.5" />
-          </Link>
-        </div>
-      </div>
-
-      {/* Список нарядов */}
-      <div className="divide-y divide-slate-100">
+      <ul className="divide-y divide-slate-100">
         {displayedOrders.map((o) => {
-          const statusCfg = STATUS_CONFIG[o.status] || {
-            label: o.status,
-            color: "bg-slate-100 text-slate-700",
-          };
+          const statusCfg = STATUS_CONFIG[o.status];
           const deadline = getDeadlineInfo(o.deadline, o.status === "COMPLETED");
           const isDone = o.status === "READY" || o.status === "COMPLETED" || !!o.completedBy;
+          const doneBy = o.completedBy || o.assignedTo?.name;
+          const hot = deadline.isUrgent && !isDone;
 
           return (
-            <div
-              key={o.id}
-              className="p-4 hover:bg-slate-50/80 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs transition"
-            >
-              <div className="flex items-start gap-3">
-                <Link
-                  href={`/orders/${o.id}`}
-                  className="font-mono font-bold text-sm text-teal-700 hover:underline shrink-0"
-                >
-                  {o.orderNumber}
-                </Link>
-                <div>
-                  <div className="font-bold text-slate-900 text-sm">{o.title}</div>
-                  <div className="text-slate-500 mt-0.5">
-                    Клиент: <b>{o.client?.name}</b> {o.client?.phone ? `(${o.client.phone})` : ""}
-                  </div>
-                  {o.installAddress && (
-                    <div className="text-[11px] text-slate-400 mt-0.5">
-                      Адрес: {o.installAddress}
-                    </div>
+            <li key={o.id} className="px-4 sm:px-5 py-3.5 grid gap-3 md:grid-cols-[minmax(0,1fr)_auto] md:items-center">
+              <div className="min-w-0">
+                <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs">
+                  <span className="font-bold text-slate-500">{o.orderNumber}</span>
+                  {statusCfg && (
+                    <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full font-semibold ${statusCfg.bg} ${statusCfg.color}`}>
+                      <span className={`w-1.5 h-1.5 rounded-full ${statusCfg.dot}`} />
+                      {statusCfg.label}
+                    </span>
+                  )}
+                  {o.deadline && !isDone && (
+                    <span className={hot ? "font-bold text-red-600" : "text-slate-500"}>{deadline.label}</span>
                   )}
                 </div>
-              </div>
-
-              <div className="flex items-center gap-2.5 sm:gap-3 shrink-0 flex-wrap sm:flex-nowrap">
-                {deadline.isUrgent && !isDone && (
-                  <span className="flex items-center gap-1 text-[10px] font-black text-red-600 bg-red-50 border border-red-200 px-1.5 py-0.5 rounded animate-pulse">
-                    <Flame className="w-3 h-3 fill-red-600 text-red-600" />
-                    ГОРИТ!
-                  </span>
-                )}
-
-                <span className={`px-2 py-0.5 rounded-lg text-xs font-bold ${statusCfg.color}`}>
-                  {statusCfg.label}
-                </span>
-
-                {deadline.label && (
-                  <span className={`text-[11px] font-mono font-bold ${deadline.colorClass}`}>
-                    {deadline.label}
-                  </span>
-                )}
-
-                <div className="text-right">
-                  <span className="font-mono font-black text-slate-900 text-sm block">
-                    {formatCurrency(o.totalAmount)}
-                  </span>
-                </div>
-
-                {/* Галочка выполнения: кто выполнил наряд */}
-                {isDone ? (
-                  <button
-                    type="button"
-                    onClick={() => toggleCompletion(o)}
-                    className="px-2.5 py-1.5 rounded-xl bg-emerald-100 hover:bg-emerald-200 text-emerald-900 border border-emerald-300 font-bold text-xs transition flex items-center gap-1.5 shadow-2xs active:scale-95"
-                    title="Нажмите, чтобы снять отметку выполнения"
-                  >
-                    <CheckSquare className="w-4 h-4 text-emerald-600 shrink-0" />
-                    <span>{o.completedBy ? `Выполнил: ${o.completedBy}` : (o.assignedTo?.name ? `Выполнил: ${o.assignedTo.name}` : "Выполнен ✅")}</span>
-                  </button>
-                ) : (
-                  <button
-                    type="button"
-                    onClick={() => toggleCompletion(o)}
-                    className="px-2.5 py-1.5 rounded-xl bg-slate-50 hover:bg-emerald-50 text-slate-700 hover:text-emerald-800 border border-slate-300 hover:border-emerald-400 font-semibold text-xs transition flex items-center gap-1.5 shadow-2xs active:scale-95 group"
-                    title={`Поставить галочку: Отметить наряд выполненным (${currentUser?.name || "Мастер"})`}
-                  >
-                    <Square className="w-4 h-4 text-slate-400 group-hover:text-emerald-600 shrink-0" />
-                    <span className="group-hover:font-bold">Поставить галочку</span>
-                  </button>
-                )}
-
-                <Link
-                  href={`/orders/${o.id}`}
-                  className="px-2.5 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition inline-flex items-center gap-0.5 shadow-2xs"
-                >
-                  <span>Открыть</span>
-                  <ChevronRight className="w-3.5 h-3.5" />
+                <Link href={`/orders/${o.id}`} className="block mt-1 text-[15px] font-bold text-slate-900 hover:text-brand-700 truncate">
+                  {o.title}
                 </Link>
+                <div className="text-sm text-slate-500 truncate">
+                  {o.client?.name || "Без клиента"}
+                  {o.client?.phone ? `, ${o.client.phone}` : ""}
+                  {o.installAddress ? `, ${o.installAddress}` : ""}
+                </div>
               </div>
-            </div>
+
+              <div className="flex items-center justify-between md:justify-end gap-3">
+                <span className="text-[15px] font-extrabold text-slate-900 whitespace-nowrap">{formatCurrency(o.totalAmount)}</span>
+                <button
+                  type="button"
+                  onClick={() => toggleCompletion(o)}
+                  aria-pressed={isDone}
+                  className={`h-10 px-3.5 rounded-xl text-sm font-bold transition flex items-center gap-2 active:scale-95 ${
+                    isDone
+                      ? "bg-emerald-50 text-emerald-800 hover:bg-emerald-100"
+                      : "border border-slate-300 text-slate-700 hover:border-emerald-500 hover:text-emerald-800"
+                  }`}
+                  title={isDone ? "Снять отметку" : `Отметить готовым (${currentUser?.name || "мастер"})`}
+                >
+                  {isDone ? <CheckSquare className="w-4 h-4 text-emerald-600" /> : <Square className="w-4 h-4 text-slate-400" />}
+                  <span className="whitespace-nowrap">{isDone ? (doneBy ? `Сделал ${doneBy}` : "Готово") : "Готово"}</span>
+                </button>
+              </div>
+            </li>
           );
         })}
 
         {displayedOrders.length === 0 && (
-          <div className="p-8 text-center text-slate-400 text-xs">
-            {viewTab === "MY" 
-              ? "У вас нет активных задач. Переключитесь на «Все наряды цеха», чтобы посмотреть общую очередь."
-              : "У цеха нет активных нарядов в работе. Все задачи выполнены!"}
-          </div>
+          <li className="px-5 py-10 text-center text-sm text-slate-500">
+            {viewTab === "MY"
+              ? "За вами сейчас нет нарядов. Переключитесь на «Весь цех», чтобы взять задачу из общей очереди."
+              : "В цехе нет нарядов в работе. Новый наряд можно создать кнопкой «Наряд»."}
+          </li>
         )}
-      </div>
-    </div>
+      </ul>
+    </section>
   );
 }

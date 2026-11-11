@@ -27,7 +27,10 @@ export async function GET(req: Request) {
     if (downloadRaw) {
       const dbPath = path.join(process.cwd(), "prisma", "dev.db");
       if (!fs.existsSync(dbPath)) {
-        return NextResponse.json({ error: "Файл базы данных не найден" }, { status: 404 });
+        return NextResponse.json(
+          { error: "На сервере база хранится в PostgreSQL, отдельного файла .db нет. Скачайте бэкап JSON — в нём все данные." },
+          { status: 404 }
+        );
       }
 
       const fileBuffer = fs.readFileSync(dbPath);
